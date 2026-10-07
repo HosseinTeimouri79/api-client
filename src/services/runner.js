@@ -76,7 +76,7 @@ function applyResponsePatch(res, p) {
 
 export async function runRequest(
   db,
-  { wid, req, collectionId, environmentId, canPersist, runtime = {} },
+  { wid, req, collectionId, environmentId, canPersist, runtime = {}, limits },
 ) {
   const logs = [];
   const log = (level, message, context) =>
@@ -251,7 +251,7 @@ export async function runRequest(
           JSON.stringify([req.url, req.method, req.headers, req.params, req.body]),
       };
     try {
-      res = await execute(built);
+      res = await execute(built, { limits });
     } catch (e) {
       // AggregateError (dual-stack attempts) hides per-address causes; surface them.
       const causes = [

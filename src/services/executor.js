@@ -4,7 +4,18 @@ import zlib from "node:zlib";
 import { safeLookup, assertPublicHost } from "./ssrf.js";
 import { config } from "../config.js";
 
-const SIZE_MAX = config.maxResponseBytes;
+/** Limits for one run: what the user asked for, never above the server's ceilings (0 = as much as allowed). */
+export function effectiveLimits(want = {}) {
+  const pick = (v, dflt, ceiling) => {
+    let n = v === undefined ? dflt : v;
+    if (n === 0) n = ceiling || Infinity;
+    return ceiling ? Math.min(n, ceiling) : n;
+  };
+  return {
+    timeoutMs: pick(want.timeoutMs, config.requestTimeoutMs, config.maxRequestTimeoutMs),
+    maxBytes: pick(want.maxResponseBytes, config.maxResponseBytes, config.maxResponseBytesLimit),
+  };
+}
 const active = (list = []) => list.filter((x) => x.key && x.enabled !== false);
 
 export function applyAuth(auth, headers, url) {
@@ -87,7 +98,7 @@ export async function buildRequest(r, inheritedAuth) {
   return { url: url.toString(), method: r.method, headers, body };
 }
 
-function once({ url, method, headers, body }, signal) {
+function once({ url, method, headers, body }, signal, lim = effectiveLimits()) {
   return new Promise((resolve, reject) => {
     assertPublicHost(url);
     const u = new URL(url);
@@ -105,7 +116,7 @@ function once({ url, method, headers, body }, signal) {
         autoSelectFamily: true,
         autoSelectFamilyAttemptTimeout: config.connectAttemptTimeoutMs,
         signal,
-        timeout: config.requestTimeoutMs,
+        timeout: Number.isFinite(lim.timeoutMs) ? lim.timeoutMs : 0,
       },
       (res) => {
         const enc = res.headers["content-encoding"];
@@ -118,14 +129,19 @@ function once({ url, method, headers, body }, signal) {
                 ? res.pipe(zlib.createInflate())
                 : res;
         const chunks = [];
-        let size = 0;
+        let size = 0,
+          tooBig = null;
         stream.on("data", (c) => {
           size += c.length;
-          if (size > SIZE_MAX) {
-            req.destroy(new Error(`Response exceeds ${SIZE_MAX} bytes`));
+          if (size > lim.maxBytes) {
+            if (!tooBig) {
+              tooBig = new Error(`Response exceeds ${lim.maxBytes} bytes`);
+              reject(tooBig); // not via destroy(err): a response that arrived in one chunk would still reach "end"
+              req.destroy();
+            }
           } else chunks.push(c);
         });
-        stream.on("end", () => resolve({ res, buf: Buffer.concat(chunks) }));
+        stream.on("end", () => (tooBig ? reject(tooBig) : resolve({ res, buf: Buffer.concat(chunks) })));
         stream.on("error", reject);
       },
     );
@@ -140,12 +156,13 @@ function once({ url, method, headers, body }, signal) {
   });
 }
 // Executes with manual redirect following so every hop passes the SSRF check.
-export async function execute(built, { maxRedirects = 5 } = {}) {
+export async function execute(built, { maxRedirects = 5, limits } = {}) {
+  const lim = effectiveLimits(limits);
   const t0 = performance.now();
   let cur = built;
   const hops = [];
   for (let i = 0; i <= maxRedirects; i++) {
-    const { res, buf } = await once(cur);
+    const { res, buf } = await once(cur, undefined, lim);
     const loc = res.headers.location;
     if ([301, 302, 303, 307, 308].includes(res.statusCode) && loc) {
       hops.push(cur.url);

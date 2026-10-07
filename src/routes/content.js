@@ -431,10 +431,18 @@ export function contentRouter(db) {
         }),
         collection_id: z.string().nullable().optional(),
         environment_id: z.string().nullable().optional(),
+        // per-user request limits from Settings (0 = as much as the server allows)
+        limits: z
+          .object({
+            timeoutMs: z.number().int().min(0).max(3_600_000).optional(),
+            maxResponseBytes: z.number().int().min(0).max(4 * 1024 ** 3).optional(),
+          })
+          .optional(),
       })
       .parse(req.body);
     if (b.collection_id) col(req, b.collection_id);
     const out = await runRequest(db, {
+      limits: b.limits,
       wid: req.wid,
       req: b.request,
       collectionId: b.collection_id,

@@ -19,6 +19,10 @@ export const config = {
   connectAttemptTimeoutMs: Number(
     process.env.CONNECT_ATTEMPT_TIMEOUT_MS || 5000,
   ), // per-address connect budget (Node default is only 250ms)
+  // Defaults used when a run does not ask for its own limits (users can set theirs in Settings).
   requestTimeoutMs: Number(process.env.REQUEST_TIMEOUT_MS || 30000),
   maxResponseBytes: Number(process.env.MAX_RESPONSE_BYTES || 10 * 1024 * 1024),
+  // Ceilings for those per-user limits ("0 = no limit" in Settings means "up to this"); 0 here lifts the ceiling.
+  maxRequestTimeoutMs: Number(process.env.MAX_REQUEST_TIMEOUT_MS || 600000),
+  maxResponseBytesLimit: Number(process.env.MAX_RESPONSE_BYTES_LIMIT || 100 * 1024 * 1024),
 };
