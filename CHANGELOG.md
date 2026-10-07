@@ -11,6 +11,16 @@ The version is shown in **Settings → General → About** and returned by `GET 
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-10-08
+
+### Added
+- **gRPC** requests: unary, server streaming, client streaming and bidirectional calls. Paste a `.proto` (parsed on the server,
+  Google's well-known types built in), pick a service and method, edit the JSON message (an example is generated), send
+  messages on streaming calls, end or cancel them. Metadata, deadline, TLS (with an option for self-signed test servers),
+  response headers, trailers and the final status are shown.
+- `POST /workspaces/:wid/grpc/describe` lists the services and methods of a `.proto`.
+- The address a gRPC connection uses is the one the SSRF guard checked.
+
 ## [1.2.0] - 2026-10-08
 
 ### Added

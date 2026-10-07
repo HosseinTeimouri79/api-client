@@ -338,6 +338,23 @@ answer is shown and the tunnel is closed again.
   anyone watching it. Viewers may connect (like running an HTTP request). Private addresses are blocked like in HTTP unless
   `ALLOW_PRIVATE_TARGETS=true`.
 
+**gRPC.** Unary, server streaming, client streaming and bidirectional calls.
+
+- The URL is `grpc://host:port` (plaintext), `grpcs://host:port` (TLS), or `http://` / `https://` / a bare `host:port`.
+- Paste the service's `.proto` in the **Proto** tab (one file; Google's well-known types such as `Timestamp` and `Any` can be
+  imported, other imports are not supported). The server parses it and lists the services and methods; picking a method inserts
+  an example request message. There is no server reflection.
+- **Message** tab: the request as JSON (`{{variables}}` work). Invoke sends it for unary and server-streaming methods. For
+  client-streaming and bidirectional methods, Invoke opens the call and you **Send message** as often as you like and **End
+  stream** when done; **Cancel** aborts. Responses are shown as JSON (64-bit integers as strings, enums by name, bytes as base64).
+- **Metadata** tab holds the request metadata (headers; keys ending in `-bin` are sent as binary from base64). Bearer, Basic and
+  API-key auth become metadata. Response headers, trailers and the final status (`OK`, `NOT_FOUND`, ...) are listed in the log
+  and in the **Metadata** pane.
+- **Settings:** a deadline in milliseconds (`0` = the request timeout from Settings for unary calls, none for streams) and an
+  option to skip TLS certificate verification for test servers with self-signed certificates.
+- The server resolves the host name once, refuses private addresses (unless `ALLOW_PRIVATE_TARGETS=true`) and connects to the
+  address it checked.
+
 ### History and console
 
 History is stored per user and workspace (latest 200 runs). The console shows structured logs of every run, including
@@ -571,7 +588,7 @@ curl -s http://localhost:3000/api/workspaces -H "authorization: Bearer $TOKEN"
 | Workspaces | `GET`/`POST /workspaces`, `GET`/`PATCH`/`DELETE /workspaces/:wid`, members, audit, environments                            |
 | Content    | `GET /workspaces/:wid/tree`, collections (`POST`, `PATCH`, `DELETE`, duplicate, scripts, auth), requests (`POST`, `PUT`, move, duplicate, `DELETE`) |
 | Running    | `POST /workspaces/:wid/run` (with optional `limits`), `GET`/`DELETE /workspaces/:wid/history`                              |
-| Live       | `POST /workspaces/:wid/sessions` (open a connection), `GET .../sessions/:id/events?since=` (Server-Sent Events), `POST .../sessions/:id/act` (`send`, `ping`, `pong`, `close`), `DELETE .../sessions/:id`, `GET .../sessions` |
+| Live       | `POST /workspaces/:wid/sessions` (open a connection), `GET .../sessions/:id/events?since=` (Server-Sent Events), `POST .../sessions/:id/act` (`send`, `ping`, `pong`, `close`, `end`, `cancel`), `POST /workspaces/:wid/grpc/describe` (parse a `.proto`), `DELETE .../sessions/:id`, `GET .../sessions` |
 | Interop    | `GET /workspaces/:wid/export?format=postman\|hoppscotch&collection=…\|environment=…`, `POST /workspaces/:wid/import`        |
 | Admin      | `/admin/stats`, `/admin/users` (list, create, `PATCH`, password, `DELETE`), `/admin/workspaces`, `/admin/audit`, `/admin/settings` |
 | Health     | `GET /healthz`                                                                                                             |
@@ -599,7 +616,7 @@ src/
   middleware/    auth.js (authenticate, csrfGuard, requireWorkspace, requireAdmin, audit)
   routes/        auth.js me.js admin.js workspaces.js content.js interop.js sessions.js
   services/      permissions.js variables.js executor.js runner.js scriptEngine.js ssrf.js sessions.js
-  protocols/     index.js (protocol list) common.js websocket.js (one module per live protocol)
+  protocols/     index.js (protocol list) common.js websocket.js grpc.js (one module per live protocol)
                  interop.js (Postman/Hoppscotch) settings.js userSettings.js locales.js
 web/             index.html vite.config.js
   src/           main.jsx App.jsx store.js api.js
@@ -716,7 +733,7 @@ Current version: **1.0.0**.
 ## Roadmap
 
 Not yet available: file upload in multipart bodies, inviting people who have no account yet, share-by-link, XML pretty-printing,
-a collection runner, mock servers, OpenAPI import, and per-secret encryption. gRPC, GraphQL, SSE, TCP, UDP, MQTT and AMQP are
+a collection runner, mock servers, OpenAPI import, and per-secret encryption. GraphQL, SSE, TCP, UDP, MQTT and AMQP are
 being added one protocol at a time (see the changelog). The code is structured so these can be added without rewriting the
 core: a `protocol` column, one module per live protocol in `src/protocols/` behind the session manager, a runner route on top of
 `runner.js` (which already returns test results), and new routes and services reading the same tables.
