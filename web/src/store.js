@@ -304,7 +304,7 @@ export const useStore = create((set, get) => {
   return {
     user: null, view: "app", booting: true, workspaces: [], ws: null, wsVars: [], tree: { collections: [], requests: [] }, expanded: {},
     tabs: [], active: null, envs: [], envId: null, logs: [], history: [], side: "collections", filter: "", colVars: {},
-    consoleOpen: true, theme: LS.get("theme", "dark"), sidebarOpen: false, sidebarW: Number(LS.get("sidebarW", 300)), editorFrac: Number(LS.get("editorFrac", 0.5)), splitDir: LS.get("splitDir", "col"), consoleH: Number(LS.get("consoleH", 180)),
+    consoleOpen: false, theme: LS.get("theme", "dark"), sidebarOpen: false, sidebarW: Number(LS.get("sidebarW", 300)), editorFrac: Number(LS.get("editorFrac", 0.5)), splitDir: LS.get("splitDir", "row"), consoleH: Number(LS.get("consoleH", 180)),
     ...actions,
     set: (p) => set(p),
     setFilter: (filter) => set({ filter }),

@@ -20,7 +20,7 @@ before(async () => {
 });
 after(async () => { await browser?.close(); server?.close(); });
 
-test("E2E: resizing panes keeps the page full width (stacked and side-by-side layouts)", { skip, timeout: 60000 }, async () => {
+test("E2E: resizing panes keeps the page full width (stacked and side-by-side layouts); layout and console defaults", { skip, timeout: 60000 }, async () => {
   const page = await (await browser.newContext({ viewport: { width: 1200, height: 800 } })).newPage();
   await page.goto(base);
   await page.getByRole("tab", { name: "Create account" }).click();
@@ -45,11 +45,15 @@ test("E2E: resizing panes keeps the page full width (stacked and side-by-side la
     assert.equal(await page.evaluate(() => document.body.className), "", "drag classes are removed afterwards");
   };
 
-  await drag(".split > .splitter.col", 80, 0); // side by side (default)
-  await page.locator(".pane").nth(1).hover();
-  await page.getByLabel("Switch layout").click(); // response goes under the editor
-  await page.locator(".split > .splitter.row").waitFor();
+  // defaults: response under the request, console collapsed
+  assert.equal(await page.locator(".split.rows").count(), 1, "response is under the request by default");
+  assert.equal(await page.locator(".console.closed").count(), 1, "console is closed by default");
   await drag(".split > .splitter.row", 0, 60);
+  await page.locator(".console-title").click();
   await drag(".console-split", 0, -40);
   await drag(".side-split", 40, 0);
+  await page.locator(".pane").nth(1).hover();
+  await page.getByLabel("Switch layout").click(); // response moves next to the request
+  await page.locator(".split.cols").waitFor();
+  await drag(".split > .splitter.col", 80, 0);
 });

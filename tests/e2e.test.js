@@ -105,6 +105,9 @@ pm.test("hello is world", () => pm.expect(d.hello).to.equal("world"));`,
   await page.locator(".pill", { hasText: "200 OK" }).waitFor();
   await page.locator(".jt", { hasText: "post-script" }).waitFor();
   await page.locator(".badge-mod").waitFor();
+  // the console starts collapsed; opening it shows what the scripts logged
+  assert.equal(await page.locator(".console.closed").count(), 1, "console is closed by default");
+  await page.locator(".console-title").click();
   assert.match(await page.locator(".log").innerText(), /Request modified by pre-request script/);
   assert.match(await page.locator(".log").innerText(), /Response modified by post-request script/);
   await page.getByRole("tab", { name: /^Request/ }).click();
