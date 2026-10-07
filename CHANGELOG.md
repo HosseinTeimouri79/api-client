@@ -11,6 +11,13 @@ The version is shown in **Settings → General → About** and returned by `GET 
 
 ## [Unreleased]
 
+## [1.6.0] - 2026-10-08
+
+### Added
+- **TCP** connections: Connect, Send and Close on a raw socket, plain or TLS (`tcp://`, `tls://`). Text with optional LF / CRLF,
+  base64 or hex messages, incoming data grouped into messages, hex dump for binary data, TLS certificate details, options to skip
+  verification or set the SNI name, and the response limit applied to the connection.
+
 ## [1.5.0] - 2026-10-08
 
 ### Added

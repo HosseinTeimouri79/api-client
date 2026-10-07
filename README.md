@@ -383,6 +383,19 @@ answer is shown and the tunnel is closed again.
   stream with `Last-Event-ID` and gives up after the chosen number of reconnects. **Stop** ends the stream.
 - A single event cannot be larger than the response limit from Settings (default 10 MB).
 
+**TCP.** Connect, Send and Close on a raw socket (plain or TLS).
+
+- The address is `tcp://host:port` or `tls://host:port` (`tcps://`, `ssl://` also mean TLS); a bare `host:port` is plain TCP. A
+  port is required. There are no headers, params or auth for a raw socket.
+- **Message** tab: text (with an optional line ending: none, LF or CRLF), base64 or hex, with `{{variables}}`; **Ctrl+Enter**
+  sends. Data received within a few milliseconds is shown as one message (TCP splits data arbitrarily). Messages that are not text
+  are shown as base64 and, when opened, as a hex dump. The server closing its side shows as an event and ends the session.
+- **Connection** tab: remote and local address and, for TLS, the version, cipher, certificate subject, issuer, validity,
+  fingerprint and whether it is trusted. **Settings:** skip certificate verification (self-signed test servers) and an SNI /
+  certificate name override.
+- Disconnecting closes the socket; the received data is limited like HTTP responses (Settings → Request, default 10 MB per
+  connection). Private addresses are refused unless `ALLOW_PRIVATE_TARGETS=true`.
+
 ### History and console
 
 History is stored per user and workspace (latest 200 runs). The console shows structured logs of every run, including
@@ -644,7 +657,7 @@ src/
   middleware/    auth.js (authenticate, csrfGuard, requireWorkspace, requireAdmin, audit)
   routes/        auth.js me.js admin.js workspaces.js content.js interop.js sessions.js protocolTools.js
   services/      permissions.js variables.js executor.js runner.js scriptEngine.js ssrf.js sessions.js
-  protocols/     index.js (protocol list) common.js websocket.js grpc.js graphql.js sse.js (one module per protocol)
+  protocols/     index.js (protocol list) common.js websocket.js grpc.js graphql.js sse.js tcp.js (one module per protocol)
                  interop.js (Postman/Hoppscotch) settings.js userSettings.js locales.js
 web/             index.html vite.config.js
   src/           main.jsx App.jsx store.js api.js
@@ -761,7 +774,7 @@ Current version: **1.0.0**.
 ## Roadmap
 
 Not yet available: file upload in multipart bodies, inviting people who have no account yet, share-by-link, XML pretty-printing,
-a collection runner, mock servers, OpenAPI import, and per-secret encryption. TCP, UDP, MQTT and AMQP are
+a collection runner, mock servers, OpenAPI import, and per-secret encryption. UDP, MQTT and AMQP are
 being added one protocol at a time (see the changelog). The code is structured so these can be added without rewriting the
 core: a `protocol` column, one module per live protocol in `src/protocols/` behind the session manager, a runner route on top of
 `runner.js` (which already returns test results), and new routes and services reading the same tables.
