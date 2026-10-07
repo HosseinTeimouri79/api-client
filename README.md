@@ -355,6 +355,23 @@ answer is shown and the tunnel is closed again.
 - The server resolves the host name once, refuses private addresses (unless `ALLOW_PRIVATE_TARGETS=true`) and connects to the
   address it checked.
 
+**GraphQL.** Queries, mutations and subscriptions in one editor.
+
+- Write the document in the **Query** tab and the variables (a JSON object) below it. The document is analysed as you type:
+  a badge shows whether the selected operation is a query, mutation or subscription, syntax errors are shown with their line
+  and column, and a document with several operations asks which one to run.
+- **Queries and mutations** are sent as an ordinary HTTP request, so everything from HTTP applies: headers, auth, variables,
+  pre-request and post-request scripts, tests, history, limits and the response viewer. By default the body is
+  `{ "query", "variables", "operationName" }` as JSON (`POST`); **Settings** can switch queries to `GET` (parameters in the URL;
+  mutations refuse it). The **Code** button generates the equivalent HTTP request in any of the snippet languages. Scripts see the
+  HTTP request but not the GraphQL document: change it with `{{variables}}` instead.
+- **Subscriptions** use a WebSocket: **Send** becomes **Subscribe** and the right pane shows every result as it arrives, until
+  the server completes or you **Unsubscribe**. Both `graphql-transport-ws` (current) and the legacy `graphql-ws`
+  (`subscriptions-transport-ws`) are supported. In **Settings** you can give a separate WebSocket URL (otherwise the request URL
+  is used, `http` → `ws`, `https` → `wss`) and connection parameters (JSON sent with `connection_init`, e.g. a token).
+- **Schema** tab: *Fetch schema* runs an introspection query through the same request (auth, scripts and address checks) and
+  shows the schema as SDL with descriptions; the filter keeps the matching type blocks.
+
 ### History and console
 
 History is stored per user and workspace (latest 200 runs). The console shows structured logs of every run, including
@@ -588,7 +605,7 @@ curl -s http://localhost:3000/api/workspaces -H "authorization: Bearer $TOKEN"
 | Workspaces | `GET`/`POST /workspaces`, `GET`/`PATCH`/`DELETE /workspaces/:wid`, members, audit, environments                            |
 | Content    | `GET /workspaces/:wid/tree`, collections (`POST`, `PATCH`, `DELETE`, duplicate, scripts, auth), requests (`POST`, `PUT`, move, duplicate, `DELETE`) |
 | Running    | `POST /workspaces/:wid/run` (with optional `limits`), `GET`/`DELETE /workspaces/:wid/history`                              |
-| Live       | `POST /workspaces/:wid/sessions` (open a connection), `GET .../sessions/:id/events?since=` (Server-Sent Events), `POST .../sessions/:id/act` (`send`, `ping`, `pong`, `close`, `end`, `cancel`), `POST /workspaces/:wid/grpc/describe` (parse a `.proto`), `DELETE .../sessions/:id`, `GET .../sessions` |
+| Live       | `POST /workspaces/:wid/sessions` (open a connection), `GET .../sessions/:id/events?since=` (Server-Sent Events), `POST .../sessions/:id/act` (`send`, `ping`, `pong`, `close`, `end`, `cancel`), `POST /workspaces/:wid/grpc/describe` (parse a `.proto`), `POST /workspaces/:wid/graphql/analyze`, `POST /workspaces/:wid/graphql/introspect`, `DELETE .../sessions/:id`, `GET .../sessions` |
 | Interop    | `GET /workspaces/:wid/export?format=postman\|hoppscotch&collection=…\|environment=…`, `POST /workspaces/:wid/import`        |
 | Admin      | `/admin/stats`, `/admin/users` (list, create, `PATCH`, password, `DELETE`), `/admin/workspaces`, `/admin/audit`, `/admin/settings` |
 | Health     | `GET /healthz`                                                                                                             |
@@ -614,9 +631,9 @@ src/
   app.js server.js config.js
   db/            index.js (open + migrate)  migrations.js (append-only)
   middleware/    auth.js (authenticate, csrfGuard, requireWorkspace, requireAdmin, audit)
-  routes/        auth.js me.js admin.js workspaces.js content.js interop.js sessions.js
+  routes/        auth.js me.js admin.js workspaces.js content.js interop.js sessions.js protocolTools.js
   services/      permissions.js variables.js executor.js runner.js scriptEngine.js ssrf.js sessions.js
-  protocols/     index.js (protocol list) common.js websocket.js grpc.js (one module per live protocol)
+  protocols/     index.js (protocol list) common.js websocket.js grpc.js graphql.js (one module per protocol)
                  interop.js (Postman/Hoppscotch) settings.js userSettings.js locales.js
 web/             index.html vite.config.js
   src/           main.jsx App.jsx store.js api.js
@@ -733,7 +750,7 @@ Current version: **1.0.0**.
 ## Roadmap
 
 Not yet available: file upload in multipart bodies, inviting people who have no account yet, share-by-link, XML pretty-printing,
-a collection runner, mock servers, OpenAPI import, and per-secret encryption. GraphQL, SSE, TCP, UDP, MQTT and AMQP are
+a collection runner, mock servers, OpenAPI import, and per-secret encryption. SSE, TCP, UDP, MQTT and AMQP are
 being added one protocol at a time (see the changelog). The code is structured so these can be added without rewriting the
 core: a `protocol` column, one module per live protocol in `src/protocols/` behind the session manager, a runner route on top of
 `runner.js` (which already returns test results), and new routes and services reading the same tables.

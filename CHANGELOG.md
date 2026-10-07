@@ -11,6 +11,16 @@ The version is shown in **Settings → General → About** and returned by `GET 
 
 ## [Unreleased]
 
+## [1.4.0] - 2026-10-08
+
+### Added
+- **GraphQL** requests: queries and mutations (sent as HTTP, with scripts, tests, history and code snippets) and subscriptions
+  (WebSocket, `graphql-transport-ws` and legacy `graphql-ws`). The document is analysed while typing (operation type, syntax
+  errors with position, choice between several operations), variables are JSON, queries can use `GET`.
+- Schema browser: fetch the schema by introspection and read it as SDL with a filter.
+- `POST /workspaces/:wid/graphql/analyze` and `/graphql/introspect`; the editor helpers (`/grpc/describe` too) now live in
+  `src/routes/protocolTools.js`.
+
 ## [1.3.0] - 2026-10-08
 
 ### Added
