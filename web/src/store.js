@@ -5,7 +5,7 @@ import { clone } from "./lib/utils.js";
 import { toast } from "./components/ui/Toasts.jsx";
 import { prompt, confirm } from "./components/ui/dialogs.jsx";
 import { pickCollection } from "./features/pickers.jsx";
-import { applyLocale, t } from "./i18n/index.js";
+import { applyLocale, t, t as tr } from "./i18n/index.js"; // `tr`: same function, usable where a local `t` (tab) shadows it
 
 const LS = {
   get: (k, d) => { try { return localStorage.getItem(k) ?? d; } catch { return d; } },
@@ -246,7 +246,8 @@ export const useStore = create((set, get) => {
     async save() {
       const { ws } = get();
       const t = get().tabs.find((x) => x.key === get().active);
-      if (!t || !can(ws).write) return;
+      if (!t) return;
+      if (!can(ws).write) return toast(tr("viewer.noSave"), "info");
       if (t.kind === "collection") {
         const d = t.draft;
         return guard(async () => {

@@ -24,7 +24,9 @@ export function RequestEditor({ tab }) {
   const { setReq, setSub, send, save } = useStore.getState();
   const vars = useKnownVars(tab);
   const c = can(ws);
-  const r = tab.req, ro = !c.write && !!tab.id;
+  const r = tab.req;
+  // View-only members may change anything to try a request out (it runs from this tab), but nothing can be saved.
+  const ro = false, noSave = !c.write;
   const set = (patch) => setReq(tab.key, patch);
   const urlRef = useRef(null);
 
@@ -52,10 +54,11 @@ export function RequestEditor({ tab }) {
   return (
     <VarsContext.Provider value={vars}>
       <div className="editor">
+        {noSave && <div className="note viewer-note" role="note"><Icon name="eye" /> {t("viewer.note")}</div>}
         <div className="req-head">
-          <input className="req-name" value={r.name} disabled={ro} aria-label="Request name" onChange={(e) => set({ name: e.target.value })} />
+          <input className="req-name" value={r.name} disabled={noSave} aria-label="Request name" onChange={(e) => set({ name: e.target.value })} />
           <Button icon="code" title={t("snippet.title")} onClick={() => modals.open((close) => <CodeSnippetModal close={close} tab={tab} />)}>{t("snippet.open")}</Button>
-          <Button icon="floppy-disk" disabled={ro} title="Ctrl+S" onClick={save}>Save</Button>
+          <Button icon="floppy-disk" disabled={noSave} title={noSave ? t("viewer.noSave") : "Ctrl+S"} onClick={save}>Save</Button>
         </div>
         <div className="urlbar">
           <Select className="method-select" value={r.method} options={METHOD_OPTS} onChange={(method) => set({ method })} aria-label="Method" renderValue={(o) => <span className={`m-t m-${o.value}`}>{o.label}</span>} renderOption={(o) => <span className={`m-t m-${o.value}`}>{o.label}</span>} />
@@ -71,7 +74,7 @@ export function RequestEditor({ tab }) {
           {tab.sub === "auth" && <AuthEditor auth={r.auth} readOnly={ro} onChange={(auth) => set({ auth })} />}
           {tab.sub === "pre" && <ScriptEditor kind="pre" value={r.pre_script} readOnly={ro} inherited={inh} onEditInherited={editInherited} onChange={(pre_script) => set({ pre_script })} />}
           {tab.sub === "post" && <ScriptEditor kind="post" value={r.post_script} readOnly={ro} inherited={inh} onEditInherited={editInherited} onChange={(post_script) => set({ post_script })} />}
-          {tab.sub === "docs" && <textarea className="docs" rows={10} disabled={ro} placeholder="Describe what this request does…" value={r.description} onChange={(e) => set({ description: e.target.value })} />}
+          {tab.sub === "docs" && <textarea className="docs" rows={10} disabled={noSave} placeholder="Describe what this request does…" value={r.description} onChange={(e) => set({ description: e.target.value })} />}
         </div>
       </div>
     </VarsContext.Provider>
