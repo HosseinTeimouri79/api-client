@@ -11,6 +11,14 @@ The version is shown in **Settings → General → About** and returned by `GET 
 
 ## [Unreleased]
 
+## [1.9.0] - 2026-10-08
+
+### Added
+- **AMQP 0-9-1** (RabbitMQ and others): Publish (with broker confirmations, properties, headers, mandatory returns), Consume
+  (declare, bind, create exchange, prefetch, auto-ack, cancel), Ack, Reject / Requeue and acknowledge-all from the message log.
+  Virtual host and credentials from the URL or Settings, TLS, heartbeats.
+- This completes the protocol list: HTTP, WebSocket, gRPC, GraphQL, SSE, TCP, UDP, MQTT and AMQP.
+
 ## [1.8.0] - 2026-10-08
 
 ### Added

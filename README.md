@@ -72,7 +72,8 @@ What that means in practice:
 - **HTTP** with every method (GET, POST, PUT, PATCH, DELETE, HEAD, OPTIONS, TRACE, CONNECT) and body type: JSON, text, raw,
   form URL-encoded, multipart (text fields). `TRACE` and `CONNECT` are sent without a body. For `CONNECT` the URL is the proxy
   and the tunnel target is the URL path (`https://proxy:3128/example.com:443`); the proxy's reply is shown and the tunnel is closed.
-- Every request has a `protocol` (HTTP today; WebSocket, gRPC, GraphQL, SSE, TCP, UDP, MQTT and AMQP are being added one by one).
+- **Nine protocols** in one tool: HTTP, WebSocket, gRPC, GraphQL, SSE, TCP, UDP, MQTT and AMQP (see [Protocols](#protocols)); each
+  request has a protocol, is saved in collections like any other and shares variables, environments, auth and the address checks.
 - Query params, headers with autocomplete, **Bearer / Basic / API-key** auth with inheritance from collections.
 - **Environments** and variables with five scopes: runtime > request > collection > environment > workspace.
 - Response viewer: JSON tree with search, raw, sandboxed HTML preview, headers, "what was actually sent", binary download.
@@ -315,6 +316,8 @@ variables are never substituted into generated code snippets.
 
 The **Code** button next to Save generates code for the request exactly as edited (see [Code snippets](#code-snippets)).
 
+<a id="protocols"></a>
+
 ### Protocols
 
 Pick the protocol in the box left of the URL. HTTP sends one request and shows one response; the other protocols keep a
@@ -423,6 +426,22 @@ answer is shown and the tunnel is closed again.
   Unsubscribe button. Every incoming message shows its topic, QoS and whether it was retained; non-text payloads show as base64.
 - **Disconnect** sends DISCONNECT (so the broker does not publish the last will); closing the tab or the server's idle timeout
   drops the connection instead, which does publish it. MQTT 5 is sent as the protocol version only (no user properties yet).
+
+**AMQP (0-9-1, RabbitMQ and others).** Publish, Consume, Ack and Reject.
+
+- The address is `amqp://user:password@host:5672/vhost` or `amqps://…` (TLS). The virtual host is the path (`/%2F` is the default
+  `/`); credentials come from the URL or from **Settings** (guest / guest when neither is given).
+- **Publish** tab: exchange (empty = the default exchange, where the routing key is a queue name), routing key, payload (text, base64
+  or hex) and the properties content type, type, correlation id, reply-to, message id, expiration, headers (JSON), persistent and
+  *mandatory* (the broker returns a message no queue accepted, shown as an event). Publishes wait for the broker's confirmation.
+- **Consume** tab: the queue, optionally declared first (durable, exclusive, auto-delete; an empty name gives a broker-named queue)
+  and bound to an exchange (which can be created as direct, fanout, topic or headers), prefetch and automatic acknowledgement.
+  Consumers are listed with a Cancel button.
+- Every delivery shows its routing key, exchange, delivery tag, redelivered flag and properties. While it waits for an
+  acknowledgement the log row has **Ack**, **Requeue** and **Discard** buttons, and the Consume tab can **acknowledge all**.
+  Unacknowledged messages go back to the queue when the connection ends, as with any AMQP client.
+- A broker error (such as a missing queue) closes only the channel; the session opens a fresh one for the next action. Tests run
+  against an in-process broker; set `AMQP_TEST_URL` to also run one test against a real broker.
 
 ### History and console
 
@@ -685,7 +704,7 @@ src/
   middleware/    auth.js (authenticate, csrfGuard, requireWorkspace, requireAdmin, audit)
   routes/        auth.js me.js admin.js workspaces.js content.js interop.js sessions.js protocolTools.js
   services/      permissions.js variables.js executor.js runner.js scriptEngine.js ssrf.js sessions.js
-  protocols/     index.js (protocol list) common.js websocket.js grpc.js graphql.js sse.js tcp.js udp.js mqtt.js (one module per protocol)
+  protocols/     index.js (protocol list) common.js websocket.js grpc.js graphql.js sse.js tcp.js udp.js mqtt.js amqp.js (one module per protocol)
                  interop.js (Postman/Hoppscotch) settings.js userSettings.js locales.js
 web/             index.html vite.config.js
   src/           main.jsx App.jsx store.js api.js
@@ -753,6 +772,11 @@ otherwise stateless.
 - **SSRF**: private, loopback, link-local and metadata ranges are blocked. The check runs on the DNS-resolved IP (anti-rebinding via
   a `lookup` hook), IP literals are validated explicitly, redirects are re-checked and credentials are dropped on cross-origin
   redirects. `ALLOW_PRIVATE_TARGETS` turns this off (default off).
+- **Other protocols**: every WebSocket, gRPC, GraphQL, SSE, TCP, UDP, MQTT and AMQP connection goes through the same address check
+  (a `lookup` hook where the library allows it, otherwise the name is resolved once and the connection goes to the checked
+  address). Live connections belong to the user who opened them (other users get "not found"), are capped per user and in total
+  (`MAX_SESSIONS_PER_USER`, `MAX_SESSIONS_TOTAL`), end after `SESSION_IDLE_MS` without anyone watching, and are closed on sign-out.
+  Listening on a local UDP port is off unless the administrator allows ports (`UDP_LISTEN_PORTS`).
 - **Scripts**: QuickJS WASM, 1.5 s CPU budget, 32 MB memory, JSON in and out only.
 - **XSS**: strict CSP (no inline scripts); the HTML preview is an `<iframe sandbox="" srcdoc>` with no scripts and an opaque origin;
   uploaded avatars are re-validated by magic bytes (PNG/JPEG/WebP only, never SVG).
@@ -779,6 +803,10 @@ npm test      # builds the UI, then runs unit, API and end-to-end tests (node --
 - Highlights: roles and permissions, scripting sandbox limits, SSRF guard, import/export round trips, the code snippet
   generators (really executed where the tool is installed), request limits, the viewer rules, every interface language in a
   real browser (including RTL layout), and the dictionaries.
+- Every protocol is tested end to end against an in-process server or broker (a WebSocket echo server, a gRPC service, a GraphQL
+  server over HTTP and WebSocket, an SSE server, TCP/TLS and UDP sockets, an `aedes` MQTT broker, and a small AMQP 0-9-1 broker built
+  on amqplib's frame codec), both through the API and in the browser. Set `AMQP_TEST_URL` to run one more test against a real
+  RabbitMQ.
 - One test (compiling the generated C code against libcurl) is skipped on machines without the libcurl headers.
 
 ---
@@ -802,9 +830,8 @@ Current version: **1.0.0**.
 ## Roadmap
 
 Not yet available: file upload in multipart bodies, inviting people who have no account yet, share-by-link, XML pretty-printing,
-a collection runner, mock servers, OpenAPI import, and per-secret encryption. AMQP is
-being added one protocol at a time (see the changelog). The code is structured so these can be added without rewriting the
-core: a `protocol` column, one module per live protocol in `src/protocols/` behind the session manager, a runner route on top of
+a collection runner, mock servers, OpenAPI import, per-secret encryption, gRPC server reflection, and MQTT 5 user properties.
+The code is structured so these can be added without rewriting the core: a `protocol` column, one module per live protocol in `src/protocols/` behind the session manager, a runner route on top of
 `runner.js` (which already returns test results), and new routes and services reading the same tables.
 
 ---
