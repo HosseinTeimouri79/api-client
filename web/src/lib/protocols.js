@@ -9,7 +9,7 @@ export const PROTOCOLS = [
   { id: "tcp", label: "TCP", tag: "TCP", icon: "network-wired", live: true, implemented: true, urlKey: "tcp.urlPlaceholder", firstTab: "message", actionKeys: ["rt.connect", "rt.disconnect"], detailsKey: "rt.connection", gracefulClose: "close" },
   { id: "udp", label: "UDP", tag: "UDP", icon: "satellite-dish", live: true, implemented: true, urlKey: "udp.urlPlaceholder", firstTab: "message", actionKeys: ["udp.open", "udp.close"], detailsKey: "rt.connection", gracefulClose: "close" },
   { id: "mqtt", label: "MQTT", tag: "MQTT", icon: "rss", live: true, implemented: true, urlKey: "mqtt.urlPlaceholder", firstTab: "publish", actionKeys: ["rt.connect", "rt.disconnect"], detailsKey: "rt.connection", gracefulClose: "disconnect" },
-  { id: "amqp", label: "AMQP", tag: "AMQP", icon: "envelope", live: true, implemented: false },
+  { id: "amqp", label: "AMQP", tag: "AMQP", icon: "envelope", live: true, implemented: true, urlKey: "amqp.urlPlaceholder", firstTab: "publish", actionKeys: ["rt.connect", "rt.disconnect"], detailsKey: "rt.connection", gracefulClose: "disconnect" },
 ];
 export const protocolOf = (id) => PROTOCOLS.find((p) => p.id === id) ?? PROTOCOLS[0];
 export const firstTab = (req) => protocolOf(req?.protocol).firstTab ?? "params";
@@ -21,6 +21,7 @@ export const PROTOCOL_DEFAULTS = {
   http: {},
   websocket: { subprotocols: "", message: "", messageFormat: "text" },
   graphql: { query: "", variables: "", operationName: "", httpMethod: "POST", transport: "graphql-transport-ws", wsUrl: "", connectionParams: "" },
+  amqp: { username: "", password: "", heartbeat: 30, tlsInsecure: false, exchange: "", routingKey: "", payload: "", payloadFormat: "text", contentType: "", deliveryMode: 1, correlationId: "", replyTo: "", messageId: "", expiration: "", type: "", headers: "", mandatory: false, queue: "", declareQueue: true, durable: false, exclusive: false, autoDelete: false, bindExchange: "", bindKey: "", exchangeType: "", prefetch: 10, noAck: false },
   mqtt: { clientId: "", username: "", password: "", protocolVersion: 4, keepalive: 60, clean: true, tlsInsecure: false, willTopic: "", willPayload: "", willQos: 0, willRetain: false, topic: "", payload: "", payloadFormat: "text", qos: 0, retain: false, subTopic: "", subQos: 0 },
   udp: { message: "", messageFormat: "text", lineEnding: "none", mode: "client", bindPort: 0, onlyFromTarget: true },
   tcp: { message: "", messageFormat: "text", lineEnding: "none", tlsInsecure: false, servername: "" },

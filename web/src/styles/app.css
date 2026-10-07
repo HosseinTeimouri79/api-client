@@ -265,3 +265,4 @@ input.mono { font-family: var(--mono); font-size: 12px; }
 .gql-type { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .03em; border-radius: 4px; padding: 2px 7px; background: var(--accent-soft); color: var(--accent); } .gql-mutation { background: color-mix(in srgb, var(--warn) 20%, transparent); color: var(--warn); } .gql-subscription { background: color-mix(in srgb, var(--ok) 18%, transparent); color: var(--ok); }
 .m-GQL { color: var(--accent); }
 .ev-badge.peer { text-transform: none; font-family: var(--mono); font-weight: 500; }
+.ev-acts { flex: none; display: inline-flex; gap: 4px; align-self: center; }

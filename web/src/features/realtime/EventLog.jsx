@@ -8,6 +8,7 @@ import { toast } from "../../components/ui/Toasts.jsx";
 import { highlightJson } from "../../lib/highlight.jsx";
 import { protocolOf } from "../../lib/protocols.js";
 import { hexDump } from "../../lib/hex.js";
+import { pendingDeliveries } from "../../lib/amqp.js";
 import { t as tr, useT } from "../../i18n/index.js";
 
 const copy = (text) => navigator.clipboard?.writeText(text).then(() => toast(tr("common.copied"), "ok"), () => toast(tr("common.copyFailed"), "error"));
@@ -23,8 +24,9 @@ function pretty(data) {
   return null;
 }
 
-function Entry({ e }) {
+function Entry({ e, pending, tabKey }) {
   const t = useT();
+  const { rtAct } = useStore.getState();
   const [open, setOpen] = useState(false);
   const message = isMessage(e) || e.type === "ping" || e.type === "pong";
   const json = isMessage(e) && !e.binary ? pretty(e.data) : null;
@@ -42,10 +44,19 @@ function Entry({ e }) {
         {e.topic && <span className="ev-badge peer">{e.topic}</span>}
         {e.qos != null && e.topic && <span className="ev-badge">{"QoS " + e.qos}</span>}
         {e.retain && <span className="ev-badge">{t("mqtt.retained")}</span>}
+        {e.exchange && <span className="ev-badge peer">{e.exchange}</span>}
+        {e.redelivered && <span className="ev-badge">{t("amqp.redelivered")}</span>}
         {isMessage(e) && e.event && e.event !== "message" && <span className="ev-badge">{e.event}</span>}
         {e.binary && <span className="ev-badge bin">{t("rt.binary")}</span>}
         <span className="ev-text">{text || <i className="muted">{t("rt.emptyMessage")}</i>}</span>
         {e.id ? <span className="ev-size">#{e.id}</span> : null}
+        {pending && (
+          <span className="ev-acts" onClick={(x) => x.stopPropagation()}>
+            <Button size="sm" onClick={() => rtAct(tabKey, "ack", { deliveryTag: e.deliveryTag })}>{t("amqp.ack")}</Button>
+            <Button size="sm" onClick={() => rtAct(tabKey, "reject", { deliveryTag: e.deliveryTag, requeue: true })}>{t("amqp.requeue")}</Button>
+            <Button size="sm" variant="danger" onClick={() => rtAct(tabKey, "reject", { deliveryTag: e.deliveryTag, requeue: false })}>{t("amqp.reject")}</Button>
+          </span>
+        )}
         {e.size != null && <span className="ev-size">{fmtBytes(e.size)}</span>}
         <span className="ev-time">{clock(e.ts)}</span>
       </div>
@@ -70,8 +81,9 @@ export function EventLog({ tab }) {
   const box = useRef(null);
   const stick = useRef(true);
   const status = rt?.status ?? "idle";
-  const events = (rt?.events ?? []).filter((e) => e.type !== "subscriptions"); // bookkeeping for the Subscribe tab, not log lines
+  const events = (rt?.events ?? []).filter((e) => e.type !== "subscriptions" && e.type !== "consumers"); // bookkeeping for the Subscribe tab, not log lines
   const shown = useMemo(() => events.filter(KINDS[kind]), [events, kind]);
+  const pending = useMemo(() => pendingDeliveries(events), [events]);
   const opened = events.find((e) => e.type === "open");
   const withHeaders = events.filter((e) => Array.isArray(e.headers));
   const last = events.at(-1);
@@ -104,7 +116,7 @@ export function EventLog({ tab }) {
       </div>
       {view === "events" ? (
         <div className="ev-list" ref={box} onScroll={(e) => { const el = e.currentTarget; stick.current = el.scrollHeight - el.scrollTop - el.clientHeight < 40; }}>
-          {shown.map((e) => <Entry key={e.seq} e={e} />)}
+          {shown.map((e) => <Entry key={e.seq} e={e} tabKey={tab.key} pending={status === "open" && pending.has(e.deliveryTag) && pending.get(e.deliveryTag) === e} />)}
           {!shown.length && <div className="empty-mini"><Icon name="plug" className="big" /><p>{status === "open" ? t("rt.emptyOpen") : status === "idle" ? t("rt.empty") : events.length ? t("rt.noMatch") : ""}</p></div>}
         </div>
       ) : (

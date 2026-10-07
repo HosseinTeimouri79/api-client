@@ -376,7 +376,7 @@ export const useStore = create((set, get) => {
           patchTab(key, (x) => {
             const events = [...(x.rt?.events ?? []), ...batch].slice(-MAX_EVENTS);
             let status = x.rt?.status, subs = x.rt?.subs;
-            for (const e of batch) { status = e.type === "open" ? "open" : e.type === "closed" ? "closed" : status; if (e.type === "subscriptions") subs = e.list; }
+            for (const e of batch) { status = e.type === "open" ? "open" : e.type === "closed" ? "closed" : status; if (e.type === "subscriptions" || e.type === "consumers") subs = e.list; }
             return x.rt?.id === r.id ? { rt: { ...x.rt, events, status, subs } } : {};
           });
         };

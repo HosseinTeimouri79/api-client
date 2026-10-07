@@ -102,11 +102,11 @@ test("E2E: WebSocket request: connect, send, ping, disconnect, and the connectio
   await page.locator(".rt-state.s-closed").waitFor();
   await page.getByRole("button", { name: "Connect" }).waitFor();
 
-  // the protocol list: unfinished protocols are visible but cannot be picked
+  // the protocol list: protocols that are not built yet (none today) are shown but cannot be picked
   await page.getByRole("combobox", { name: "Protocol" }).click();
   const soon = page.locator(".opt.disabled");
   assert.equal(await soon.count(), PROTOCOLS.length - IMPLEMENTED.length);
-  await soon.first().click({ force: true });
+  if (await soon.count()) await soon.first().click({ force: true }); // nothing is "soon" once every protocol is built
   assert.equal((await page.getByRole("combobox", { name: "Protocol" }).textContent()).trim(), "WebSocket");
   await page.locator(".opt", { hasText: /^HTTP/ }).click();
   await page.locator(".method-select").waitFor();

@@ -37,6 +37,7 @@
   },
   "dependencies": {
     "@grpc/grpc-js": "^1.14.5",
+    "amqplib": "^2.2.0",
     "bcryptjs": "^3.0.3",
     "cookie-parser": "^1.4.7",
     "crypto-js": "^4.2.0",

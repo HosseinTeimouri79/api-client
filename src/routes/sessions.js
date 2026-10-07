@@ -12,9 +12,10 @@ import { connectSse } from "../protocols/sse.js";
 import { connectTcp } from "../protocols/tcp.js";
 import { connectUdp } from "../protocols/udp.js";
 import { connectMqtt } from "../protocols/mqtt.js";
+import { connectAmqp } from "../protocols/amqp.js";
 
 // One connector per live protocol: (context) -> Promise<driver>
-const CONNECTORS = { websocket: connectWebSocket, grpc: connectGrpc, graphql: connectSubscription, sse: connectSse, tcp: connectTcp, udp: connectUdp, mqtt: connectMqtt };
+const CONNECTORS = { websocket: connectWebSocket, grpc: connectGrpc, graphql: connectSubscription, sse: connectSse, tcp: connectTcp, udp: connectUdp, mqtt: connectMqtt, amqp: connectAmqp };
 
 const toHttp = (e) => (e instanceof SessionError ? new HttpError(e.status, e.message) : e);
 

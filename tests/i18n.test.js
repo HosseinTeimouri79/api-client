@@ -66,7 +66,7 @@ test("every t('key') in the source exists, and every key is used", () => {
 });
 
 test("no UI text is hard-coded in the components", () => {
-  const allowed = new Set(["Ctrl", "Enter", "API Client", "JSON", "Postman", "Hoppscotch", "GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS", "Ctrl+S", "Ctrl+Enter", "OK", "Raw", "pm.test(...)", "console.log", "Tab", "Esc", "Basic", "Bearer", "API", "Apache", "cURL", "graphql-ws, chat", "wss://api.example.com/graphql", "api.example.com", "devices/{{deviceId}}/state", "sensors/+/temperature", "syntax = \"proto3\"; ... paste a .proto file here"]);
+  const allowed = new Set(["Ctrl", "Enter", "API Client", "JSON", "Postman", "Hoppscotch", "GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS", "Ctrl+S", "Ctrl+Enter", "OK", "Raw", "pm.test(...)", "console.log", "Tab", "Esc", "Basic", "Bearer", "API", "Apache", "cURL", "graphql-ws, chat", "wss://api.example.com/graphql", "api.example.com", "orders", "devices/{{deviceId}}/state", "sensors/+/temperature", "syntax = \"proto3\"; ... paste a .proto file here"]);
   const found = [];
   for (const [file, src] of sources) {
     if (/lib\/(snippets|http|highlight|image|settings)\.js|lib\/codegen|\.test\./.test(file)) continue; // data and code, not UI chrome
