@@ -105,7 +105,11 @@ pm.test("hello is world", () => pm.expect(d.hello).to.equal("world"));`,
   // --- members: pick several people from the full list ---
   await page.getByLabel("More").click();
   await page.getByRole("menuitem", { name: "Members" }).click();
+  await page.locator(".modal").waitFor();
+  assert.equal(await page.locator(".optlist").count(), 0, "autofocus must not pop the people list open");
+  assert.equal(await page.getByRole("combobox", { name: "People to add" }).evaluate((el) => document.activeElement === el), true, "but the field is focused");
   await page.getByLabel("People to add").click();
+  await page.locator(".opt").first().waitFor();
   assert.deepEqual(
     (await page.locator(".opt .opt-label").allInnerTexts()).sort(),
     ["Ali Reza", "Mona K", "Sara Lee"],

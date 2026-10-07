@@ -66,13 +66,15 @@ export function AutoComplete({
   const commit = (o) => {
     const v = o.create ? (onCreate ? onCreate(o.value) : { value: o.value, label: o.value }) : o;
     if (multiple) { onChange([...selected, v]); setQuery(""); inputRef.current?.focus(); }
-    else { onChange(v); setOpen(false); setQuery(""); }
+    else { onChange(v); setQuery(""); dismiss(); }
   };
+  // Closing the list also drops focus, so the next click on the field opens it again (and autofocus never pops it open).
+  const dismiss = () => { setOpen(false); inputRef.current?.blur(); };
   const onKey = (e) => {
     if (e.key === "ArrowDown") { e.preventDefault(); setOpen(true); setActive((a) => Math.min(a + 1, list.length - 1)); }
     else if (e.key === "ArrowUp") { e.preventDefault(); setActive((a) => Math.max(a - 1, 0)); }
     else if (e.key === "Enter" && open && list[active]) { e.preventDefault(); commit(list[active]); }
-    else if (e.key === "Escape" && open) { e.stopPropagation(); setOpen(false); }
+    else if (e.key === "Escape" && open) { e.stopPropagation(); dismiss(); }
     else if (e.key === "Backspace" && !query && multiple && selected.length) onChange(selected.slice(0, -1));
     else if (e.key === "Tab") setOpen(false);
   };
@@ -80,7 +82,7 @@ export function AutoComplete({
   const chip = (o) => (renderChip ? renderChip(o) : <span className="chip-label">{o.label}</span>);
 
   return (
-    <div ref={wrapRef} className={cx("ac", open && "open", disabled && "disabled", multiple && "multi", className)} onClick={() => !disabled && inputRef.current?.focus()}>
+    <div ref={wrapRef} className={cx("ac", open && "open", disabled && "disabled", multiple && "multi", className)} onClick={(e) => { if (disabled || !wrapRef.current?.contains(e.target)) return; inputRef.current?.focus(); setOpen(true); }}>
       {multiple && selected.map((o) => (
         <span className="chip" key={o.value}>
           {chip(o)}
@@ -99,7 +101,7 @@ export function AutoComplete({
         placeholder={selected.length && !query ? (multiple ? "" : "") : placeholder}
         value={query}
         onChange={(e) => { setQuery(e.target.value); setOpen(true); }}
-        onFocus={() => setOpen(true)} onKeyDown={onKey}
+        onKeyDown={onKey}
       />
       {loading ? <Spinner className="ac-spin" /> : clearable && !multiple && value && !disabled ? (
         <button type="button" className="ac-clear" aria-label="Clear" onClick={(e) => { e.stopPropagation(); onChange(null); }}><Icon name="xmark" /></button>

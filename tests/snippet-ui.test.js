@@ -55,6 +55,7 @@ test("E2E: code snippet — cURL by default, switch language with the autocomple
   await page.getByRole("button", { name: "Code", exact: true }).click();
   const code = page.locator("pre.snippet");
   await code.waitFor();
+  assert.equal(await page.locator(".optlist").count(), 0, "the language list starts closed");
   await page.waitForFunction(() => document.querySelector("pre.snippet")?.textContent.includes("inherited-token"));
   assert.match(await code.textContent(), /^curl --location 'https:\/\/api\.example\.com\/users' \\\n  --header 'Authorization: Bearer inherited-token'/);
   assert.equal(await page.getByRole("combobox", { name: "Language" }).inputValue(), "");
@@ -66,6 +67,16 @@ test("E2E: code snippet — cURL by default, switch language with the autocomple
   assert.ok((await page.locator(".opt-group").allTextContents()).includes("Node.js"), "variants are grouped by language");
   await combo.fill("py req");
   await page.getByRole("option", { name: "Requests" }).click();
+  // picking closes the list and drops focus, so clicking the field again opens it again
+  assert.equal(await page.locator(".optlist").count(), 0);
+  assert.equal(await combo.evaluate((el) => document.activeElement === el), false);
+  await combo.click();
+  await page.locator(".optlist").waitFor();
+  await page.keyboard.press("Escape"); // Escape closes it and also drops focus
+  assert.equal(await page.locator(".optlist").count(), 0);
+  assert.equal(await combo.evaluate((el) => document.activeElement === el), false);
+  await combo.click();
+  await page.locator(".optlist").waitFor();
   assert.match(await code.textContent(), /import requests[\s\S]*requests\.request\("GET", url/);
   await combo.fill("axios");
   await page.keyboard.press("Enter");
