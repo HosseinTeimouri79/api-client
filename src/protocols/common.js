@@ -4,12 +4,11 @@ import { assertPublicHost } from "../services/ssrf.js";
 const active = (list = []) => list.filter((x) => x.key && x.enabled !== false);
 
 /**
- * Turns an (already variable-resolved) request into a URL and headers for a live protocol:
- * adds query params, headers and auth, and refuses private targets (SSRF) like HTTP runs do.
- * `schemes` maps what the user may type to the scheme to connect with.
+ * Parses what the user typed as the address: adds the default scheme, maps the accepted schemes to the one to connect
+ * with (`schemes`), and refuses private targets (SSRF) like HTTP runs do.
  */
-export function prepareTarget(r, inheritedAuth, { schemes, defaultScheme }) {
-  const raw = String(r.url ?? "").trim();
+export function parseEndpoint(raw, { schemes, defaultScheme, needPort = false }) {
+  raw = String(raw ?? "").trim();
   let url;
   try {
     url = new URL(/^[a-z][a-z0-9+.-]*:\/\//i.test(raw) ? raw : `${defaultScheme}://${raw}`);
@@ -23,11 +22,18 @@ export function prepareTarget(r, inheritedAuth, { schemes, defaultScheme }) {
     // URL refuses to change between "special" and other schemes via .protocol, so rebuild it
     url = new URL(`${scheme}://${url.host}${url.pathname}${url.search}${url.hash}`);
   }
+  if (needPort && !url.port) throw new Error(`The address needs a port, e.g. ${scheme}://${url.hostname}:9000`);
+  assertPublicHost(url.toString());
+  return url;
+}
+
+/** An (already variable-resolved) request as a URL plus headers: adds query params, headers and auth. */
+export function prepareTarget(r, inheritedAuth, opts) {
+  const url = parseEndpoint(r.url, opts);
   for (const p of active(r.params)) url.searchParams.append(p.key, p.value ?? "");
   const headers = {};
   for (const h of active(r.headers)) headers[h.key] = h.value ?? "";
   applyAuth(r.auth?.type && r.auth.type !== "inherit" ? r.auth : inheritedAuth, headers, url);
-  assertPublicHost(url.toString());
   return { url, headers };
 }
 

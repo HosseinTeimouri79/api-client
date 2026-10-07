@@ -686,4 +686,18 @@ export default {
   "sse.reconnect": "サーバーがストリームを終了したら再接続する",
   "sse.reconnectHint": "サーバーが指定した待ち時間（retry:、既定は3秒）の後にストリームを開き直し、ブラウザーの EventSource と同様に Last-Event-ID ヘッダーで続きから受信します。",
   "sse.maxReconnects": "この回数再接続したら諦める",
+  // rt
+  "rt.connection": "接続",
+  "rt.ev.end": "相手側が自分の側を閉じました",
+  "rt.hexDump": "16進ダンプ",
+  // tcp
+  "tcp.urlPlaceholder": "tcp://localhost:9000   または   tls://example.com:443",
+  "tcp.lineEnding": "テキストメッセージに付ける改行",
+  "tcp.lineEnding.none": "改行なし",
+  "tcp.lineEnding.lf": "LF（ラインフィード）",
+  "tcp.lineEnding.crlf": "CRLF（キャリッジリターンとラインフィード）",
+  "tcp.tlsInsecure": "TLS 証明書の検証をスキップ",
+  "tcp.tlsInsecureHint": "自己署名証明書を使うサーバー向けです。tls:// アドレスにのみ適用されます。",
+  "tcp.servername": "TLS サーバー名（SNI）",
+  "tcp.servernameHint": "空にするとアドレスのホストを使います。証明書が別の名前で発行されている場合に設定してください。",
 };

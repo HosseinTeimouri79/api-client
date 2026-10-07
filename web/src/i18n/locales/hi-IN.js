@@ -686,4 +686,18 @@ export default {
   "sse.reconnect": "सर्वर के स्ट्रीम समाप्त करने पर फिर से कनेक्ट करें",
   "sse.reconnectHint": "सर्वर द्वारा माँगी गई देरी (retry:, डिफ़ॉल्ट 3 सेकंड) के बाद स्ट्रीम फिर खोलता है और ब्राउज़र के EventSource की तरह Last-Event-ID हेडर के साथ आगे बढ़ता है।",
   "sse.maxReconnects": "इतने बार फिर से कनेक्ट करने के बाद हार मानें",
+  // rt
+  "rt.connection": "कनेक्शन",
+  "rt.ev.end": "दूसरे पक्ष ने अपनी ओर से कनेक्शन बंद कर दिया",
+  "rt.hexDump": "हेक्स डंप",
+  // tcp
+  "tcp.urlPlaceholder": "tcp://localhost:9000   या   tls://example.com:443",
+  "tcp.lineEnding": "टेक्स्ट संदेशों में जोड़ा जाने वाला पंक्ति-अंत",
+  "tcp.lineEnding.none": "कोई पंक्ति-अंत नहीं",
+  "tcp.lineEnding.lf": "LF (लाइन फ़ीड)",
+  "tcp.lineEnding.crlf": "CRLF (कैरिज रिटर्न और लाइन फ़ीड)",
+  "tcp.tlsInsecure": "TLS प्रमाणपत्र सत्यापन छोड़ें",
+  "tcp.tlsInsecureHint": "स्व-हस्ताक्षरित प्रमाणपत्र वाले सर्वर के लिए। केवल tls:// पतों पर लागू होता है।",
+  "tcp.servername": "TLS सर्वर नाम (SNI)",
+  "tcp.servernameHint": "पते के होस्ट का उपयोग करने के लिए खाली छोड़ें। प्रमाणपत्र किसी अन्य नाम के लिए जारी हो तो इसे सेट करें।",
 };

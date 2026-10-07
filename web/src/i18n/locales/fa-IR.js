@@ -686,4 +686,18 @@ export default {
   "sse.reconnect": "وقتی سرور جریان را پایان داد دوباره متصل شو",
   "sse.reconnectHint": "جریان را پس از مهلتی که سرور خواسته (retry:، پیش‌فرض ۳ ثانیه) دوباره باز می‌کند و مانند EventSource مرورگر با سرآیند Last-Event-ID ادامه می‌دهد.",
   "sse.maxReconnects": "پس از این تعداد اتصال دوباره منصرف شو",
+  // rt
+  "rt.connection": "اتصال",
+  "rt.ev.end": "طرف مقابل سمت خود را بست",
+  "rt.hexDump": "دامپ هگزادسیمال",
+  // tcp
+  "tcp.urlPlaceholder": "tcp://localhost:9000   یا   tls://example.com:443",
+  "tcp.lineEnding": "پایان خطی که به پیام‌های متنی افزوده می‌شود",
+  "tcp.lineEnding.none": "بدون پایان خط",
+  "tcp.lineEnding.lf": "LF (خط‌خوراک)",
+  "tcp.lineEnding.crlf": "CRLF (بازگشت به ابتدای سطر و خط‌خوراک)",
+  "tcp.tlsInsecure": "رد کردن تأیید گواهی TLS",
+  "tcp.tlsInsecureHint": "برای سرورهایی با گواهی خودامضا. فقط برای نشانی‌های tls:// اعمال می‌شود.",
+  "tcp.servername": "نام سرور TLS (SNI)",
+  "tcp.servernameHint": "برای استفاده از میزبان نشانی خالی بگذارید. اگر گواهی برای نام دیگری صادر شده آن را تنظیم کنید.",
 };

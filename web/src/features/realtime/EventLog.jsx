@@ -7,6 +7,7 @@ import { Icon, Spinner } from "../../components/ui/Icon.jsx";
 import { toast } from "../../components/ui/Toasts.jsx";
 import { highlightJson } from "../../lib/highlight.jsx";
 import { protocolOf } from "../../lib/protocols.js";
+import { hexDump } from "../../lib/hex.js";
 import { t as tr, useT } from "../../i18n/index.js";
 
 const copy = (text) => navigator.clipboard?.writeText(text).then(() => toast(tr("common.copied"), "ok"), () => toast(tr("common.copyFailed"), "error"));
@@ -47,6 +48,7 @@ function Entry({ e }) {
       {open && message && (
         <div className="ev-detail">
           <pre className="raw">{json ? highlightJson(json) : e.data}</pre>
+          {e.binary && <><b>{t("rt.hexDump")}</b><pre className="raw" dir="ltr">{hexDump(e.data)}</pre></>}
           <Button size="sm" icon="copy" onClick={() => copy(e.data)}>{t("common.copy")}</Button>
         </div>
       )}

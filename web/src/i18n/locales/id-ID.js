@@ -686,4 +686,18 @@ export default {
   "sse.reconnect": "Sambung ulang saat server mengakhiri stream",
   "sse.reconnectHint": "Membuka kembali stream setelah jeda yang diminta server (retry:, bawaan 3 detik) dan melanjutkan dengan header Last-Event-ID, seperti EventSource di peramban.",
   "sse.maxReconnects": "Menyerah setelah sekian kali sambung ulang",
+  // rt
+  "rt.connection": "Koneksi",
+  "rt.ev.end": "Pihak lain menutup sisinya",
+  "rt.hexDump": "Dump heksadesimal",
+  // tcp
+  "tcp.urlPlaceholder": "tcp://localhost:9000   atau   tls://example.com:443",
+  "tcp.lineEnding": "Akhir baris yang ditambahkan ke pesan teks",
+  "tcp.lineEnding.none": "Tanpa akhir baris",
+  "tcp.lineEnding.lf": "LF (line feed)",
+  "tcp.lineEnding.crlf": "CRLF (carriage return dan line feed)",
+  "tcp.tlsInsecure": "Lewati verifikasi sertifikat TLS",
+  "tcp.tlsInsecureHint": "Untuk server dengan sertifikat yang ditandatangani sendiri. Hanya berlaku untuk alamat tls://.",
+  "tcp.servername": "Nama server TLS (SNI)",
+  "tcp.servernameHint": "Kosongkan untuk memakai host dari alamat. Isi bila sertifikat diterbitkan untuk nama lain.",
 };

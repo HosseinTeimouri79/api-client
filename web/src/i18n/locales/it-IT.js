@@ -686,4 +686,18 @@ export default {
   "sse.reconnect": "Riconnetti quando il server termina lo stream",
   "sse.reconnectHint": "Riapre lo stream dopo l'attesa richiesta dal server (retry:, 3 secondi per impostazione predefinita) e riprende con l'header Last-Event-ID, come l'EventSource di un browser.",
   "sse.maxReconnects": "Rinuncia dopo questo numero di riconnessioni",
+  // rt
+  "rt.connection": "Connessione",
+  "rt.ev.end": "L'altra parte ha chiuso il suo lato",
+  "rt.hexDump": "Dump esadecimale",
+  // tcp
+  "tcp.urlPlaceholder": "tcp://localhost:9000   oppure   tls://example.com:443",
+  "tcp.lineEnding": "Fine riga aggiunta ai messaggi di testo",
+  "tcp.lineEnding.none": "Nessuna fine riga",
+  "tcp.lineEnding.lf": "LF (avanzamento riga)",
+  "tcp.lineEnding.crlf": "CRLF (ritorno a capo e avanzamento riga)",
+  "tcp.tlsInsecure": "Salta la verifica del certificato TLS",
+  "tcp.tlsInsecureHint": "Per server con certificati autofirmati. Vale solo per gli indirizzi tls://.",
+  "tcp.servername": "Nome del server TLS (SNI)",
+  "tcp.servernameHint": "Lascia vuoto per usare l'host dell'indirizzo. Impostalo quando il certificato è emesso per un altro nome.",
 };

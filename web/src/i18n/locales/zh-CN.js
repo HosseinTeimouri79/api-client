@@ -686,4 +686,18 @@ export default {
   "sse.reconnect": "服务器结束流后自动重连",
   "sse.reconnectHint": "按服务器要求的等待时间（retry:，默认 3 秒）重新打开流，并像浏览器的 EventSource 一样携带 Last-Event-ID 请求头继续接收。",
   "sse.maxReconnects": "重连达到此次数后放弃",
+  // rt
+  "rt.connection": "连接",
+  "rt.ev.end": "对端已关闭其一侧",
+  "rt.hexDump": "十六进制转储",
+  // tcp
+  "tcp.urlPlaceholder": "tcp://localhost:9000   或   tls://example.com:443",
+  "tcp.lineEnding": "添加到文本消息末尾的换行符",
+  "tcp.lineEnding.none": "不加换行符",
+  "tcp.lineEnding.lf": "LF（换行）",
+  "tcp.lineEnding.crlf": "CRLF（回车加换行）",
+  "tcp.tlsInsecure": "跳过 TLS 证书验证",
+  "tcp.tlsInsecureHint": "用于使用自签名证书的服务器。仅适用于 tls:// 地址。",
+  "tcp.servername": "TLS 服务器名称（SNI）",
+  "tcp.servernameHint": "留空则使用地址中的主机名。当证书是为其他名称签发时请设置。",
 };

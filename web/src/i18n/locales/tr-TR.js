@@ -686,4 +686,18 @@ export default {
   "sse.reconnect": "Sunucu akışı bitirince yeniden bağlan",
   "sse.reconnectHint": "Akışı sunucunun istediği bekleme süresinden sonra (retry:, varsayılan 3 saniye) yeniden açar ve bir tarayıcının EventSource'u gibi Last-Event-ID başlığıyla devam eder.",
   "sse.maxReconnects": "Bu kadar yeniden bağlanmadan sonra vazgeç",
+  // rt
+  "rt.connection": "Bağlantı",
+  "rt.ev.end": "Karşı taraf kendi tarafını kapattı",
+  "rt.hexDump": "Onaltılık döküm",
+  // tcp
+  "tcp.urlPlaceholder": "tcp://localhost:9000   veya   tls://example.com:443",
+  "tcp.lineEnding": "Metin mesajlarına eklenen satır sonu",
+  "tcp.lineEnding.none": "Satır sonu yok",
+  "tcp.lineEnding.lf": "LF (satır besleme)",
+  "tcp.lineEnding.crlf": "CRLF (satır başı ve satır besleme)",
+  "tcp.tlsInsecure": "TLS sertifika doğrulamasını atla",
+  "tcp.tlsInsecureHint": "Kendinden imzalı sertifikası olan sunucular için. Yalnızca tls:// adresleri için geçerlidir.",
+  "tcp.servername": "TLS sunucu adı (SNI)",
+  "tcp.servernameHint": "Adresteki ana bilgisayarı kullanmak için boş bırakın. Sertifika başka bir ad için verildiyse ayarlayın.",
 };

@@ -686,4 +686,18 @@ export default {
   "sse.reconnect": "إعادة الاتصال عندما ينهي الخادم التدفق",
   "sse.reconnectHint": "يعيد فتح التدفق بعد المهلة التي طلبها الخادم (retry:، الافتراضي 3 ثوانٍ) ويتابع بالترويسة Last-Event-ID، مثل EventSource في المتصفح.",
   "sse.maxReconnects": "التوقف بعد هذا العدد من إعادات الاتصال",
+  // rt
+  "rt.connection": "الاتصال",
+  "rt.ev.end": "أغلق الطرف الآخر جانبه",
+  "rt.hexDump": "تفريغ سداسي عشري",
+  // tcp
+  "tcp.urlPlaceholder": "tcp://localhost:9000   أو   tls://example.com:443",
+  "tcp.lineEnding": "نهاية السطر المضافة إلى الرسائل النصية",
+  "tcp.lineEnding.none": "بلا نهاية سطر",
+  "tcp.lineEnding.lf": "LF (تغذية سطر)",
+  "tcp.lineEnding.crlf": "CRLF (إرجاع المؤشر وتغذية سطر)",
+  "tcp.tlsInsecure": "تخطي التحقق من شهادة TLS",
+  "tcp.tlsInsecureHint": "للخوادم ذات الشهادات الموقّعة ذاتيًا. ينطبق فقط على عناوين tls://.",
+  "tcp.servername": "اسم خادم TLS (SNI)",
+  "tcp.servernameHint": "اتركه فارغًا لاستخدام المضيف من العنوان. عيّنه عندما تكون الشهادة صادرة لاسم آخر.",
 };

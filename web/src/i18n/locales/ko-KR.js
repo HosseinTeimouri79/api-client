@@ -686,4 +686,18 @@ export default {
   "sse.reconnect": "서버가 스트림을 끝내면 다시 연결",
   "sse.reconnectHint": "서버가 요청한 대기 시간(retry:, 기본 3초) 뒤에 스트림을 다시 열고, 브라우저의 EventSource처럼 Last-Event-ID 헤더로 이어서 받습니다.",
   "sse.maxReconnects": "이 횟수만큼 다시 연결한 뒤 포기",
+  // rt
+  "rt.connection": "연결",
+  "rt.ev.end": "상대방이 자기 쪽을 닫았습니다",
+  "rt.hexDump": "16진수 덤프",
+  // tcp
+  "tcp.urlPlaceholder": "tcp://localhost:9000   또는   tls://example.com:443",
+  "tcp.lineEnding": "텍스트 메시지에 붙일 줄 끝",
+  "tcp.lineEnding.none": "줄 끝 없음",
+  "tcp.lineEnding.lf": "LF (줄 바꿈)",
+  "tcp.lineEnding.crlf": "CRLF (캐리지 리턴과 줄 바꿈)",
+  "tcp.tlsInsecure": "TLS 인증서 검증 건너뛰기",
+  "tcp.tlsInsecureHint": "자체 서명 인증서를 쓰는 서버용입니다. tls:// 주소에만 적용됩니다.",
+  "tcp.servername": "TLS 서버 이름(SNI)",
+  "tcp.servernameHint": "비워 두면 주소의 호스트를 사용합니다. 인증서가 다른 이름으로 발급된 경우에 설정하세요.",
 };

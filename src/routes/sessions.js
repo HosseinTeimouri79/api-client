@@ -9,9 +9,10 @@ import { connectWebSocket } from "../protocols/websocket.js";
 import { connectGrpc } from "../protocols/grpc.js";
 import { connectSubscription } from "../protocols/graphql.js";
 import { connectSse } from "../protocols/sse.js";
+import { connectTcp } from "../protocols/tcp.js";
 
 // One connector per live protocol: (context) -> Promise<driver>
-const CONNECTORS = { websocket: connectWebSocket, grpc: connectGrpc, graphql: connectSubscription, sse: connectSse };
+const CONNECTORS = { websocket: connectWebSocket, grpc: connectGrpc, graphql: connectSubscription, sse: connectSse, tcp: connectTcp };
 
 const toHttp = (e) => (e instanceof SessionError ? new HttpError(e.status, e.message) : e);
 

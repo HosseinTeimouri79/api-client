@@ -686,4 +686,18 @@ export default {
   "sse.reconnect": "Reconectar cuando el servidor termine el flujo",
   "sse.reconnectHint": "Reabre el flujo tras la espera que pidió el servidor (retry:, 3 segundos por defecto) y continúa con la cabecera Last-Event-ID, como el EventSource de un navegador.",
   "sse.maxReconnects": "Rendirse tras esta cantidad de reconexiones",
+  // rt
+  "rt.connection": "Conexión",
+  "rt.ev.end": "El otro extremo cerró su lado",
+  "rt.hexDump": "Volcado hexadecimal",
+  // tcp
+  "tcp.urlPlaceholder": "tcp://localhost:9000   o   tls://example.com:443",
+  "tcp.lineEnding": "Fin de línea que se añade a los mensajes de texto",
+  "tcp.lineEnding.none": "Sin fin de línea",
+  "tcp.lineEnding.lf": "LF (salto de línea)",
+  "tcp.lineEnding.crlf": "CRLF (retorno de carro y salto de línea)",
+  "tcp.tlsInsecure": "Omitir la verificación del certificado TLS",
+  "tcp.tlsInsecureHint": "Para servidores con certificados autofirmados. Solo se aplica a direcciones tls://.",
+  "tcp.servername": "Nombre del servidor TLS (SNI)",
+  "tcp.servernameHint": "Déjalo vacío para usar el host de la dirección. Indícalo cuando el certificado esté emitido para otro nombre.",
 };
