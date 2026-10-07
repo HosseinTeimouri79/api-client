@@ -700,4 +700,18 @@ export default {
   "tcp.tlsInsecureHint": "自己署名証明書を使うサーバー向けです。tls:// アドレスにのみ適用されます。",
   "tcp.servername": "TLS サーバー名（SNI）",
   "tcp.servernameHint": "空にするとアドレスのホストを使います。証明書が別の名前で発行されている場合に設定してください。",
+  // rt
+  "rt.ev.ignored": "無視",
+  // udp
+  "udp.urlPlaceholder": "udp://localhost:9000   または   {{host}}:9000",
+  "udp.open": "ソケットを開く",
+  "udp.close": "ソケットを閉じる",
+  "udp.mode": "モード",
+  "udp.mode.client": "アドレスへ送信して応答を読む",
+  "udp.mode.listen": "ローカルポートで待ち受ける",
+  "udp.modeHint": "待ち受けには管理者が許可したポート（UDP_LISTEN_PORTS）が必要です。その場合、上のアドレスは任意で、送信にのみ使われます。",
+  "udp.bindPort": "待ち受けるローカルポート",
+  "udp.bindPortHint": "サーバーのこのポートに送られたデータグラムがここに表示されます。",
+  "udp.onlyFromTarget": "アドレスからのデータグラムのみ表示",
+  "udp.onlyFromTargetHint": "ほかの送信元は「無視」として一覧に出ます。別のアドレスやポートからの応答を読むにはオフにします。",
 };

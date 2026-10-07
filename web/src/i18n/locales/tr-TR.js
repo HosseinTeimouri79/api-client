@@ -700,4 +700,18 @@ export default {
   "tcp.tlsInsecureHint": "Kendinden imzalı sertifikası olan sunucular için. Yalnızca tls:// adresleri için geçerlidir.",
   "tcp.servername": "TLS sunucu adı (SNI)",
   "tcp.servernameHint": "Adresteki ana bilgisayarı kullanmak için boş bırakın. Sertifika başka bir ad için verildiyse ayarlayın.",
+  // rt
+  "rt.ev.ignored": "Yoksayıldı",
+  // udp
+  "udp.urlPlaceholder": "udp://localhost:9000   veya   {{host}}:9000",
+  "udp.open": "Soketi aç",
+  "udp.close": "Soketi kapat",
+  "udp.mode": "Mod",
+  "udp.mode.client": "Adrese gönder ve yanıtları oku",
+  "udp.mode.listen": "Yerel bir portu dinle",
+  "udp.modeHint": "Dinlemek için yöneticinin izin verdiği bir port gerekir (UDP_LISTEN_PORTS). Yukarıdaki adres isteğe bağlı olur ve yalnızca göndermek için kullanılır.",
+  "udp.bindPort": "Dinlenecek yerel port",
+  "udp.bindPortHint": "Sunucudaki bu porta gönderilen datagramlar burada gösterilir.",
+  "udp.onlyFromTarget": "Yalnızca adresten gelen datagramları göster",
+  "udp.onlyFromTargetHint": "Diğer göndericiler yoksayıldı olarak listelenir. Başka bir adres veya porttan gelen yanıtları okumak için kapatın.",
 };

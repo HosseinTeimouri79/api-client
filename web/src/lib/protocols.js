@@ -7,7 +7,7 @@ export const PROTOCOLS = [
   { id: "graphql", label: "GraphQL", tag: "GQL", icon: "circle-nodes", live: false, implemented: true, noMethod: true, urlKey: "gql.urlPlaceholder", firstTab: "query", actionKeys: ["gql.subscribe", "gql.unsubscribe"], detailsKey: "rt.handshake" },
   { id: "sse", label: "SSE", tag: "SSE", icon: "tower-broadcast", live: true, implemented: true, methods: ["GET", "POST"], urlKey: "sse.urlPlaceholder", firstTab: "params", actionKeys: ["sse.start", "sse.stop"], detailsKey: "rt.response" },
   { id: "tcp", label: "TCP", tag: "TCP", icon: "network-wired", live: true, implemented: true, urlKey: "tcp.urlPlaceholder", firstTab: "message", actionKeys: ["rt.connect", "rt.disconnect"], detailsKey: "rt.connection" },
-  { id: "udp", label: "UDP", tag: "UDP", icon: "satellite-dish", live: true, implemented: false },
+  { id: "udp", label: "UDP", tag: "UDP", icon: "satellite-dish", live: true, implemented: true, urlKey: "udp.urlPlaceholder", firstTab: "message", actionKeys: ["udp.open", "udp.close"], detailsKey: "rt.connection" },
   { id: "mqtt", label: "MQTT", tag: "MQTT", icon: "rss", live: true, implemented: false },
   { id: "amqp", label: "AMQP", tag: "AMQP", icon: "envelope", live: true, implemented: false },
 ];
@@ -21,6 +21,7 @@ export const PROTOCOL_DEFAULTS = {
   http: {},
   websocket: { subprotocols: "", message: "", messageFormat: "text" },
   graphql: { query: "", variables: "", operationName: "", httpMethod: "POST", transport: "graphql-transport-ws", wsUrl: "", connectionParams: "" },
+  udp: { message: "", messageFormat: "text", lineEnding: "none", mode: "client", bindPort: 0, onlyFromTarget: true },
   tcp: { message: "", messageFormat: "text", lineEnding: "none", tlsInsecure: false, servername: "" },
   sse: { reconnect: false, maxReconnects: 10 },
   grpc: { proto: "", service: "", method: "", message: "{}", tlsInsecure: false, deadlineMs: 0 },

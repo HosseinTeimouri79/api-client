@@ -264,3 +264,4 @@ input.mono { font-family: var(--mono); font-size: 12px; }
 .gql-query { flex: 1; min-height: 200px; } .gql-vars { min-height: 80px; } .gql-sdl { margin: 0; overflow: auto; flex: 1; min-height: 200px; white-space: pre; }
 .gql-type { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .03em; border-radius: 4px; padding: 2px 7px; background: var(--accent-soft); color: var(--accent); } .gql-mutation { background: color-mix(in srgb, var(--warn) 20%, transparent); color: var(--warn); } .gql-subscription { background: color-mix(in srgb, var(--ok) 18%, transparent); color: var(--ok); }
 .m-GQL { color: var(--accent); }
+.ev-badge.peer { text-transform: none; font-family: var(--mono); font-weight: 500; }

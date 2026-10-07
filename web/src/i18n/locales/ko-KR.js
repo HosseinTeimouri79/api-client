@@ -700,4 +700,18 @@ export default {
   "tcp.tlsInsecureHint": "자체 서명 인증서를 쓰는 서버용입니다. tls:// 주소에만 적용됩니다.",
   "tcp.servername": "TLS 서버 이름(SNI)",
   "tcp.servernameHint": "비워 두면 주소의 호스트를 사용합니다. 인증서가 다른 이름으로 발급된 경우에 설정하세요.",
+  // rt
+  "rt.ev.ignored": "무시됨",
+  // udp
+  "udp.urlPlaceholder": "udp://localhost:9000   또는   {{host}}:9000",
+  "udp.open": "소켓 열기",
+  "udp.close": "소켓 닫기",
+  "udp.mode": "모드",
+  "udp.mode.client": "주소로 보내고 응답 읽기",
+  "udp.mode.listen": "로컬 포트에서 수신 대기",
+  "udp.modeHint": "수신 대기에는 관리자가 허용한 포트(UDP_LISTEN_PORTS)가 필요합니다. 이때 위의 주소는 선택 사항이며 보내기에만 쓰입니다.",
+  "udp.bindPort": "수신 대기할 로컬 포트",
+  "udp.bindPortHint": "서버의 이 포트로 보낸 데이터그램이 여기에 표시됩니다.",
+  "udp.onlyFromTarget": "해당 주소에서 온 데이터그램만 표시",
+  "udp.onlyFromTargetHint": "다른 발신자는 무시됨으로 표시됩니다. 다른 주소나 포트에서 온 응답을 읽으려면 끄세요.",
 };

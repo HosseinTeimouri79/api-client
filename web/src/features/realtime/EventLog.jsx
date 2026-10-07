@@ -38,6 +38,7 @@ function Entry({ e }) {
           <Icon name={e.direction === "out" ? "arrow-up" : e.direction === "in" ? "arrow-down" : e.type === "error" ? "triangle-exclamation" : "circle-info"} />
         </span>
         {!isMessage(e) && <span className="ev-badge">{label}</span>}
+        {e.peer && <span className="ev-badge peer">{e.peer}</span>}
         {isMessage(e) && e.event && e.event !== "message" && <span className="ev-badge">{e.event}</span>}
         {e.binary && <span className="ev-badge bin">{t("rt.binary")}</span>}
         <span className="ev-text">{text || <i className="muted">{t("rt.emptyMessage")}</i>}</span>

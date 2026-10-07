@@ -7,6 +7,10 @@ const secret =
   process.env.JWT_SECRET ||
   (isProd ? null : crypto.randomBytes(32).toString("hex"));
 if (!secret) throw new Error("JWT_SECRET is required in production");
+// "40000-40100,50000" -> [[40000, 40100], [50000, 50000]]: the local UDP ports a user may listen on (empty = listening is off)
+const portRanges = (v = "") =>
+  v.split(",").map((x) => x.trim()).filter(Boolean).map((x) => { const [a, b = a] = x.split("-").map(Number); return [a, b]; })
+    .filter(([a, b]) => Number.isInteger(a) && Number.isInteger(b) && a >= 1 && b <= 65535 && a <= b);
 export const config = {
   isProd,
   port: Number(process.env.PORT || 3000),
@@ -28,6 +32,7 @@ export const config = {
   // Ceilings for those per-user limits ("0 = no limit" in Settings means "up to this"); 0 here lifts the ceiling.
   maxRequestTimeoutMs: Number(process.env.MAX_REQUEST_TIMEOUT_MS || 600000),
   maxResponseBytesLimit: Number(process.env.MAX_RESPONSE_BYTES_LIMIT || 100 * 1024 * 1024),
+  udpListenPorts: portRanges(process.env.UDP_LISTEN_PORTS),
   // Live sessions (WebSocket and the other realtime protocols)
   maxSessionsPerUser: Number(process.env.MAX_SESSIONS_PER_USER || 10),
   maxSessionsTotal: Number(process.env.MAX_SESSIONS_TOTAL || 200),

@@ -700,4 +700,18 @@ export default {
   "tcp.tlsInsecureHint": "Untuk server dengan sertifikat yang ditandatangani sendiri. Hanya berlaku untuk alamat tls://.",
   "tcp.servername": "Nama server TLS (SNI)",
   "tcp.servernameHint": "Kosongkan untuk memakai host dari alamat. Isi bila sertifikat diterbitkan untuk nama lain.",
+  // rt
+  "rt.ev.ignored": "Diabaikan",
+  // udp
+  "udp.urlPlaceholder": "udp://localhost:9000   atau   {{host}}:9000",
+  "udp.open": "Buka soket",
+  "udp.close": "Tutup soket",
+  "udp.mode": "Mode",
+  "udp.mode.client": "Kirim ke alamat dan baca jawaban",
+  "udp.mode.listen": "Dengarkan port lokal",
+  "udp.modeHint": "Mendengarkan membutuhkan port yang diizinkan administrator (UDP_LISTEN_PORTS). Alamat di atas menjadi opsional dan hanya dipakai untuk mengirim.",
+  "udp.bindPort": "Port lokal untuk didengarkan",
+  "udp.bindPortHint": "Datagram yang dikirim ke port ini pada server ditampilkan di sini.",
+  "udp.onlyFromTarget": "Hanya tampilkan datagram dari alamat tersebut",
+  "udp.onlyFromTargetHint": "Pengirim lain dicantumkan sebagai diabaikan. Matikan untuk membaca jawaban dari alamat atau port lain.",
 };

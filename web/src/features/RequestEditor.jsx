@@ -16,6 +16,7 @@ import { WebSocketMessage, WebSocketSettings } from "./realtime/WebSocketPanels.
 import { GrpcMessage, GrpcProto, GrpcSettings } from "./realtime/GrpcPanels.jsx";
 import { SseSettings } from "./realtime/SsePanels.jsx";
 import { TcpMessage, TcpSettings } from "./realtime/TcpPanels.jsx";
+import { UdpSettings } from "./realtime/UdpPanels.jsx";
 import { GraphqlQuery, GraphqlSchema, GraphqlSettings } from "./realtime/GraphqlPanels.jsx";
 import { PROTOCOLS, PROTOCOL_DEFAULTS, protocolOf, liveTab } from "../lib/protocols.js";
 import { modals } from "../components/ui/modals.js";
@@ -64,6 +65,7 @@ export function RequestEditor({ tab }) {
   const byProtocol = {
     websocket: [{ id: "message", label: t("ws.message"), badge: r.protocol_data?.message?.trim() ? "●" : false }, http[0], http[1], http[3], { id: "settings", label: t("ws.settings"), badge: r.protocol_data?.subprotocols?.trim() ? "●" : false }, docs],
     graphql: [{ id: "query", label: t("gql.query"), badge: r.protocol_data?.query?.trim() ? "●" : false }, http[0], http[1], http[3], { id: "schema", label: t("gql.schema"), badge: tab.schema?.sdl ? "●" : false }, { id: "settings", label: t("ws.settings"), badge: r.protocol_data?.httpMethod === "GET" || r.protocol_data?.wsUrl?.trim() || r.protocol_data?.connectionParams?.trim() ? "●" : false }, http[4], http[5], docs],
+    udp: [{ id: "message", label: t("ws.message"), badge: r.protocol_data?.message?.trim() ? "●" : false }, { id: "settings", label: t("ws.settings"), badge: r.protocol_data?.mode === "listen" ? "●" : false }, docs],
     tcp: [{ id: "message", label: t("ws.message"), badge: r.protocol_data?.message?.trim() ? "●" : false }, { id: "settings", label: t("ws.settings"), badge: r.protocol_data?.tlsInsecure || r.protocol_data?.servername?.trim() ? "●" : false }, docs],
     sse: [http[0], http[1], ...(r.method === "POST" ? [http[2]] : []), http[3], { id: "settings", label: t("ws.settings"), badge: r.protocol_data?.reconnect ? "●" : false }, docs],
     grpc: [{ id: "message", label: t("grpc.message"), badge: r.protocol_data?.method ? "●" : false }, { id: "proto", label: t("grpc.proto"), badge: r.protocol_data?.proto?.trim() ? "●" : false }, { ...http[1], label: t("grpc.metadata") }, http[3], { id: "settings", label: t("ws.settings"), badge: r.protocol_data?.tlsInsecure || r.protocol_data?.deadlineMs ? "●" : false }, docs],
@@ -96,11 +98,11 @@ export function RequestEditor({ tab }) {
         </div>
         <Tabs items={tabs} value={sub} onChange={(s) => setSub(tab.key, s)} />
         <div className="editor-body">
-          {sub === "message" && (r.protocol === "grpc" ? <GrpcMessage tab={tab} /> : r.protocol === "tcp" ? <TcpMessage tab={tab} /> : <WebSocketMessage tab={tab} />)}
+          {sub === "message" && (r.protocol === "grpc" ? <GrpcMessage tab={tab} /> : r.protocol === "tcp" || r.protocol === "udp" ? <TcpMessage tab={tab} /> : <WebSocketMessage tab={tab} />)}
           {sub === "query" && <GraphqlQuery tab={tab} />}
           {sub === "schema" && <GraphqlSchema tab={tab} />}
           {sub === "proto" && <GrpcProto tab={tab} />}
-          {sub === "settings" && (r.protocol === "grpc" ? <GrpcSettings tab={tab} /> : r.protocol === "sse" ? <SseSettings tab={tab} /> : r.protocol === "tcp" ? <TcpSettings tab={tab} /> : r.protocol === "graphql" ? <GraphqlSettings tab={tab} /> : <WebSocketSettings tab={tab} />)}
+          {sub === "settings" && (r.protocol === "grpc" ? <GrpcSettings tab={tab} /> : r.protocol === "sse" ? <SseSettings tab={tab} /> : r.protocol === "tcp" ? <TcpSettings tab={tab} /> : r.protocol === "udp" ? <UdpSettings tab={tab} /> : r.protocol === "graphql" ? <GraphqlSettings tab={tab} /> : <WebSocketSettings tab={tab} />)}
           {sub === "params" && <KeyValueEditor rows={r.params} readOnly={ro} onChange={(params) => set({ params })} keyPlaceholder={t("req.parameter")} />}
           {sub === "headers" && <KeyValueEditor rows={r.headers} readOnly={ro} onChange={(headers) => set({ headers })} keySuggestions={proto.live ? undefined : HEADER_SUGG} valueSuggestions={proto.live ? undefined : (k) => HEADER_VALUES[k.toLowerCase()]} keyPlaceholder={r.protocol === "grpc" ? t("grpc.metadataKey") : t("req.header")} />}
           {sub === "body" && <BodyEditor body={r.body} readOnly={ro} onChange={(body) => set({ body })} />}

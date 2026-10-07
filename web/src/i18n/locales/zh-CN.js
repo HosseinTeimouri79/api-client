@@ -700,4 +700,18 @@ export default {
   "tcp.tlsInsecureHint": "用于使用自签名证书的服务器。仅适用于 tls:// 地址。",
   "tcp.servername": "TLS 服务器名称（SNI）",
   "tcp.servernameHint": "留空则使用地址中的主机名。当证书是为其他名称签发时请设置。",
+  // rt
+  "rt.ev.ignored": "已忽略",
+  // udp
+  "udp.urlPlaceholder": "udp://localhost:9000   或   {{host}}:9000",
+  "udp.open": "打开套接字",
+  "udp.close": "关闭套接字",
+  "udp.mode": "模式",
+  "udp.mode.client": "发送到该地址并读取回复",
+  "udp.mode.listen": "监听本地端口",
+  "udp.modeHint": "监听需要管理员允许的端口（UDP_LISTEN_PORTS）。此时上方的地址为可选项，仅用于发送。",
+  "udp.bindPort": "要监听的本地端口",
+  "udp.bindPortHint": "发送到服务器此端口的数据报会显示在这里。",
+  "udp.onlyFromTarget": "仅显示来自该地址的数据报",
+  "udp.onlyFromTargetHint": "其他发送方会列为已忽略。关闭后可读取来自其他地址或端口的回复。",
 };

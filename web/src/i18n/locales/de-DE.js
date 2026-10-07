@@ -700,4 +700,18 @@ export default {
   "tcp.tlsInsecureHint": "Für Server mit selbstsignierten Zertifikaten. Gilt nur für tls://-Adressen.",
   "tcp.servername": "TLS-Servername (SNI)",
   "tcp.servernameHint": "Leer lassen, um den Host aus der Adresse zu verwenden. Setze ihn, wenn das Zertifikat für einen anderen Namen ausgestellt ist.",
+  // rt
+  "rt.ev.ignored": "Ignoriert",
+  // udp
+  "udp.urlPlaceholder": "udp://localhost:9000   oder   {{host}}:9000",
+  "udp.open": "Socket öffnen",
+  "udp.close": "Socket schließen",
+  "udp.mode": "Modus",
+  "udp.mode.client": "An die Adresse senden und Antworten lesen",
+  "udp.mode.listen": "Auf einem lokalen Port lauschen",
+  "udp.modeHint": "Zum Lauschen ist ein vom Administrator erlaubter Port nötig (UDP_LISTEN_PORTS). Die Adresse oben ist dann optional und wird nur zum Senden verwendet.",
+  "udp.bindPort": "Lokaler Port zum Lauschen",
+  "udp.bindPortHint": "Datagramme, die an diesen Port des Servers gesendet werden, erscheinen hier.",
+  "udp.onlyFromTarget": "Nur Datagramme von der Adresse anzeigen",
+  "udp.onlyFromTargetHint": "Andere Absender werden als ignoriert aufgeführt. Schalte dies aus, um Antworten von einer anderen Adresse oder einem anderen Port zu lesen.",
 };
