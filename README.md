@@ -1,55 +1,381 @@
+<div align="center">
+
+<img src="api.png" alt="API Client logo" width="120" />
+
 # API Client
 
-A self-hostable, team-oriented API client (Postman-style): collections & sub-collections, requests with all common body types, environments/variables, pre/post-request scripts (sandboxed), response viewer, console, history, workspaces with role-based sharing.
+**A self-hostable, team-oriented API client.**
+Organize requests in collections, share them in workspaces, script them, turn them into code, and move your data
+in and out with **Postman** and **Hoppscotch**.
 
-## Quick start (Docker)
+Version **1.0.0** · [Changelog](CHANGELOG.md) · [License: Apache-2.0](LICENSE)
+
+</div>
+
+---
+
+## Table of contents
+
+1. [Why self-host it](#why-self-host-it)
+2. [Features](#features)
+3. [Quick start](#quick-start)
+4. [Installation and setup](#installation-and-setup)
+5. [Testing internal web services](#testing-internal-web-services)
+6. [Configuration](#configuration)
+7. [Using the app](#using-the-app)
+8. [Import and export (Postman and Hoppscotch)](#import-and-export-postman-and-hoppscotch)
+9. [Scripting](#scripting)
+10. [Code snippets](#code-snippets)
+11. [Languages](#languages)
+12. [Accounts, roles and administration](#accounts-roles-and-administration)
+13. [HTTP API](#http-api)
+14. [Architecture](#architecture)
+15. [Security](#security)
+16. [Testing](#testing)
+17. [Versioning and releases](#versioning-and-releases)
+18. [Roadmap](#roadmap)
+19. [License and attribution](#license-and-attribution)
+
+---
+
+## Why self-host it
+
+API Client runs **entirely on your own infrastructure**. It is a single Node.js process with an embedded database, so you can run it:
+
+- **inside your organization**, on a company server, a VM, Kubernetes or a Docker host, shared by the whole team;
+- **on your own computer**, for personal or local use, with nothing leaving your machine.
+
+What that means in practice:
+
+- **Test internal web services without a cloud platform.** Requests are sent from the machine that runs the app, so it can reach
+  services on your private network, staging environments and `localhost` directly (see
+  [Testing internal web services](#testing-internal-web-services)). You do not need to sign up for, or send your collections and
+  secrets to, Postman or any other hosted service.
+- **Your data stays with you.** Collections, environments, secrets, history and accounts live in one SQLite file that you
+  control and back up. There is no vendor account and no cloud sync.
+- **No limits imposed by the app.** There are no seats, plans, paywalled features or caps on workspaces, collections, requests,
+  environments, history or **team members** — add as many people as your server can handle. The only limits are your own
+  hardware and the request limits you configure.
+- **Free and open source.** Free to use, for personal and commercial purposes, under the [Apache License 2.0](#license-and-attribution)
+  (keep the license and credit the author and source).
+- **Compatible with the tools you already use.** Import and export Postman and Hoppscotch collections and environments, so
+  moving in or out is never a lock-in (see [Import and export](#import-and-export-postman-and-hoppscotch)).
+
+---
+
+## Features
+
+**Requests and organization**
+
+- Workspaces shared with role-based access (owner, admin, editor, viewer), member picker, audit log.
+- Collections and sub-collections with drag and drop, duplicate, sort, move to root and **descriptions**.
+- Every common method and body type: JSON, text, raw, form URL-encoded, multipart (text fields).
+- Query params, headers with autocomplete, **Bearer / Basic / API-key** auth with inheritance from collections.
+- **Environments** and variables with five scopes: runtime > request > collection > environment > workspace.
+- Response viewer: JSON tree with search, raw, sandboxed HTML preview, headers, "what was actually sent", binary download.
+- Console, per-user history, tabs, keyboard shortcuts, dark and light themes.
+
+**Scripting**
+
+- Pre-request and post-request scripts at request and collection level, run in a **WASM sandbox** (QuickJS).
+- Postman-compatible `pm.*` API, tests and assertions (jest and chai style), CryptoJS.
+- Scripts can rewrite the request before it is sent and the response before the UI shows it.
+
+**Tooling**
+
+- **Code snippets** in 35 language/library targets (cURL by default), generated from the request as currently edited.
+- **Import and export of Postman and Hoppscotch** collections and environments.
+- Per-user **app settings**: request timeout, maximum response size, layout, console, editor font and indentation,
+  auto-close brackets and quotes, theme, language, app font, autosave.
+
+**Teams and administration**
+
+- Username and password accounts, profile photo and profile editing, password change.
+- **Admin panel**: manage users (create, edit, reset password, disable, delete), workspaces, activity, and switch
+  self-registration off so that only admins can create accounts.
+- View-only members can still change a request to try it out; nothing they change can be saved.
+
+**Interface**
+
+- **15 languages** with a flag + name picker, and a fully mirrored layout for Arabic and Persian (RTL).
+
+**Operations**
+
+- Single Node.js process with an embedded SQLite database, versioned automatic migrations, health check, Docker image
+  that runs as a non-root user with a read-only root filesystem.
+
+---
+
+## Quick start
+
+### With Docker
 
 ```bash
-cp .env.example .env && sed -i "s/^JWT_SECRET=.*/JWT_SECRET=$(openssl rand -hex 32)/" .env
+cp .env.example .env
+sed -i "s/^JWT_SECRET=.*/JWT_SECRET=$(openssl rand -hex 32)/" .env
 docker compose up -d --build
-open http://localhost:3000        # create an account (username + password), create a workspace
 ```
 
-Data lives in the `apiclient-data` volume (`/data/app.db`). Back up that volume.
+Open <http://localhost:3000>, choose **Create account**, and register. **The first account becomes the administrator.**
+Then create a workspace and start sending requests.
 
-## Local development
+Data lives in the `apiclient-data` volume (`/data/app.db` inside the container). Back that volume up.
+
+### Without Docker
 
 ```bash
 npm install
-npm run build          # builds the React UI (web/) into dist/
-npm run dev            # API + built UI on http://localhost:3000, DB in ./data/app.db, random JWT secret per start
-npm run dev:web        # (second terminal) UI with hot reload on http://localhost:5173, proxies /api to :3000
-ALLOW_PRIVATE_TARGETS=true npm run dev   # to call localhost APIs from the app
-npm test               # builds the UI, then unit + integration + E2E (E2E needs Chromium; set CHROME_PATH or it is skipped)
+npm run build        # builds the React UI (web/) into dist/
+JWT_SECRET=$(openssl rand -hex 32) npm start
 ```
 
-Requires Node ≥ 22.13 (built-in `node:sqlite`).
+Requires **Node.js 22.13 or newer** (the app uses the built-in `node:sqlite`).
+
+---
+
+## Installation and setup
+
+### Requirements
+
+| Tool                | Needed for                         | Notes                                              |
+| ------------------- | ---------------------------------- | -------------------------------------------------- |
+| Node.js ≥ 22.13     | running and developing             | built-in SQLite, no native build step              |
+| npm                 | installing dependencies            |                                                    |
+| Docker + Compose    | the container deployment           | optional                                           |
+| Chromium / Chrome   | the end-to-end tests               | optional; set `CHROME_PATH` or those tests are skipped |
+
+### Docker (recommended for teams)
+
+1. Copy the example environment file and set a strong secret:
+
+   ```bash
+   cp .env.example .env
+   sed -i "s/^JWT_SECRET=.*/JWT_SECRET=$(openssl rand -hex 32)/" .env
+   ```
+
+2. Review `.env` (see [Configuration](#configuration)). Behind HTTPS set `COOKIE_SECURE=true`; behind a reverse proxy set
+   `TRUST_PROXY=true`.
+3. Start it: `docker compose up -d --build`.
+4. Check it: `curl http://localhost:3000/healthz` returns `{"ok":true,"version":"1.0.0"}`.
+5. Register the first account in the browser; it is the administrator. Optionally turn self-registration off in
+   **Account menu → Admin panel → Settings** and create the other accounts yourself.
+
+The container runs as the unprivileged `node` user with a read-only root filesystem; only `/data` is writable.
+`docker-compose.yml` mounts the `apiclient-data` volume there.
+
+**Upgrading:** pull the new sources, then `docker compose up -d --build`. Database migrations run automatically at start.
+Back up the volume first (for example `docker run --rm -v apiclient-data:/data -v "$PWD":/backup alpine tar czf /backup/apiclient-data.tgz -C /data .`).
+
+### Local development
+
+```bash
+npm install
+npm run build        # build the UI once (also run by `npm test`)
+npm run dev          # API + built UI on http://localhost:3000 with auto-restart; DB in ./data/app.db
+npm run dev:web      # in a second terminal: UI with hot reload on http://localhost:5173 (proxies /api to :3000)
+```
+
+- A random `JWT_SECRET` is generated on every start in development, so you are signed out after a restart. Set
+  `JWT_SECRET` in your shell to keep sessions.
+- To call APIs running on your own machine (localhost, private IPs), start with `ALLOW_PRIVATE_TARGETS=true`. The
+  server blocks private targets by default (see [Security](#security)).
+- To become the administrator on an existing database, set `ADMIN_USERNAMES=<your username>`.
+
+### Personal use on your own computer
+
+Run it locally for yourself: `npm install && npm run build && npm start` (or `docker compose up -d --build`), open
+<http://localhost:3000>, and create the first account (you are the administrator). Add `ALLOW_PRIVATE_TARGETS=true` so you can call
+APIs on your own machine, and turn self-registration off in the admin panel if the app is reachable by others. Nothing is sent to any
+third-party service.
+
+### Behind a reverse proxy (production)
+
+Run the app behind HTTPS (nginx, Traefik, Caddy). Set `COOKIE_SECURE=true`, `TRUST_PROXY=true`, a strong `JWT_SECRET`
+and leave `ALLOW_PRIVATE_TARGETS=false` on public deployments. Example Caddy site:
+
+```caddyfile
+api.example.com {
+  reverse_proxy 127.0.0.1:3000
+}
+```
+
+Example nginx location:
+
+```nginx
+location / {
+  proxy_pass http://127.0.0.1:3000;
+  proxy_set_header Host $host;
+  proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+  proxy_set_header X-Forwarded-Proto $scheme;
+  client_max_body_size 10m;
+}
+```
+
+Health check endpoint: `GET /healthz` → `{"ok":true,"version":"<app version>"}`.
+
+---
+
+## Testing internal web services
+
+Requests are sent **from the server that runs API Client**, not from your browser. That is what lets you test services that are
+not on the public internet, with no tunnel and no cloud account:
+
+- an API on `localhost` or on another port of the same machine;
+- services on your company network or VPN (private IP ranges such as `10.x.x.x`, `172.16–31.x.x`, `192.168.x.x`, internal hostnames);
+- staging and development environments, containers and Kubernetes services that the server can resolve.
+
+**By default the app refuses private, loopback and link-local targets** (this is an SSRF protection, see [Security](#security)), so
+on a deployment that is only used inside your organization, or on your own computer, enable them:
+
+```bash
+ALLOW_PRIVATE_TARGETS=true
+```
+
+(in `.env` for Docker, or in the environment of the process). Notes:
+
+- The server must be able to reach the service you call: with Docker, use a host name the container can resolve (for example
+  `host.docker.internal` for something running on the Docker host, or the name of another compose service on the same network).
+- Turn this switch on **only for private installations**. On a deployment exposed to people you do not trust, leave it off so
+  nobody can use the server to reach your internal network.
+- Use environments and variables (`{{baseUrl}}`) to switch between local, staging and production targets, and share collections
+  with your team in a workspace.
+
+---
 
 ## Configuration
 
-| Variable                                                          | Default              | Notes                                                        |
-| ----------------------------------------------------------------- | -------------------- | ------------------------------------------------------------ |
-| `JWT_SECRET`                                                      | random (dev)         | **required** in production                                   |
-| `PORT`                                                            | 3000                 |                                                              |
-| `DB_PATH`                                                         | `./data/app.db`      | `/data/app.db` in Docker                                     |
-| `COOKIE_SECURE`                                                   | true in prod         | set `false` only for plain-HTTP local use                    |
-| `TRUST_PROXY`                                                     | false                | `true` behind a reverse proxy (rate limiting uses client IP) |
-| `ALLOW_PRIVATE_TARGETS`                                           | false                | SSRF guard. Enable only to call internal/localhost APIs      |
-| `SCRIPT_TIMEOUT_MS` / `REQUEST_TIMEOUT_MS` / `MAX_RESPONSE_BYTES` | 1500 / 30000 / 10 MB |                                                              |
+All configuration is through environment variables (`.env.example` lists the common ones).
 
-## Database & migrations
+| Variable                      | Default                | Description                                                                                     |
+| ----------------------------- | ---------------------- | ----------------------------------------------------------------------------------------------- |
+| `JWT_SECRET`                  | random (development)   | Secret used to sign sessions. **Required in production.** Generate with `openssl rand -hex 32`. |
+| `PORT`                        | `3000`                 | HTTP port.                                                                                      |
+| `DB_PATH`                     | `./data/app.db`        | SQLite file (`/data/app.db` in Docker).                                                         |
+| `NODE_ENV`                    | –                      | `production` enables secure cookies and requires `JWT_SECRET`.                                  |
+| `COOKIE_SECURE`               | `true` in production   | Set `false` only for plain-HTTP local use.                                                      |
+| `TRUST_PROXY`                 | `false`                | `true` behind a reverse proxy so rate limiting uses the client IP.                              |
+| `ADMIN_USERNAMES`             | –                      | Comma-separated usernames promoted to administrator on every start (recovery / bootstrap).      |
+| `ALLOW_PRIVATE_TARGETS`       | `false`                | SSRF guard off-switch: allow requests to localhost and private networks. Development only.      |
+| `SCRIPT_TIMEOUT_MS`           | `1500`                 | CPU budget of a script.                                                                         |
+| `REQUEST_TIMEOUT_MS`          | `30000`                | Default time a request waits for a response.                                                    |
+| `MAX_RESPONSE_BYTES`          | `10485760` (10 MB)     | Default maximum response size.                                                                  |
+| `MAX_REQUEST_TIMEOUT_MS`      | `600000` (10 min)      | Ceiling for the per-user timeout in Settings (`0` lifts the ceiling).                           |
+| `MAX_RESPONSE_BYTES_LIMIT`    | `104857600` (100 MB)   | Ceiling for the per-user response size in Settings (`0` lifts the ceiling).                     |
+| `CONNECT_ATTEMPT_TIMEOUT_MS`  | `5000`                 | Connect budget per resolved address.                                                            |
+| `CHROME_PATH`                 | auto-detected          | Chromium/Chrome binary for the end-to-end tests.                                                |
 
-Migrations run automatically at start (`src/db/migrations.js`, append-only, transactional, tracked in `_migrations`). To change the schema add a new entry with the next `id`; never edit applied ones.
+**Per-user limits.** Each user can set a request timeout and maximum response size under **Settings → General → Request**.
+A value of `0` means "as much as the server allows", i.e. the two ceilings above. Operators who want no ceiling at all can set
+a ceiling to `0`.
 
-## Production deployment
+**Database and migrations.** Migrations run automatically at start (`src/db/migrations.js`). They are append-only,
+transactional and tracked in the `_migrations` table: to change the schema add a new entry with the next `id`, never edit an
+applied one.
 
-Run behind HTTPS (nginx/Traefik/Caddy), set `COOKIE_SECURE=true`, `TRUST_PROXY=true`, a strong `JWT_SECRET`, keep `ALLOW_PRIVATE_TARGETS=false` on public deployments. Container runs as non-root with a read-only root FS. Health: `GET /healthz`.
+---
 
-## Accounts
+## Using the app
 
-Sign in with a **username and password** (no email). Usernames are 3–32 characters (`A–Z a–z 0–9 . _ -`), case-insensitive. On upgrade, existing accounts keep their password and get a username from the part of their email before the `@` (made unique with a number if needed).
+### Workspaces, collections and requests
 
-To add people to a workspace open **Members**: the picker lists every user that is not a member yet, searchable by name or username as you type, so you can select several at once and give them a role.
+- A **workspace** is a shared space. Create one from the top bar. Invite people from **⋯ → Members** (the picker lists every user
+  who is not a member yet and is searchable by name or username).
+- **Collections** and **sub-collections** form a tree in the sidebar. Right-click or use the **⋯** button for rename, duplicate,
+  move to root, sort, export and delete. Drag and drop to reorder or move. Click a collection to open its settings:
+  variables, authorization, pre/post-request scripts and a description that every request inside inherits (variables, auth
+  and scripts).
+- A **request** has Params, Headers, Body, Auth, Pre-request, Post-request and Description tabs. A tab shows a **●** badge
+  when it has content. Type `{{` in any field to pick a variable.
+- Press **Send** (or `Ctrl/⌘+Enter`). The response panel shows the body (JSON tree, raw or HTML preview), headers, test
+  results and the request that was actually sent. By default the response is shown **below** the request; change it with
+  the layout button or in Settings.
+
+### Variables and environments
+
+Variables use `{{name}}`. Precedence from highest to lowest:
+
+1. runtime variables (set by scripts for one run),
+2. request variables,
+3. collection variables (nearest collection first),
+4. the selected environment,
+5. workspace (global) variables.
+
+Open **Environments & variables** from the top bar to edit them, import and export environments, and add new ones. Secret
+variables are never substituted into generated code snippets.
+
+### Code snippets
+
+The **Code** button next to Save generates code for the request exactly as edited (see [Code snippets](#code-snippets)).
+
+### History and console
+
+History is stored per user and workspace (latest 200 runs). The console shows structured logs of every run, including
+`console.log` from scripts. It starts collapsed; toggle it with `` Ctrl/⌘+` `` or open it on start in Settings.
+
+### Settings
+
+Open **Account menu → Settings**.
+
+- **Profile**: *Profile details* (photo, display name, username) and *Change password* (the button enables once all three
+  fields are filled).
+- **General**: *Application* (theme, language, app font, autosave), *User interface* (open the console on start, layout
+  type), *Request* (timeout and maximum response size), *Editor* (font, size, indentation, auto-close brackets and
+  quotes), *About* (version and license).
+
+Settings are saved to your account, so they follow you across devices.
+
+### Keyboard shortcuts
+
+`Ctrl/⌘+Enter` send · `Ctrl/⌘+S` save · `Ctrl/⌘+T` new tab · `` Ctrl/⌘+` `` toggle console · `Esc` closes dialogs and menus.
+
+---
+
+## Import and export (Postman and Hoppscotch)
+
+API Client reads and writes both formats, so you can move collections and environments in either direction. The format of a
+file is **detected automatically** on import.
+
+| Format                       | Import | Export | Notes                                                                                     |
+| ---------------------------- | :----: | :----: | ----------------------------------------------------------------------------------------- |
+| Postman collection (v2.1)    |   ✓    |   ✓    | one collection per file                                                                   |
+| Postman environment          |   ✓    |   ✓    | exported one at a time; secrets keep their `secret` type                                  |
+| Hoppscotch collection        |   ✓    |   ✓    | a file can hold several collections                                                       |
+| Hoppscotch environment       |   ✓    |   ✓    | exported one at a time (as a one-item list)                                               |
+
+### How to import
+
+- **Import / Export** dialog (**⋯ → Import / Export**): choose one or several `.json` files, optionally a destination collection
+  (collections only), then **Import**. The empty sidebar also has an **Import** button next to **New collection**.
+- **Environments & variables → Import**: Postman or Hoppscotch environment files, several at once.
+
+Anything that cannot be converted is listed as a **note** after the import instead of failing silently. You need the editor
+role (or higher) to import.
+
+### How to export
+
+- Collection context menu (**⋯ → Export as Postman / Export as Hoppscotch**).
+- **Import / Export → Export**: pick the format and *what to export* (a collection, all top-level collections — Hoppscotch only —
+  or one environment).
+- **Environments & variables → Export**: the selected environment as Postman or Hoppscotch.
+
+### What is converted
+
+| Concept                                 | Postman                                   | Hoppscotch                                        |
+| --------------------------------------- | ----------------------------------------- | ------------------------------------------------- |
+| Folders / sub-collections               | ✓                                         | ✓                                                 |
+| Methods, URLs, query params, headers    | ✓ (disabled rows kept disabled)           | ✓ (disabled rows kept disabled)                   |
+| Bodies                                  | raw (JSON/text), URL-encoded, form-data (text), GraphQL (as JSON) | JSON, text, URL-encoded, form-data (text) |
+| Auth                                    | Bearer, Basic, API key (inherit/none)     | Bearer, Basic, API key (inherit/none)             |
+| Pre-request / post-request scripts      | ✓ (`prerequest` / `test` events)          | ✓ (converted between `pw.*` and `pm.*`)           |
+| Collection and folder variables         | ✓                                         | not representable: move them to an environment on export |
+| Collection-level scripts                | ✓                                         | not exported (reported as a note)                 |
+| Descriptions (collection, folder, request) | ✓ (`info.description`, folder and request `description`) | no equivalent: not exported (reported as a note) |
+| `{{variable}}` syntax                   | `{{name}}`                                | converted to and from `<<name>>`                  |
+
+Not converted: file uploads in form-data, Postman body types other than the ones above, and non-text auth types
+(these are reported as notes). Inherited auth is copied into each request when exporting to Hoppscotch.
+
+---
 
 ## Scripting
 
@@ -67,7 +393,10 @@ pm.request.params.add("ts", new Date().toISOString());
 pm.request.url = pm.request.url + "/v2";                       // pm.request.method = "POST" works too
 ```
 
-`pm.request`: `url`, `method`, `headers` / `params` (`add upsert remove get has toObject all clear`), `body` (`raw`, `mode`, `urlencoded`, `formdata`, `update()`). `{{variables}}` are resolved **after** the script, so the value you just set is used. The **Request** tab of the response shows what was actually sent (with a badge when a script changed it) and the Console logs `Request modified by pre-request script`.
+`pm.request`: `url`, `method`, `headers` / `params` (`add upsert remove get has toObject all clear`), `body` (`raw`, `mode`,
+`urlencoded`, `formdata`, `update()`). `{{variables}}` are resolved **after** the script, so the value you just set is used.
+The **Request** tab of the response shows what was actually sent (with a badge when a script changed it) and the console logs
+`Request modified by pre-request script`.
 
 ### Post-request: change what the UI receives, test, store values
 
@@ -79,32 +408,302 @@ pm.response.setStatus(200, "OK");  pm.response.setHeader("X-Processed", "1");
 pm.test("Status is 200", () => pm.response.to.have.status(200));
 ```
 
-The response panel is marked **modified by script** when a post script changed it. Collection scripts run first (outermost → nearest), each seeing the previous one's result.
+The response panel is marked **modified by script** when a post script changed it. Collection scripts run first (outermost →
+nearest), each seeing the previous one's result.
 
 ### Reference
 
-`pm.variables / environment / globals / collectionVariables` (`get set unset has clear toObject`; `pm.variables.get` and `replaceIn` resolve every scope), `postman.setGlobalVariable / getGlobalVariable / setEnvironmentVariable …`, `pm.response` (`json() text() code status headers.get() responseTime`, `to.have.status/header/jsonBody`, `to.be.ok/success/error`), `pm.test`, `pm.expect` (jest `toBe toEqual …` **and** chai `to.equal .eql .include .have.property .be.a("string") …`), `CryptoJS` / `require("crypto-js")` (SHA1/256/MD5, HMAC, Base64, AES …), `btoa/atob`, `console.*`. Not supported: `pm.sendRequest` (network is blocked by design). `pm.environment.set` and `pm.globals.set` persist for Editors+ (globals are the workspace variables); Viewers' runs never persist.
+- `pm.variables / environment / globals / collectionVariables` (`get set unset has clear toObject`; `pm.variables.get` and
+  `replaceIn` resolve every scope), `postman.setGlobalVariable / getGlobalVariable / setEnvironmentVariable …`.
+- `pm.response` (`json() text() code status headers.get() responseTime`, `to.have.status/header/jsonBody`,
+  `to.be.ok/success/error`), `pm.test`, `pm.expect` (jest `toBe toEqual …` **and** chai `to.equal .eql .include .have.property
+  .be.a("string") …`).
+- `CryptoJS` / `require("crypto-js")` (SHA1/256/MD5, HMAC, Base64, AES …), `btoa/atob`, `console.*`.
+- Not supported: `pm.sendRequest` (network access is blocked by design).
+- `pm.environment.set` and `pm.globals.set` persist for editors and above (globals are the workspace variables); runs by
+  viewers never persist anything.
 
 In the editor, type `pm.` for completions and use **Snippets** for ready-made examples.
 
-## Environments import / export
+---
 
-**Environments & variables** has its own Import (Postman or Hoppscotch environment `.json`, several files at once) and Export (Postman v2.1 or Hoppscotch, one environment at a time). Unsaved edits to the selected environment are saved before exporting. The generic **Import / Export** dialog still handles collections.
+## Code snippets
 
-## Permissions
+The **Code** dialog turns the request, **as currently edited**, into code. cURL is the default; an autocomplete (grouped by
+language, searchable by any words such as `py req` or `node ax`) switches the target, and your last choice is remembered.
+
+Variables are substituted; secret and undefined ones stay as `{{name}}`. Auth inherited from the collection is applied.
+Pre-request scripts are not applied.
+
+| Language      | Targets                                                |
+| ------------- | ------------------------------------------------------ |
+| C#            | HttpClient, RestSharp                                  |
+| cURL          | cURL                                                   |
+| Dart          | Dio, HTTP                                              |
+| Go            | http package                                           |
+| HTTP          | Raw HTTP request                                       |
+| Java          | OkHttp, Unirest                                        |
+| JavaScript    | Fetch, jQuery, XHR                                     |
+| Kotlin        | OkHttp                                                 |
+| C             | LibCurl                                                |
+| Node.js       | Axios, Native, Request, Unirest                        |
+| Objective-C   | NSURLSession                                           |
+| OCaml         | Cohttp                                                 |
+| PHP           | cURL, Guzzle, Http_Request2, pecl_http                 |
+| Postman CLI   | Postman CLI                                            |
+| PowerShell    | RestMethod                                             |
+| Python        | http.client, Requests                                  |
+| R             | httr, RCurl                                            |
+| Ruby          | Net::HTTP                                              |
+| Rust          | reqwest                                                |
+| Shell         | HTTPie, wget                                           |
+| Swift         | URLSession                                             |
+
+The cURL, wget, Python (`http.client`, `requests`), Node `fetch` and Node native snippets are executed against a local server
+in the test suite; the JavaScript, Python, shell and C output is syntax-checked.
+
+---
+
+## Languages
+
+The interface is available in **English (en-US), Spanish (es-ES), Chinese (zh-CN), German (de-DE), French (fr-FR), Japanese
+(ja-JP), Portuguese (pt-BR), Korean (ko-KR), Hindi (hi-IN), Italian (it-IT), Indonesian (id-ID), Turkish (tr-TR), Arabic
+(ar-SA), Russian (ru-RU) and Persian (fa-IR)**.
+
+- Pick a language with the flag + name selector in the top bar, on the sign-in screen or in Settings. Your browser's language
+  is detected on first visit; once you are signed in, the language saved on your account wins.
+- **Arabic and Persian are right-to-left**: the whole page mirrors (the sidebar moves to the right, tabs, menus and dialogs
+  flip). Code, URLs, JSON and other technical content always stay left-to-right.
+- Product and format names (Postman, Hoppscotch, JSON, cURL, Bearer, …) are never translated.
+- The server still answers in English; the common error messages are mapped to the interface language in the browser.
+
+**Adding a language:** create `web/src/i18n/locales/<code>.js` (copy `en-US.js` and translate the values), add it to
+`web/src/i18n/locales.js` (name, flag, direction) and `src/services/locales.js`, and draw its flag in
+`web/src/components/ui/Flag.jsx`. `npm test` checks that every dictionary has exactly the same keys and placeholders as
+`en-US.js`, that nothing is left empty, and that no UI text is hard-coded in the components.
+
+---
+
+## Accounts, roles and administration
+
+### Accounts
+
+You sign in with a **username and password** (no email). Usernames are 3–32 characters (`A–Z a–z 0–9 . _ -`),
+case-insensitive. **The first account that registers becomes the administrator** (on upgrades, the oldest existing account).
+Self-registration can be turned off in the admin panel so that only admins create accounts; then people sign in with the
+password they were given and can change it under *Settings → Profile → Change password*.
+
+### Workspace roles
 
 | Role   | Run | Edit requests/collections/scripts/envs | Manage members & workspace            | Delete workspace |
-| ------ | --- | -------------------------------------- | ------------------------------------- | ---------------- |
-| Viewer | ✓   |                                        |                                       |                  |
-| Editor | ✓   | ✓                                      |                                       |                  |
-| Admin  | ✓   | ✓                                      | ✓ (cannot grant admin / change owner) |                  |
-| Owner  | ✓   | ✓                                      | ✓                                     | ✓                |
+| ------ | :-: | :------------------------------------: | :-----------------------------------: | :--------------: |
+| Viewer |  ✓  |                                        |                                       |                  |
+| Editor |  ✓  |                   ✓                    |                                       |                  |
+| Admin  |  ✓  |                   ✓                    | ✓ (cannot grant admin / change owner) |                  |
+| Owner  |  ✓  |                   ✓                    |                   ✓                   |        ✓         |
 
-## Shortcuts
+Viewers can change anything in a request tab to try it out and run it, but nothing they change can be saved, and their runs
+never persist environment changes.
 
-`Ctrl/⌘+Enter` send · `Ctrl/⌘+S` save · `Ctrl/⌘+T` new tab · ``Ctrl/⌘+` `` toggle console.
+### Administrator panel
 
-## Status vs. spec
+Administrators (a platform-level flag, separate from workspace roles) get **Account menu → Admin panel**:
 
-Done: 15-language UI (en-US, es-ES, zh-CN, de-DE, fr-FR, ja-JP, pt-BR, ko-KR, hi-IN, it-IT, id-ID, tr-TR, ar-SA, ru-RU, fa-IR; flag + name picker; RTL for Arabic and Persian), app settings (request timeout and max response size, console and layout, editor font/indentation/auto-close, theme, language, app font, autosave; stored on the account), collection descriptions (also in Postman import/export), code snippets (35 language/library targets, cURL by default), user settings (profile photo, name/username, password, English/Persian UI with RTL), admin panel (user management, password reset, disable, workspaces, activity, admin-only account creation switch), username login, member picker (autocomplete), React UI with custom components (AutoComplete, Select, Menu, Modal, variable-aware inputs, code editor with completions), auth, workspaces, RBAC, collections tree (+drag & drop, duplicate, sort), all methods/body types, auth (bearer/basic/API key, inheritance), environments + 5-level variables, pre/post scripts (request + collection), scripts that rewrite the request and the response, response viewer (JSON tree/search/raw, HTML sandboxed preview, headers, sent-request view, binary), console, history, audit log, dark/light, tests, Docker.
-Not yet: file upload in multipart, invitation of not-yet-registered users, share-by-link, XML pretty-printing, TypeScript types. See `docs/ARCHITECTURE.md` for the roadmap hooks.
+- **Users**: search, create, edit name/username/administrator flag, reset a password, disable or delete accounts. Password
+  reset and disabling sign the user out everywhere. You cannot demote, disable or delete yourself, and a user who owns a
+  workspace cannot be deleted until the workspace is removed.
+- **Workspaces**: list and delete.
+- **Activity**: a log of administrator actions.
+- **Settings**: *Allow self-registration* on or off (the very first account is always allowed).
+
+---
+
+## HTTP API
+
+The UI talks to a JSON API under `/api`. You can use it directly.
+
+- **Authentication**: sign in with `POST /api/auth/login` (`{ "username", "password" }`). The response contains a `token`; send it as
+  `Authorization: Bearer <token>`. Browsers use an httpOnly cookie instead, and cookie-authenticated writes must also send
+  the header `X-Requested-With: api-client` (CSRF protection).
+- Errors are `{ "error": "message" }` (validation errors add `details`).
+
+```bash
+TOKEN=$(curl -s -X POST http://localhost:3000/api/auth/login \
+  -H 'content-type: application/json' -d '{"username":"alice","password":"secret-pass"}' | jq -r .token)
+curl -s http://localhost:3000/api/workspaces -H "authorization: Bearer $TOKEN"
+```
+
+| Area       | Endpoints                                                                                                                  |
+| ---------- | -------------------------------------------------------------------------------------------------------------------------- |
+| Auth       | `POST /auth/register`, `POST /auth/login`, `POST /auth/logout`, `GET /auth/me`, `GET /auth/config`                         |
+| Profile    | `PATCH /me` (name, username, locale, settings), `PUT`/`DELETE /me/avatar`, `POST /me/password`, `GET /users/:id/avatar`    |
+| Workspaces | `GET`/`POST /workspaces`, `GET`/`PATCH`/`DELETE /workspaces/:wid`, members, audit, environments                            |
+| Content    | `GET /workspaces/:wid/tree`, collections (`POST`, `PATCH`, `DELETE`, duplicate, scripts, auth), requests (`POST`, `PUT`, move, duplicate, `DELETE`) |
+| Running    | `POST /workspaces/:wid/run` (with optional `limits`), `GET`/`DELETE /workspaces/:wid/history`                              |
+| Interop    | `GET /workspaces/:wid/export?format=postman\|hoppscotch&collection=…\|environment=…`, `POST /workspaces/:wid/import`        |
+| Admin      | `/admin/stats`, `/admin/users` (list, create, `PATCH`, password, `DELETE`), `/admin/workspaces`, `/admin/audit`, `/admin/settings` |
+| Health     | `GET /healthz`                                                                                                             |
+
+---
+
+## Architecture
+
+### Stack
+
+| Layer         | Choice                                                                        | Why                                                                                          |
+| ------------- | ----------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| Backend       | Node 22 + Express 5 routers, zod validation                                   | small, well understood, easy to extend                                                       |
+| Database      | SQLite (`node:sqlite`, WAL, foreign keys on) + versioned migrations           | zero ops, single file, no native build; the data layer is isolated in `src/db`               |
+| Auth          | username + password (bcrypt), JWT in an httpOnly SameSite=Strict cookie or Bearer | CSRF-resistant (custom header required for cookie auth)                                  |
+| Script engine | QuickJS compiled to WASM (`quickjs-emscripten`)                               | a real sandbox: no fs/net/process, CPU and memory limits                                     |
+| Frontend      | React 19 + Vite + zustand (`web/`, built to `dist/`)                          | in-house component library (no UI kit); React escapes by default; Vite is build-time only    |
+
+### Layout
+
+```
+src/
+  app.js server.js config.js
+  db/            index.js (open + migrate)  migrations.js (append-only)
+  middleware/    auth.js (authenticate, csrfGuard, requireWorkspace, requireAdmin, audit)
+  routes/        auth.js me.js admin.js workspaces.js content.js interop.js
+  services/      permissions.js variables.js executor.js runner.js scriptEngine.js ssrf.js
+                 interop.js (Postman/Hoppscotch) settings.js userSettings.js locales.js
+web/             index.html vite.config.js
+  src/           main.jsx App.jsx store.js api.js
+    components/  ui (AutoComplete Select Popover Menu Modal Toasts Splitter Flag LanguageSelect …)
+                 editor (VarInput CodeEditor KeyValueEditor BodyEditor AuthEditor ScriptEditor)
+                 response (ResponseViewer JsonTree)
+    features/    TopBar Sidebar RequestEditor RequestTabs Console CodeSnippet SettingsPage AdminPanel + dialogs
+    lib/         codegen (35 snippet targets) settings http snippets …
+    i18n/        index.js locales.js locales/<code>.js
+dist/            build output served by Express (npm run build)
+tests/           unit, API and end-to-end tests
+```
+
+### Data model
+
+`users` (unique username, `is_admin`, `disabled`, `token_version`, avatar, `locale`, `settings`) · `workspaces` (variables) ·
+`workspace_members` (role) · `collections` (parent tree, description, variables, auth, pre/post scripts) · `requests` (method,
+url, params, headers, body, auth, variables, scripts, description) · `environments` · `history` (per user) · `audit_log` ·
+`settings` (instance settings such as registration) · `_migrations`.
+
+Migrations: 1 initial schema · 2 username login · 3 admin panel (admin/disabled/token version) · 4 profile (avatar, locale) ·
+5 instance settings · 6 collection description · 7 per-user settings · 8 full locale codes.
+
+### Request pipeline (`services/runner.js`)
+
+1. Load the variable scopes.
+2. Run pre-request scripts (collections root→leaf, then the request). A script may rewrite url, method, headers, params and
+   body (`pm.request.*`).
+3. Resolve `{{vars}}` (runtime > request > collection > environment > workspace).
+4. Build the request (params, auth including inherited auth, body mode).
+5. Execute it: manual redirects, an SSRF check on every hop and on every connected IP, the user's timeout and size limits
+   capped by the server ceilings.
+6. Run post-request scripts and tests; a script may rewrite status, headers and body before the UI gets them.
+7. Persist environment changes **only if the caller may write**.
+8. Record history (the unresolved request, never resolved secrets). Every step appends a structured log to the console.
+
+### Authorization
+
+Workspace roles are `owner > admin > editor > viewer`; `services/permissions.js` is the single permission table, and
+`requireWorkspace(db, perm)` loads the membership from the database on every request (never trusting the client) and answers
+404 to non-members. Admins cannot grant admin or touch peers or the owner; the owner is immutable; nobody changes their own
+role. Administrator access (`users.is_admin`) is separate and guards `/api/admin`.
+
+### Scaling and performance
+
+The tree endpoint returns names only (collections carry `has_pre`/`has_post` booleans, and `GET /collections/:id/scripts`
+returns the inherited script chain on demand); request details load lazily; collapsed branches are not rendered; search is
+debounced; history is capped at 200 rows per query. To scale out, move to PostgreSQL with a shared session secret — the app is
+otherwise stateless.
+
+### Design decisions
+
+- **SQLite first.** Zero-ops team deployments; single writer mitigated by WAL. Revisit above ~50 concurrent writers.
+- **QuickJS-WASM for scripts.** Node `vm` is not a security boundary and `isolated-vm` needs native builds.
+- **Server-side execution.** No CORS problems, shared history and consistent scripting, at the price of SSRF risk (handled below).
+- **React + Vite, in-house components.** Keeps the dependency surface small; the production image only ships `dist/`.
+- **Username login.** Email was never verified or used, so it was dropped.
+- **Dictionaries, not hard-coded text.** All UI text lives in `web/src/i18n/locales`; a test fails when a component hard-codes
+  user-facing text.
+
+---
+
+## Security
+
+- **SSRF**: private, loopback, link-local and metadata ranges are blocked. The check runs on the DNS-resolved IP (anti-rebinding via
+  a `lookup` hook), IP literals are validated explicitly, redirects are re-checked and credentials are dropped on cross-origin
+  redirects. `ALLOW_PRIVATE_TARGETS` turns this off (default off).
+- **Scripts**: QuickJS WASM, 1.5 s CPU budget, 32 MB memory, JSON in and out only.
+- **XSS**: strict CSP (no inline scripts); the HTML preview is an `<iframe sandbox="" srcdoc>` with no scripts and an opaque origin;
+  uploaded avatars are re-validated by magic bytes (PNG/JPEG/WebP only, never SVG).
+- **CSRF**: SameSite=Strict cookies plus a required `X-Requested-With` header for cookie-authenticated writes.
+- **Sessions**: JWTs carry a per-user version, so a password reset, a password change or disabling an account signs the user
+  out everywhere.
+- **Injection**: parameterized SQL only; zod validation on every input; sign-in, registration and password change are
+  rate-limited. Operators can cap what users may ask for (`MAX_REQUEST_TIMEOUT_MS`, `MAX_RESPONSE_BYTES_LIMIT`).
+- **Known limits**: secrets in environments are stored in plain text in SQLite (use disk encryption); there is no server-side
+  list of revoked tokens beyond the per-user version.
+
+Found a vulnerability? Please open a private security advisory on the GitHub repository rather than a public issue.
+
+---
+
+## Testing
+
+```bash
+npm test      # builds the UI, then runs unit, API and end-to-end tests (node --test)
+```
+
+- Unit and API tests need nothing else. The end-to-end tests drive the real UI in headless Chromium and are **skipped** when no
+  browser is found; set `CHROME_PATH` to a Chromium/Chrome binary to run them.
+- Highlights: roles and permissions, scripting sandbox limits, SSRF guard, import/export round trips, the code snippet
+  generators (really executed where the tool is installed), request limits, the viewer rules, every interface language in a
+  real browser (including RTL layout), and the dictionaries.
+- One test (compiling the generated C code against libcurl) is skipped on machines without the libcurl headers.
+
+---
+
+## Versioning and releases
+
+The project follows [Semantic Versioning](https://semver.org/) and keeps a [changelog](CHANGELOG.md).
+
+- The single source of truth is `version` in `package.json`. It is shown in **Settings → General → About** and returned by
+  `GET /healthz`.
+- **From now on every user-visible change updates the version**: patch for fixes, minor for new features, major for breaking
+  changes (API, data or configuration). Add an entry to `CHANGELOG.md` under *Unreleased*, and move it under a new version
+  heading when releasing.
+- To release: `npm version <patch|minor|major> --no-git-tag-version`, update the changelog, commit, then
+  `git tag -a vX.Y.Z -m "vX.Y.Z"` and push the tag. A test fails if the changelog does not mention the current version.
+
+Current version: **1.0.0**.
+
+---
+
+## Roadmap
+
+Not yet available: file upload in multipart bodies, inviting people who have no account yet, share-by-link, XML pretty-printing,
+WebSocket / GraphQL / gRPC requests, a collection runner, mock servers, OpenAPI import, and per-secret encryption. The code is
+structured so these can be added without rewriting the core: a `protocol` column and a new executor for other protocols, a
+runner route on top of `runner.js` (which already returns test results), and new routes and services reading the same tables.
+
+---
+
+## License and attribution
+
+API Client is open source under the **[Apache License, Version 2.0](LICENSE)**.
+
+Copyright 2026 Hossein Teimouri — source: <https://github.com/HosseinTeimouri79/api-client>
+
+You are free to use, modify, self-host and redistribute this software, including commercially, **provided that you give credit**.
+If you use it or build on it you must:
+
+1. **Keep the `LICENSE` and `NOTICE` files** with every copy or derivative you distribute (the Docker image already includes them).
+2. **Credit the original author and link to the source** in your documentation or in an "About" / credits screen, for example:
+
+   > Based on **API Client** by Hossein Teimouri — <https://github.com/HosseinTeimouri79/api-client> (Apache License 2.0).
+
+3. **State your changes**: mark modified files as changed, and keep the copyright, patent and attribution notices.
+
+The software is provided "as is", without warranty of any kind. This summary is not legal advice; the full terms are in
+[`LICENSE`](LICENSE).
