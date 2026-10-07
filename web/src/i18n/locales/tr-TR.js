@@ -117,7 +117,7 @@ export default {
   "settings.autosave": "Otomatik kaydet",
   "settings.autosaveHint": "Düzenlenen istekleri yazmayı bıraktıktan kısa süre sonra kaydeder (düzenleme yetkisi olan üyeler için).",
   "settings.about": "Hakkında",
-  "settings.aboutText": "API Client, ISC lisansı altında yayımlanan özgür ve açık kaynaklı bir yazılımdır. Ayarlarınız hesabınıza kaydedilir.",
+  "settings.aboutText": "API Client, Apache 2.0 lisansı altında yayımlanan özgür ve açık kaynaklı bir yazılımdır. Ayarlarınız hesabınıza kaydedilir.",
   "settings.photo": "Profil fotoğrafı",
   "settings.photoHint": "PNG, JPEG veya WebP. Kare olarak kırpılır.",
   "settings.upload": "Fotoğraf yükle",

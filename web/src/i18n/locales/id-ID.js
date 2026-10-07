@@ -117,7 +117,7 @@ export default {
   "settings.autosave": "Simpan otomatis",
   "settings.autosaveHint": "Simpan permintaan yang diedit sesaat setelah Anda berhenti mengetik (untuk anggota yang dapat mengedit).",
   "settings.about": "Tentang",
-  "settings.aboutText": "API Client adalah perangkat lunak bebas dan sumber terbuka yang dirilis di bawah lisensi ISC. Pengaturan Anda disimpan di akun Anda.",
+  "settings.aboutText": "API Client adalah perangkat lunak bebas dan sumber terbuka yang dirilis di bawah lisensi Apache 2.0. Pengaturan Anda disimpan di akun Anda.",
   "settings.photo": "Foto profil",
   "settings.photoHint": "PNG, JPEG, atau WebP. Foto dipotong menjadi persegi.",
   "settings.upload": "Unggah foto",

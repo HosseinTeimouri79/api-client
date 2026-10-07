@@ -117,7 +117,7 @@ export default {
   "settings.autosave": "ذخیره‌ی خودکار",
   "settings.autosaveHint": "درخواست‌های ویرایش‌شده کمی پس از توقف تایپ ذخیره شوند (برای اعضایی که اجازه‌ی ویرایش دارند).",
   "settings.about": "درباره",
-  "settings.aboutText": "API Client نرم‌افزاری آزاد و متن‌باز است و با مجوز ISC منتشر شده. تنظیمات شما در حساب‌تان ذخیره می‌شود.",
+  "settings.aboutText": "API Client نرم‌افزاری آزاد و متن‌باز است و با مجوز Apache 2.0 منتشر شده. تنظیمات شما در حساب‌تان ذخیره می‌شود.",
   "settings.photo": "عکس پروفایل",
   "settings.photoHint": "PNG، JPEG یا WebP. به‌صورت مربع برش می‌خورد.",
   "settings.upload": "بارگذاری عکس",

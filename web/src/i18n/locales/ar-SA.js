@@ -117,7 +117,7 @@ export default {
   "settings.autosave": "الحفظ التلقائي",
   "settings.autosaveHint": "حفظ الطلبات المعدَّلة بعد لحظة من التوقف عن الكتابة (للأعضاء الذين يمكنهم التعديل).",
   "settings.about": "حول",
-  "settings.aboutText": "API Client برنامج حر ومفتوح المصدر صادر بموجب رخصة ISC. تُحفظ إعداداتك في حسابك.",
+  "settings.aboutText": "API Client برنامج حر ومفتوح المصدر صادر بموجب رخصة Apache 2.0. تُحفظ إعداداتك في حسابك.",
   "settings.photo": "صورة الملف الشخصي",
   "settings.photoHint": "PNG أو JPEG أو WebP. تُقص الصورة إلى مربع.",
   "settings.upload": "رفع صورة",

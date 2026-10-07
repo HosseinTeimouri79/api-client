@@ -117,7 +117,7 @@ export default {
   "settings.autosave": "自动保存",
   "settings.autosaveHint": "停止输入片刻后自动保存已编辑的请求（适用于有编辑权限的成员）。",
   "settings.about": "关于",
-  "settings.aboutText": "API Client 是自由开源软件，基于 ISC 许可证发布。你的设置会保存到你的账户。",
+  "settings.aboutText": "API Client 是自由开源软件，基于 Apache 2.0 许可证发布。你的设置会保存到你的账户。",
   "settings.photo": "头像",
   "settings.photoHint": "PNG、JPEG 或 WebP。将裁剪为正方形。",
   "settings.upload": "上传照片",

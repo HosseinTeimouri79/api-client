@@ -46,7 +46,7 @@ for (const l of LOCALES.filter((x) => x.id !== "en-US"))
   });
 
 test("product and format names are never translated", () => {
-  const names = ["Postman", "Hoppscotch", "API Client", "JSON", "PNG", "JPEG", "WebP", "ISC", "Bearer", "Basic"];
+  const names = ["Postman", "Hoppscotch", "API Client", "JSON", "PNG", "JPEG", "WebP", "Apache", "Bearer", "Basic"];
   for (const l of LOCALES.filter((x) => x.id !== "en-US"))
     for (const [k, v] of Object.entries(en))
       for (const n of names) if (v.includes(n)) assert.ok(dicts[l.id][k].includes(n), `${l.id} ${k} must keep "${n}": ${dicts[l.id][k]}`);
@@ -66,7 +66,7 @@ test("every t('key') in the source exists, and every key is used", () => {
 });
 
 test("no UI text is hard-coded in the components", () => {
-  const allowed = new Set(["Ctrl", "Enter", "API Client", "JSON", "Postman", "Hoppscotch", "GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS", "Ctrl+S", "Ctrl+Enter", "OK", "Raw", "pm.test(...)", "console.log", "Tab", "Esc", "Basic", "Bearer", "API", "ISC", "cURL"]);
+  const allowed = new Set(["Ctrl", "Enter", "API Client", "JSON", "Postman", "Hoppscotch", "GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS", "Ctrl+S", "Ctrl+Enter", "OK", "Raw", "pm.test(...)", "console.log", "Tab", "Esc", "Basic", "Bearer", "API", "Apache", "cURL"]);
   const found = [];
   for (const [file, src] of sources) {
     if (/lib\/(snippets|http|highlight|image|settings)\.js|lib\/codegen|\.test\./.test(file)) continue; // data and code, not UI chrome

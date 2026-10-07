@@ -117,7 +117,7 @@ export default {
   "settings.autosave": "Salvamento automático",
   "settings.autosaveHint": "Salva as requisições editadas logo após você parar de digitar (para membros que podem editar).",
   "settings.about": "Sobre",
-  "settings.aboutText": "O API Client é um software livre e de código aberto, distribuído sob a licença ISC. Suas configurações são salvas na sua conta.",
+  "settings.aboutText": "O API Client é um software livre e de código aberto, distribuído sob a licença Apache 2.0. Suas configurações são salvas na sua conta.",
   "settings.photo": "Foto de perfil",
   "settings.photoHint": "PNG, JPEG ou WebP. Ela é cortada em um quadrado.",
   "settings.upload": "Enviar foto",

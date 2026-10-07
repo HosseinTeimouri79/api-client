@@ -117,7 +117,7 @@ export default {
   "settings.autosave": "Automatisch speichern",
   "settings.autosaveHint": "Bearbeitete Anfragen kurz nach dem Tippen speichern (für Mitglieder mit Bearbeitungsrecht).",
   "settings.about": "Info",
-  "settings.aboutText": "API Client ist freie Open-Source-Software unter der ISC-Lizenz. Ihre Einstellungen werden in Ihrem Konto gespeichert.",
+  "settings.aboutText": "API Client ist freie Open-Source-Software unter der Apache 2.0-Lizenz. Ihre Einstellungen werden in Ihrem Konto gespeichert.",
   "settings.photo": "Profilfoto",
   "settings.photoHint": "PNG, JPEG oder WebP. Es wird quadratisch zugeschnitten.",
   "settings.upload": "Foto hochladen",

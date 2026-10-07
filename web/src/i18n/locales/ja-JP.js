@@ -117,7 +117,7 @@ export default {
   "settings.autosave": "自動保存",
   "settings.autosaveHint": "入力が止まって少ししたら編集したリクエストを保存します（編集権限のあるメンバー向け）。",
   "settings.about": "このアプリについて",
-  "settings.aboutText": "API Client は ISC ライセンスで公開されている無料のオープンソースソフトウェアです。設定はアカウントに保存されます。",
+  "settings.aboutText": "API Client は Apache 2.0 ライセンスで公開されている無料のオープンソースソフトウェアです。設定はアカウントに保存されます。",
   "settings.photo": "プロフィール写真",
   "settings.photoHint": "PNG、JPEG、WebP に対応。正方形に切り抜かれます。",
   "settings.upload": "写真をアップロード",

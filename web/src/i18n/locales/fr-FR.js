@@ -117,7 +117,7 @@ export default {
   "settings.autosave": "Enregistrement automatique",
   "settings.autosaveHint": "Enregistre les requêtes modifiées peu après l’arrêt de la saisie (pour les membres qui peuvent modifier).",
   "settings.about": "À propos",
-  "settings.aboutText": "API Client est un logiciel libre et open source publié sous licence ISC. Vos paramètres sont enregistrés dans votre compte.",
+  "settings.aboutText": "API Client est un logiciel libre et open source publié sous licence Apache 2.0. Vos paramètres sont enregistrés dans votre compte.",
   "settings.photo": "Photo de profil",
   "settings.photoHint": "PNG, JPEG ou WebP. Elle est recadrée en carré.",
   "settings.upload": "Téléverser une photo",

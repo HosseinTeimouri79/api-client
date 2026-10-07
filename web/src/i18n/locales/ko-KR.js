@@ -117,7 +117,7 @@ export default {
   "settings.autosave": "자동 저장",
   "settings.autosaveHint": "입력을 멈추고 잠시 후 편집한 요청을 저장합니다(편집 권한이 있는 멤버).",
   "settings.about": "정보",
-  "settings.aboutText": "API Client는 ISC 라이선스로 배포되는 무료 오픈 소스 소프트웨어입니다. 설정은 계정에 저장됩니다.",
+  "settings.aboutText": "API Client는 Apache 2.0 라이선스로 배포되는 무료 오픈 소스 소프트웨어입니다. 설정은 계정에 저장됩니다.",
   "settings.photo": "프로필 사진",
   "settings.photoHint": "PNG, JPEG 또는 WebP. 정사각형으로 잘립니다.",
   "settings.upload": "사진 업로드",
