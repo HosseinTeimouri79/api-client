@@ -52,11 +52,14 @@ export function interopRouter(db) {
         "SELECT * FROM collections WHERE workspace_id=? ORDER BY position,name",
       )
       .all(req.wid);
-    const reqs = db
+    const all = db
       .prepare(
         "SELECT * FROM requests WHERE workspace_id=? ORDER BY position,name",
       )
       .all(req.wid);
+    // Postman and Hoppscotch files only describe HTTP requests
+    const reqs = all.filter((x) => x.protocol === "http");
+    const skipped = all.length - reqs.length;
     const node = (c, d = 0) => ({
       id: c.id,
       name: c.name,
@@ -96,6 +99,8 @@ export function interopRouter(db) {
     const warnings = [],
       warn = (m) => warnings.push(m),
       trees = roots.map((c) => node(c));
+    if (skipped)
+      warn(`${skipped} non-HTTP request(s) were left out: the export formats only support HTTP`);
     audit(db, req, "collection.export", collection ?? "all");
     const data =
       format === "postman"
@@ -162,7 +167,7 @@ export function interopRouter(db) {
       "INSERT INTO collections(id,workspace_id,parent_id,name,description,position,variables,auth,pre_script,post_script) VALUES(?,?,?,?,?,?,?,?,?,?)",
     );
     const insReq = db.prepare(
-      "INSERT INTO requests(id,workspace_id,collection_id,name,description,position,method,url,params,headers,body,auth,variables,pre_script,post_script) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+      "INSERT INTO requests(id,workspace_id,collection_id,name,description,position,protocol,protocol_data,method,url,params,headers,body,auth,variables,pre_script,post_script) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
     );
     const addCol = (n, parent, position, depth) => {
       if (depth > MAX_DEPTH)
@@ -203,6 +208,8 @@ export function interopRouter(db) {
           x.name,
           x.description,
           i,
+          x.protocol,
+          j(x.protocol_data),
           x.method,
           x.url,
           j(x.params),

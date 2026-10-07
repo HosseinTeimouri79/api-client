@@ -4,6 +4,7 @@ import { uid, j, parse } from "../db/index.js";
 import { HttpError, requireWorkspace, audit } from "../middleware/auth.js";
 import { can } from "../services/permissions.js";
 import { runRequest, collectionChain } from "../services/runner.js";
+import { HTTP_METHODS, IMPLEMENTED } from "../protocols/index.js";
 
 export const kv = z
   .array(
@@ -26,11 +27,16 @@ export const auth = z
     in: z.enum(["header", "query"]).optional(),
   })
   .nullable();
-const METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"];
 export const RequestSchema = z.object({
   name: z.string().min(1).max(200),
   description: z.string().max(10000).default(""),
-  method: z.enum(METHODS).default("GET"),
+  protocol: z.enum(IMPLEMENTED).default("http"),
+  // protocol specific settings (validated when the request is run)
+  protocol_data: z
+    .record(z.string(), z.unknown())
+    .default({})
+    .refine((d) => JSON.stringify(d).length <= 2_000_000, "protocol_data is too large"),
+  method: z.enum(HTTP_METHODS).default("GET"),
   url: z.string().max(8000).default(""),
   params: kv.default([]),
   headers: kv.default([]),
@@ -48,6 +54,7 @@ export const RequestSchema = z.object({
 });
 const reqOut = (r) => ({
   ...r,
+  protocol_data: parse(r.protocol_data, {}),
   params: parse(r.params, []),
   headers: parse(r.headers, []),
   variables: parse(r.variables, []),
@@ -106,7 +113,7 @@ export function contentRouter(db) {
         .map((c) => ({ ...c, has_pre: !!c.has_pre, has_post: !!c.has_post })),
       requests: db
         .prepare(
-          "SELECT id,collection_id,name,method,position FROM requests WHERE workspace_id=? ORDER BY position,name",
+          "SELECT id,collection_id,name,protocol,method,position FROM requests WHERE workspace_id=? ORDER BY position,name",
         )
         .all(req.wid),
     }),
@@ -262,7 +269,7 @@ export function contentRouter(db) {
         .prepare("SELECT * FROM requests WHERE collection_id=?")
         .all(c.id))
         db.prepare(
-          "INSERT INTO requests(id,workspace_id,collection_id,name,description,position,method,url,params,headers,body,auth,variables,pre_script,post_script) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+          "INSERT INTO requests(id,workspace_id,collection_id,name,description,position,protocol,protocol_data,method,url,params,headers,body,auth,variables,pre_script,post_script) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
         ).run(
           uid(),
           req.wid,
@@ -270,6 +277,8 @@ export function contentRouter(db) {
           q.name,
           q.description,
           q.position,
+          q.protocol,
+          q.protocol_data,
           q.method,
           q.url,
           q.params,
@@ -303,7 +312,7 @@ export function contentRouter(db) {
     const b = RequestSchema.parse(req.body);
     const id = uid();
     db.prepare(
-      "INSERT INTO requests(id,workspace_id,collection_id,name,description,position,method,url,params,headers,body,auth,variables,pre_script,post_script) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+      "INSERT INTO requests(id,workspace_id,collection_id,name,description,position,protocol,protocol_data,method,url,params,headers,body,auth,variables,pre_script,post_script) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
     ).run(
       id,
       req.wid,
@@ -311,6 +320,8 @@ export function contentRouter(db) {
       b.name,
       b.description,
       nextPos("requests", "collection_id=?", req.params.id),
+      b.protocol,
+      j(b.protocol_data),
       b.method,
       b.url,
       j(b.params),
@@ -331,10 +342,12 @@ export function contentRouter(db) {
     rq(req, req.params.id);
     const b = RequestSchema.parse(req.body);
     db.prepare(
-      "UPDATE requests SET name=?,description=?,method=?,url=?,params=?,headers=?,body=?,auth=?,variables=?,pre_script=?,post_script=?,updated_at=datetime('now') WHERE id=?",
+      "UPDATE requests SET name=?,description=?,protocol=?,protocol_data=?,method=?,url=?,params=?,headers=?,body=?,auth=?,variables=?,pre_script=?,post_script=?,updated_at=datetime('now') WHERE id=?",
     ).run(
       b.name,
       b.description,
+      b.protocol,
+      j(b.protocol_data),
       b.method,
       b.url,
       j(b.params),
@@ -369,7 +382,7 @@ export function contentRouter(db) {
     const q = rq(req, req.params.id),
       id = uid();
     db.prepare(
-      "INSERT INTO requests(id,workspace_id,collection_id,name,description,position,method,url,params,headers,body,auth,variables,pre_script,post_script) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+      "INSERT INTO requests(id,workspace_id,collection_id,name,description,position,protocol,protocol_data,method,url,params,headers,body,auth,variables,pre_script,post_script) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
     ).run(
       id,
       req.wid,
@@ -377,6 +390,8 @@ export function contentRouter(db) {
       `${q.name} (copy)`,
       q.description,
       nextPos("requests", "collection_id=?", q.collection_id),
+      q.protocol,
+      q.protocol_data,
       q.method,
       q.url,
       q.params,

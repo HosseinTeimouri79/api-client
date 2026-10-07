@@ -1,4 +1,4 @@
-export const METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"];
+export const METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS", "TRACE", "CONNECT"];
 // header name -> i18n key of its description
 export const HEADER_NAMES = {
   Accept: "hdr.acceptTypes",
@@ -34,6 +34,8 @@ export const statusColor = (s) =>
 export const blankReq = () => ({
   name: "New Request",
   description: "",
+  protocol: "http",
+  protocol_data: {},
   method: "GET",
   url: "",
   params: [],

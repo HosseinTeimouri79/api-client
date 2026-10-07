@@ -3,6 +3,7 @@ import https from "node:https";
 import zlib from "node:zlib";
 import { safeLookup, assertPublicHost } from "./ssrf.js";
 import { config } from "../config.js";
+import { BODYLESS_METHODS } from "../protocols/index.js";
 
 /** Limits for one run: what the user asked for, never above the server's ceilings (0 = as much as allowed). */
 export function effectiveLimits(want = {}) {
@@ -57,7 +58,7 @@ export async function buildRequest(r, inheritedAuth) {
   );
   const b = r.body ?? { mode: "none" };
   let body;
-  const noBody = ["GET", "HEAD"].includes(r.method);
+  const noBody = BODYLESS_METHODS.includes(r.method);
   if (!noBody)
     switch (b.mode) {
       case "json":
@@ -95,10 +96,28 @@ export async function buildRequest(r, inheritedAuth) {
       }
     }
   if (body != null) headers["Content-Length"] = String(Buffer.byteLength(body));
-  return { url: url.toString(), method: r.method, headers, body };
+  return {
+    url: url.toString(),
+    method: r.method,
+    headers,
+    body,
+    ...(r.method === "CONNECT" && { connectTarget: connectTarget(url) }),
+  };
+}
+// CONNECT asks a proxy to open a tunnel. The URL is the proxy; the tunnel target is the URL's path ("/example.com:443"),
+// or the URL's own host:port when the path is empty.
+export function connectTarget(url) {
+  const fromPath = decodeURIComponent(url.pathname).replace(/^\/+/, "");
+  const target =
+    fromPath || `${url.hostname}:${url.port || (url.protocol === "https:" ? 443 : 80)}`;
+  if (!/^(\[[0-9a-f:.]+\]|[^\s/:@?#]+):\d{1,5}$/i.test(target))
+    throw new Error(
+      `CONNECT target must look like host:port (put it in the URL path, e.g. ${url.origin}/example.com:443)`,
+    );
+  return target;
 }
 
-function once({ url, method, headers, body }, signal, lim = effectiveLimits()) {
+function once({ url, method, headers, body, connectTarget }, signal, lim = effectiveLimits()) {
   return new Promise((resolve, reject) => {
     assertPublicHost(url);
     const u = new URL(url);
@@ -112,6 +131,7 @@ function once({ url, method, headers, body }, signal, lim = effectiveLimits()) {
           "User-Agent": "api-client/1.0",
           ...headers,
         },
+        ...(connectTarget && { path: connectTarget }),
         lookup: safeLookup,
         autoSelectFamily: true,
         autoSelectFamilyAttemptTimeout: config.connectAttemptTimeoutMs,
@@ -151,6 +171,11 @@ function once({ url, method, headers, body }, signal, lim = effectiveLimits()) {
       ),
     );
     req.on("error", reject);
+    // a CONNECT answer arrives as an event (the connection becomes a tunnel); we only report the proxy's reply
+    req.on("connect", (res, socket) => {
+      socket.destroy();
+      resolve({ res, buf: Buffer.alloc(0) });
+    });
     if (body != null) req.write(body);
     req.end();
   });

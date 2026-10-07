@@ -2,7 +2,7 @@
 // Everything is converted to / from one neutral tree:
 //   folder  = { name, variables[], auth|null, pre_script, post_script, folders[], requests[] }
 //   request = same shape as RequestSchema (method, url, params, headers, body, auth, variables, pre_script, post_script)
-const METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"];
+import { HTTP_METHODS as METHODS } from "../protocols/index.js";
 const str = (v) => (v == null ? "" : String(v));
 const lines = (v) => (Array.isArray(v) ? v.join("\n") : str(v));
 const dec = (s) => {

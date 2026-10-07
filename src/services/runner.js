@@ -3,7 +3,7 @@ import { mergeScopes, resolve, resolveDeep, toMap } from "./variables.js";
 import { buildRequest, execute } from "./executor.js";
 import { runScript } from "./scriptEngine.js";
 
-const METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"];
+import { HTTP_METHODS as METHODS, BODYLESS_METHODS } from "../protocols/index.js";
 const BODY_MODES = ["none", "json", "text", "urlencoded", "multipart", "raw"];
 const kv = (obj) =>
   Object.entries(obj).map(([key, value]) => ({ key, value, enabled: true }));
@@ -234,7 +234,7 @@ export async function runRequest(
       log("ERROR", `Validation error: ${e.message}`);
       throw Object.assign(e, { phase: "validation" });
     }
-    if (["GET", "HEAD"].includes(built.method) && resolved.body?.mode !== "none")
+    if (BODYLESS_METHODS.includes(built.method) && resolved.body?.mode !== "none")
       log("WARN", `${built.method} requests are sent without a body; the body was ignored`);
     log("INFO", "Request sent", { method: built.method, url: built.url });
     if (canPersist)

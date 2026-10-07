@@ -100,4 +100,13 @@ export const migrations = [
     name: "locale-codes",
     sql: "UPDATE users SET locale='en-US' WHERE locale='en'; UPDATE users SET locale='fa-IR' WHERE locale='fa'",
   },
+  {
+    // Requests can speak other protocols than HTTP; `protocol_data` holds the protocol specific settings (JSON).
+    id: 9,
+    name: "request-protocol",
+    sql: `
+    ALTER TABLE requests ADD COLUMN protocol TEXT NOT NULL DEFAULT 'http';
+    ALTER TABLE requests ADD COLUMN protocol_data TEXT NOT NULL DEFAULT '{}';
+  `,
+  },
 ];

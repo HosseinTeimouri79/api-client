@@ -65,7 +65,7 @@ export function buildModel(req, { vars = {}, inheritedAuth = null, substitute = 
 
   let body = null;
   const b = req.body ?? { mode: "none" };
-  if (!["GET", "HEAD"].includes(method)) {
+  if (!["GET", "HEAD", "TRACE", "CONNECT"].includes(method)) {
     if (["json", "text", "raw"].includes(b.mode)) {
       const text = R(b.content ?? "");
       if (text) {

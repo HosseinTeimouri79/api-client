@@ -285,7 +285,7 @@ test("request CRUD + move + validation", async () => {
     (
       await editor.c("POST", `/workspaces/${ws}/collections/${col}/requests`, {
         ...body,
-        method: "TRACE",
+        method: "BREW",
       })
     ).status,
     400,

@@ -56,7 +56,7 @@ label.btn input { display: none; }
 .note { background: var(--accent-soft); border-radius: var(--r); padding: 8px 10px; color: var(--accent); }
 .badge-mod { background: color-mix(in srgb, var(--warn) 18%, transparent); color: var(--warn); border-radius: 999px; padding: 1px 9px; font-size: 11px; font-weight: 600; }
 .m { font-size: 10px; font-weight: 700; letter-spacing: .02em; min-width: 40px; text-align: start; flex: none; }
-.m-GET { color: #3ed59a; } .m-POST { color: #f5b041; } .m-PUT { color: #6aa6ff; } .m-PATCH { color: #b58bff; } .m-DELETE { color: #f5617c; } .m-HEAD, .m-OPTIONS { color: #8b93a8; }
+.m-GET { color: #3ed59a; } .m-POST { color: #f5b041; } .m-PUT { color: #6aa6ff; } .m-PATCH { color: #b58bff; } .m-DELETE { color: #f5617c; } .m-HEAD, .m-OPTIONS, .m-TRACE, .m-CONNECT { color: #8b93a8; }
 :root[data-theme="light"] .m-GET { color: #0b8a58; } :root[data-theme="light"] .m-POST { color: #a86200; }
 .m-t { font-weight: 700; font-family: var(--mono); font-size: 12px; }
 
