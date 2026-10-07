@@ -2,6 +2,7 @@ import { parse, j } from "../db/index.js";
 import { mergeScopes, resolve, resolveDeep, toMap } from "./variables.js";
 import { buildRequest, execute } from "./executor.js";
 import { runScript } from "./scriptEngine.js";
+import { graphqlAsHttp } from "../protocols/graphql.js";
 
 import { HTTP_METHODS as METHODS, BODYLESS_METHODS } from "../protocols/index.js";
 const BODY_MODES = ["none", "json", "text", "urlencoded", "multipart", "raw"];
@@ -209,7 +210,16 @@ export async function runRequest(
     await runScripts("pre_script");
 
     const vars = scopesOf();
-    const resolved = resolveDeep(cur, vars);
+    let resolved = resolveDeep(cur, vars);
+    if (resolved.protocol === "graphql") {
+      // queries and mutations travel as an ordinary HTTP request; the editor's query and variables become the body
+      try {
+        resolved = graphqlAsHttp(resolved);
+      } catch (e) {
+        log("ERROR", `Validation error: ${e.message}`);
+        throw Object.assign(e, { phase: "validation" });
+      }
+    }
     const inherited =
       [...chain]
         .reverse()

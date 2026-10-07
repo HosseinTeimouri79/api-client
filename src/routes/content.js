@@ -471,7 +471,7 @@ export function contentRouter(db) {
       id,
       req.user.id,
       req.wid,
-      b.request.method,
+      b.request.protocol === "graphql" ? "GQL" : b.request.method,
       b.request.url,
       out.response?.status ?? null,
       out.response?.durationMs ?? null,

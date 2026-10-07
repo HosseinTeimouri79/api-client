@@ -3,6 +3,7 @@ import test, { before, after } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import { WebSocketServer } from "ws";
+import { PROTOCOLS, IMPLEMENTED } from "../src/protocols/index.js";
 process.env.ALLOW_PRIVATE_TARGETS = "true";
 const CHROME =
   process.env.CHROME_PATH ||
@@ -104,7 +105,7 @@ test("E2E: WebSocket request: connect, send, ping, disconnect, and the connectio
   // the protocol list: unfinished protocols are visible but cannot be picked
   await page.getByRole("combobox", { name: "Protocol" }).click();
   const soon = page.locator(".opt.disabled");
-  assert.ok((await soon.count()) >= 6);
+  assert.equal(await soon.count(), PROTOCOLS.length - IMPLEMENTED.length);
   await soon.first().click({ force: true });
   assert.equal((await page.getByRole("combobox", { name: "Protocol" }).textContent()).trim(), "WebSocket");
   await page.locator(".opt", { hasText: /^HTTP/ }).click();

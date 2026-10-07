@@ -13,6 +13,7 @@ import { meRouter, usersRouter } from "./routes/me.js";
 import { adminRouter } from "./routes/admin.js";
 import { interopRouter } from "./routes/interop.js";
 import { sessionsRouter } from "./routes/sessions.js";
+import { protocolToolsRouter } from "./routes/protocolTools.js";
 
 export function createApp(db) {
   const app = express();
@@ -50,6 +51,7 @@ export function createApp(db) {
   api.use("/workspaces", workspaceRouter(db));
   api.use("/workspaces/:wid", contentRouter(db));
   api.use("/workspaces/:wid", interopRouter(db));
+  api.use("/workspaces/:wid", protocolToolsRouter(db));
   const live = sessionsRouter(db);
   api.use("/workspaces/:wid", live);
   app.locals.sessions = live.sessions; // closed with the server (tests, shutdown)

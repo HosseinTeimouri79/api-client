@@ -14,7 +14,8 @@ import { ScriptEditor } from "../components/editor/ScriptEditor.jsx";
 import { CodeSnippetModal } from "./CodeSnippet.jsx";
 import { WebSocketMessage, WebSocketSettings } from "./realtime/WebSocketPanels.jsx";
 import { GrpcMessage, GrpcProto, GrpcSettings } from "./realtime/GrpcPanels.jsx";
-import { PROTOCOLS, PROTOCOL_DEFAULTS, protocolOf } from "../lib/protocols.js";
+import { GraphqlQuery, GraphqlSchema, GraphqlSettings } from "./realtime/GraphqlPanels.jsx";
+import { PROTOCOLS, PROTOCOL_DEFAULTS, protocolOf, liveTab } from "../lib/protocols.js";
 import { modals } from "../components/ui/modals.js";
 import { t as tr, useT } from "../i18n/index.js";
 
@@ -45,6 +46,7 @@ export function RequestEditor({ tab }) {
   const inhCount = (k) => inh.filter((x) => x[k === "pre" ? "pre_script" : "post_script"]?.trim()).length;
   const filled = (l) => l.filter((x) => x.key).length;
   const proto = protocolOf(r.protocol);
+  const live = liveTab(tab);
   const rt = tab.rt?.status;
   const connected = rt === "open" || rt === "connecting";
   const http = [
@@ -59,11 +61,12 @@ export function RequestEditor({ tab }) {
   const docs = http.at(-1);
   const byProtocol = {
     websocket: [{ id: "message", label: t("ws.message"), badge: r.protocol_data?.message?.trim() ? "●" : false }, http[0], http[1], http[3], { id: "settings", label: t("ws.settings"), badge: r.protocol_data?.subprotocols?.trim() ? "●" : false }, docs],
+    graphql: [{ id: "query", label: t("gql.query"), badge: r.protocol_data?.query?.trim() ? "●" : false }, http[0], http[1], http[3], { id: "schema", label: t("gql.schema"), badge: tab.schema?.sdl ? "●" : false }, { id: "settings", label: t("ws.settings"), badge: r.protocol_data?.httpMethod === "GET" || r.protocol_data?.wsUrl?.trim() || r.protocol_data?.connectionParams?.trim() ? "●" : false }, http[4], http[5], docs],
     grpc: [{ id: "message", label: t("grpc.message"), badge: r.protocol_data?.method ? "●" : false }, { id: "proto", label: t("grpc.proto"), badge: r.protocol_data?.proto?.trim() ? "●" : false }, { ...http[1], label: t("grpc.metadata") }, http[3], { id: "settings", label: t("ws.settings"), badge: r.protocol_data?.tlsInsecure || r.protocol_data?.deadlineMs ? "●" : false }, docs],
   };
   const tabs = byProtocol[r.protocol] ?? http;
   const sub = tabs.some((x) => x.id === tab.sub) ? tab.sub : tabs[0].id;
-  const switchProtocol = (id) => { set({ protocol: id, protocol_data: { ...PROTOCOL_DEFAULTS[id] }, ...(id === "http" ? {} : { method: "GET" }) }); setSub(tab.key, protocolOf(id).firstTab ?? "params"); };
+  const switchProtocol = (id) => { set({ protocol: id, protocol_data: { ...PROTOCOL_DEFAULTS[id] }, ...(id === "http" ? {} : { method: id === "graphql" ? "POST" : "GET" }) }); setSub(tab.key, protocolOf(id).firstTab ?? "params"); };
   const editInherited = c.write ? (id) => useStore.getState().openCollection(id, tab.sub) : undefined;
 
   return (
@@ -72,16 +75,16 @@ export function RequestEditor({ tab }) {
         {noSave && <div className="note viewer-note" role="note"><Icon name="eye" /> {t("viewer.note")}</div>}
         <div className="req-head">
           <input className="req-name" value={r.name} disabled={noSave} aria-label={t("req.nameLabel")} onChange={(e) => set({ name: e.target.value })} />
-          {!proto.live && <Button icon="code" title={t("snippet.title")} onClick={() => modals.open((close) => <CodeSnippetModal close={close} tab={tab} />)}>{t("snippet.open")}</Button>}
+          {!live && <Button icon="code" title={t("snippet.title")} onClick={() => modals.open((close) => <CodeSnippetModal close={close} tab={tab} />)}>{t("snippet.open")}</Button>}
           <Button icon="floppy-disk" disabled={noSave} title={noSave ? t("viewer.noSave") : "Ctrl+S"} onClick={save}>{t("common.save")}</Button>
         </div>
         <div className="urlbar">
           <Select className="protocol-select" value={r.protocol ?? "http"} options={PROTOCOL_OPTS} disabled={connected} title={connected ? t("proto.locked") : undefined} onChange={switchProtocol} aria-label={t("proto.label")}
             renderValue={(o) => <span className="proto-t">{o.label}</span>} renderOption={(o) => <span className="proto-opt">{o.label}{o.disabled && <em>{t("proto.soon")}</em>}</span>} />
-          {!proto.live && <Select className="method-select" value={r.method} options={METHOD_OPTS} onChange={(method) => set({ method })} aria-label={t("req.method")} renderValue={(o) => <span className={`m-t m-${o.value}`}>{o.label}</span>} renderOption={(o) => <span className={`m-t m-${o.value}`}>{o.label}</span>} />}
-          <VarInput className="url-input" value={r.url} placeholder={proto.live ? t(proto.urlKey) : t("req.urlPlaceholder")} aria-label={t("req.url")} inputRef={urlRef}
+          {!proto.live && !proto.noMethod && <Select className="method-select" value={r.method} options={METHOD_OPTS} onChange={(method) => set({ method })} aria-label={t("req.method")} renderValue={(o) => <span className={`m-t m-${o.value}`}>{o.label}</span>} renderOption={(o) => <span className={`m-t m-${o.value}`}>{o.label}</span>} />}
+          <VarInput className="url-input" value={r.url} placeholder={proto.urlKey ? t(proto.urlKey) : t("req.urlPlaceholder")} aria-label={t("req.url")} inputRef={urlRef}
             onChange={(url) => set({ url })} onBlur={extractQuery} onKeyDown={(e) => { if (e.key === "Enter" && !e.ctrlKey && !e.metaKey) { extractQuery(); send(); } }} />
-          {proto.live ? (
+          {live ? (
             <Button variant={connected ? "danger" : "primary"} icon={connected ? "plug-circle-xmark" : "plug"} id="sendBtn" loading={rt === "connecting"} onClick={() => send()} title="Ctrl+Enter">{t(proto.actionKeys[connected ? 1 : 0])}</Button>
           ) : (
             <Button variant="primary" icon="paper-plane" id="sendBtn" loading={tab.running} onClick={() => send()} title="Ctrl+Enter">{t("req.send")}</Button>
@@ -90,8 +93,10 @@ export function RequestEditor({ tab }) {
         <Tabs items={tabs} value={sub} onChange={(s) => setSub(tab.key, s)} />
         <div className="editor-body">
           {sub === "message" && (r.protocol === "grpc" ? <GrpcMessage tab={tab} /> : <WebSocketMessage tab={tab} />)}
+          {sub === "query" && <GraphqlQuery tab={tab} />}
+          {sub === "schema" && <GraphqlSchema tab={tab} />}
           {sub === "proto" && <GrpcProto tab={tab} />}
-          {sub === "settings" && (r.protocol === "grpc" ? <GrpcSettings tab={tab} /> : <WebSocketSettings tab={tab} />)}
+          {sub === "settings" && (r.protocol === "grpc" ? <GrpcSettings tab={tab} /> : r.protocol === "graphql" ? <GraphqlSettings tab={tab} /> : <WebSocketSettings tab={tab} />)}
           {sub === "params" && <KeyValueEditor rows={r.params} readOnly={ro} onChange={(params) => set({ params })} keyPlaceholder={t("req.parameter")} />}
           {sub === "headers" && <KeyValueEditor rows={r.headers} readOnly={ro} onChange={(headers) => set({ headers })} keySuggestions={proto.live ? undefined : HEADER_SUGG} valueSuggestions={proto.live ? undefined : (k) => HEADER_VALUES[k.toLowerCase()]} keyPlaceholder={r.protocol === "grpc" ? t("grpc.metadataKey") : t("req.header")} />}
           {sub === "body" && <BodyEditor body={r.body} readOnly={ro} onChange={(body) => set({ body })} />}

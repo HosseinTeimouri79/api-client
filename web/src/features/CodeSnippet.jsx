@@ -3,6 +3,7 @@ import { api } from "../api.js";
 import { useStore } from "../store.js";
 import { useT } from "../i18n/index.js";
 import { useKnownVars } from "../lib/vars.jsx";
+import { gqlToHttp } from "../lib/graphql.js";
 import { TARGETS, DEFAULT_TARGET, generate } from "../lib/codegen/index.js";
 import { Modal } from "../components/ui/Modal.jsx";
 import { Button } from "../components/ui/Button.jsx";
@@ -29,7 +30,7 @@ export function CodeSnippetModal({ close, tab }) {
   const [target, setTarget] = useState(read);
   const [substitute, setSubstitute] = useState(true);
   const [inherited, setInherited] = useState(null);
-  const r = tab.req;
+  const r = tab.req.protocol === "graphql" ? gqlToHttp(tab.req) : tab.req; // a GraphQL request is sent as plain HTTP
 
   useEffect(() => {
     if ((r.auth?.type ?? "inherit") !== "inherit" || !tab.collection_id) return;

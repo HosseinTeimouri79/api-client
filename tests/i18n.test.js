@@ -58,7 +58,7 @@ test("every t('key') in the source exists, and every key is used", () => {
     for (const m of s.matchAll(/\b(?:t|tr)\(\s*["`]([\w.${}]+)["`]/g)) used.add(m[1]);
     for (const m of s.matchAll(/["'`]([a-z][A-Za-z]*(?:\.[A-Za-z0-9]+)+)["'`]/g)) literals.add(m[1]);
   }
-  const dynamic = ["role.", "vars.scope.", "rt.status.", "rt.filter.", "rt.ev.", "ws.format.", "grpc.kind."]; // keys built at runtime, e.g. t(`role.${r}`)
+  const dynamic = ["role.", "vars.scope.", "rt.status.", "rt.filter.", "rt.ev.", "ws.format.", "grpc.kind.", "gql.type.", "gql.transport."]; // keys built at runtime, e.g. t(`role.${r}`)
   const missing = [...used].filter((k) => !k.includes("$") && !k.endsWith(".") && !(k in en));
   assert.deepEqual(missing, [], "keys used in the source but absent from en-US");
   const dead = Object.keys(en).filter((k) => !literals.has(k) && !dynamic.some((p) => k.startsWith(p)));
@@ -66,7 +66,7 @@ test("every t('key') in the source exists, and every key is used", () => {
 });
 
 test("no UI text is hard-coded in the components", () => {
-  const allowed = new Set(["Ctrl", "Enter", "API Client", "JSON", "Postman", "Hoppscotch", "GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS", "Ctrl+S", "Ctrl+Enter", "OK", "Raw", "pm.test(...)", "console.log", "Tab", "Esc", "Basic", "Bearer", "API", "Apache", "cURL", "graphql-ws, chat", "syntax = \"proto3\"; ... paste a .proto file here"]);
+  const allowed = new Set(["Ctrl", "Enter", "API Client", "JSON", "Postman", "Hoppscotch", "GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS", "Ctrl+S", "Ctrl+Enter", "OK", "Raw", "pm.test(...)", "console.log", "Tab", "Esc", "Basic", "Bearer", "API", "Apache", "cURL", "graphql-ws, chat", "wss://api.example.com/graphql", "syntax = \"proto3\"; ... paste a .proto file here"]);
   const found = [];
   for (const [file, src] of sources) {
     if (/lib\/(snippets|http|highlight|image|settings)\.js|lib\/codegen|\.test\./.test(file)) continue; // data and code, not UI chrome

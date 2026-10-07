@@ -22,6 +22,17 @@ export const CloseSchema = z.object({
   reason: z.string().max(100).default(""),
 });
 
+/** A WebSocket with the safety options every live protocol over WebSocket needs (address check, size and handshake limits). */
+export function newSocket(url, subprotocols, headers, lim) {
+  return new WebSocket(url, subprotocols, {
+    headers,
+    lookup: safeLookup, // validates the address actually connected to (DNS rebinding)
+    handshakeTimeout: Number.isFinite(lim.timeoutMs) ? lim.timeoutMs : undefined,
+    maxPayload: Number.isFinite(lim.maxBytes) ? lim.maxBytes : 0,
+    followRedirects: false,
+  });
+}
+
 /** Opens a WebSocket. Resolves once the handshake finished; rejects with the reason when it failed. */
 export function connectWebSocket({ request, inherited, data, limits, ctx, vars }) {
   const cfg = WebSocketData.parse(data ?? {});
@@ -30,13 +41,7 @@ export function connectWebSocket({ request, inherited, data, limits, ctx, vars }
   const subprotocols = cfg.subprotocols.split(",").map((s) => s.trim()).filter(Boolean);
   return new Promise((resolve, reject) => {
     let opened = false;
-    const sock = new WebSocket(url, subprotocols, {
-      headers,
-      lookup: safeLookup, // validates the address actually connected to (DNS rebinding)
-      handshakeTimeout: Number.isFinite(lim.timeoutMs) ? lim.timeoutMs : undefined,
-      maxPayload: Number.isFinite(lim.maxBytes) ? lim.maxBytes : 0,
-      followRedirects: false,
-    });
+    const sock = newSocket(url, subprotocols, headers, lim);
     let upgrade = null;
     sock.on("upgrade", (res) => (upgrade = res));
     const show = (buf) => describePayload(Buffer.isBuffer(buf) ? buf : Buffer.from(buf));

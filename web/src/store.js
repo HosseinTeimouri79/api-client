@@ -2,7 +2,7 @@ import { create } from "zustand";
 import { api, ApiError, errorText } from "./api.js";
 import { blankReq, cleanReq } from "./lib/http.js";
 import { clone } from "./lib/utils.js";
-import { isLive, firstTab } from "./lib/protocols.js";
+import { liveTab, firstTab } from "./lib/protocols.js";
 import { followSession } from "./lib/session.js";
 import { toast } from "./components/ui/Toasts.jsx";
 import { prompt, confirm } from "./components/ui/dialogs.jsx";
@@ -328,7 +328,7 @@ export const useStore = create((set, get) => {
     async send(key = get().active) {
       const t = get().tabs.find((x) => x.key === key);
       if (!t || t.kind === "collection" || t.running) return;
-      if (isLive(t.req)) return actions.toggleSession(key);
+      if (liveTab(t)) return actions.toggleSession(key);
       patchTab(key, { running: true });
       let response;
       try {
@@ -411,6 +411,27 @@ export const useStore = create((set, get) => {
       try { grpc = { ...(await api("POST", W("/grpc/describe"), { proto })), forProto: proto }; }
       catch (e) { grpc = { ok: false, error: e.message, services: [], forProto: proto }; }
       patchTab(key, { grpc: { services: grpc.services ?? [], error: grpc.ok ? null : grpc.error, forProto: proto } });
+    },
+    /** GraphQL: which operations the query holds and which one would run (subscriptions open a connection instead of sending). */
+    async analyzeQuery(key) {
+      const t = get().tabs.find((x) => x.key === key);
+      if (!t) return;
+      const { query = "", operationName = "" } = t.req.protocol_data ?? {};
+      const forKey = `${query}\u0000${operationName}`;
+      let gql;
+      try { gql = await api("POST", W("/graphql/analyze"), { query, operationName }); } catch (e) { gql = { ok: false, error: e.message }; }
+      patchTab(key, (x) => ((x.req.protocol_data?.query ?? "") === query && (x.req.protocol_data?.operationName ?? "") === operationName ? { gql: { ...gql, forKey } } : {}));
+    },
+    /** GraphQL: downloads the schema by introspection and keeps its SDL with the tab. */
+    async introspect(key) {
+      const t = get().tabs.find((x) => x.key === key);
+      if (!t) return;
+      patchTab(key, { schema: { loading: true } });
+      try {
+        const { timeoutMs, maxResponseMb } = get().settings.request;
+        const r = await api("POST", W("/graphql/introspect"), { request: cleanReq(t.req), collection_id: t.collection_id, environment_id: get().envId, limits: { timeoutMs, maxResponseBytes: Math.round(maxResponseMb * 1024 * 1024) } });
+        patchTab(key, { schema: r.ok ? { sdl: r.sdl, roots: r.roots } : { error: r.error } });
+      } catch (e) { patchTab(key, { schema: { error: e.message } }); }
     },
     clearEvents(key) { patchTab(key, (x) => (x.rt ? { rt: { ...x.rt, events: [] } } : {})); },
     async disconnect(key) {

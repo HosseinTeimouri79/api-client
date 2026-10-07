@@ -2,7 +2,7 @@ import { useEffect, useRef } from "react";
 import { useStore, activeTab } from "./store.js";
 import { cx } from "./lib/utils.js";
 import { blankReq } from "./lib/http.js";
-import { isLive } from "./lib/protocols.js";
+import { liveTab } from "./lib/protocols.js";
 import { EventLog } from "./features/realtime/EventLog.jsx";
 import { ModalHost } from "./components/ui/Modal.jsx";
 import { Toasts, toast } from "./components/ui/Toasts.jsx";
@@ -41,7 +41,7 @@ function Workspace() {
           <Splitter dir={vertical ? "col" : "row"} onDrag={(d) => { const r = split.current.getBoundingClientRect(); set((s) => ({ editorFrac: Math.min(0.85, Math.max(0.15, s.editorFrac + d / (vertical ? r.width : r.height))) })); }} onEnd={() => LS("editorFrac", useStore.getState().editorFrac)} />
           <div className="pane grow">
             <div className="pane-tools"><IconButton icon={vertical ? "table-columns" : "table-cells-large"} size="sm" label={t("app.switchLayout")} onClick={() => useStore.getState().updateSettings({ ui: { layout: vertical ? "stacked" : "side" } })} /></div>
-            {isLive(tab.req) ? <EventLog tab={tab} /> : <ResponseViewer tab={tab} />}
+            {liveTab(tab) ? <EventLog tab={tab} /> : <ResponseViewer tab={tab} />}
           </div>
         </div>
       ) : (

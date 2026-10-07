@@ -261,3 +261,6 @@ input.mono { font-family: var(--mono); font-size: 12px; }
 .ev-detail { padding: 4px 12px 10px 34px; display: flex; flex-direction: column; align-items: flex-start; gap: 6px; } .ev-detail .raw { align-self: stretch; margin: 0; max-height: 260px; overflow: auto; }
 .rt-state.s-closed.bad i { background: var(--err); } .kind { font-style: normal; font-size: 11px; color: var(--muted); margin-inline-start: 6px; }
 .proto-src { flex: 1; min-height: 240px; } .note.err { background: color-mix(in srgb, var(--err) 14%, transparent); color: var(--err); white-space: pre-wrap; } input.short { max-width: 140px; }
+.gql-query { flex: 1; min-height: 200px; } .gql-vars { min-height: 80px; } .gql-sdl { margin: 0; overflow: auto; flex: 1; min-height: 200px; white-space: pre; }
+.gql-type { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .03em; border-radius: 4px; padding: 2px 7px; background: var(--accent-soft); color: var(--accent); } .gql-mutation { background: color-mix(in srgb, var(--warn) 20%, transparent); color: var(--warn); } .gql-subscription { background: color-mix(in srgb, var(--ok) 18%, transparent); color: var(--ok); }
+.m-GQL { color: var(--accent); }
