@@ -69,7 +69,10 @@ What that means in practice:
 
 - Workspaces shared with role-based access (owner, admin, editor, viewer), member picker, audit log.
 - Collections and sub-collections with drag and drop, duplicate, sort, move to root and **descriptions**.
-- Every common method and body type: JSON, text, raw, form URL-encoded, multipart (text fields).
+- **HTTP** with every method (GET, POST, PUT, PATCH, DELETE, HEAD, OPTIONS, TRACE, CONNECT) and body type: JSON, text, raw,
+  form URL-encoded, multipart (text fields). `TRACE` and `CONNECT` are sent without a body. For `CONNECT` the URL is the proxy
+  and the tunnel target is the URL path (`https://proxy:3128/example.com:443`); the proxy's reply is shown and the tunnel is closed.
+- Every request has a `protocol` (HTTP today; WebSocket, gRPC, GraphQL, SSE, TCP, UDP, MQTT and AMQP are being added one by one).
 - Query params, headers with autocomplete, **Bearer / Basic / API-key** auth with inheritance from collections.
 - **Environments** and variables with five scopes: runtime > request > collection > environment > workspace.
 - Response viewer: JSON tree with search, raw, sandboxed HTML preview, headers, "what was actually sent", binary download.
@@ -583,7 +586,7 @@ tests/           unit, API and end-to-end tests
 ### Data model
 
 `users` (unique username, `is_admin`, `disabled`, `token_version`, avatar, `locale`, `settings`) · `workspaces` (variables) ·
-`workspace_members` (role) · `collections` (parent tree, description, variables, auth, pre/post scripts) · `requests` (method,
+`workspace_members` (role) · `collections` (parent tree, description, variables, auth, pre/post scripts) · `requests` (protocol, protocol data, method,
 url, params, headers, body, auth, variables, scripts, description) · `environments` · `history` (per user) · `audit_log` ·
 `settings` (instance settings such as registration) · `_migrations`.
 

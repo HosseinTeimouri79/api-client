@@ -11,6 +11,19 @@ The version is shown in **Settings → General → About** and returned by `GET 
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-10-08
+
+First step of multi-protocol support.
+
+### Added
+- HTTP `TRACE` and `CONNECT` methods. Both are sent without a body; for `CONNECT` the URL is the proxy and the tunnel
+  target is the URL path (or the URL's host:port), and the proxy's reply is reported.
+- Every request now has a `protocol` and free-form `protocol_data` (migration 9). Only `http` is accepted for now; the list of
+  planned protocols lives in `src/protocols/index.js`.
+
+### Changed
+- Postman / Hoppscotch export leaves non-HTTP requests out and says so in the warnings.
+
 ## [1.0.0] - 2026-10-08
 
 First versioned release.
