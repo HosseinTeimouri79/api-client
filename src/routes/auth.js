@@ -48,7 +48,11 @@ export function authRouter(db) {
         password: z.string().min(1).max(200),
       })
       .parse(req.body);
-    const u = db.prepare("SELECT * FROM users WHERE username=?").get(b.username);
+    const u = db
+      .prepare(
+        "SELECT id,username,name,is_admin,disabled,token_version,avatar_v,locale,password_hash FROM users WHERE username=?",
+      )
+      .get(b.username);
     const ok = bcrypt.compareSync(
       b.password,
       u?.password_hash ??

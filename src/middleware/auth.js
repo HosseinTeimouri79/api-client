@@ -13,11 +13,17 @@ export const signToken = (user) =>
   jwt.sign({ sub: user.id, v: user.token_version ?? 0 }, config.jwtSecret, {
     expiresIn: "7d",
   });
+// avatar_v (upload time) doubles as the cache-busting version in the URL.
+export const avatarUrl = (id, v) => (v ? `/api/users/${id}/avatar?v=${v}` : null);
+export const withAvatar = (rows) =>
+  rows.map(({ avatar_v, ...r }) => ({ ...r, avatar: avatarUrl(r.id, avatar_v) }));
 export const publicUser = (u) => ({
   id: u.id,
   username: u.username,
   name: u.name,
   is_admin: !!u.is_admin,
+  avatar: avatarUrl(u.id, u.avatar_v),
+  locale: u.locale ?? null,
 });
 export const setCookie = (res, user) =>
   res.cookie("token", signToken(user), {
@@ -37,7 +43,7 @@ export function authenticate(db) {
       const { sub, v } = jwt.verify(token, config.jwtSecret);
       const user = db
         .prepare(
-          "SELECT id,username,name,is_admin,disabled,token_version FROM users WHERE id=?",
+          "SELECT id,username,name,is_admin,disabled,token_version,avatar_v,locale FROM users WHERE id=?",
         )
         .get(sub);
       if (!user || user.disabled || (v ?? 0) !== user.token_version)

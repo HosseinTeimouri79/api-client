@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { z } from "zod";
 import { uid, j, parse } from "../db/index.js";
-import { HttpError, requireWorkspace, audit } from "../middleware/auth.js";
+import { HttpError, requireWorkspace, audit, withAvatar } from "../middleware/auth.js";
 import { ROLES, outranks, can } from "../services/permissions.js";
 
 const kvList = z
@@ -78,11 +78,13 @@ export function workspaceRouter(db) {
   // ---- members / sharing ----
   r.get("/:wid/members", W("workspace:read"), (req, res) =>
     res.json(
-      db
-        .prepare(
-          "SELECT u.id,u.name,u.username,m.role FROM workspace_members m JOIN users u ON u.id=m.user_id WHERE m.workspace_id=? ORDER BY m.role,u.name",
-        )
-        .all(req.wid),
+      withAvatar(
+        db
+          .prepare(
+            "SELECT u.id,u.name,u.username,u.avatar_v,m.role FROM workspace_members m JOIN users u ON u.id=m.user_id WHERE m.workspace_id=? ORDER BY m.role,u.name",
+          )
+          .all(req.wid),
+      ),
     ),
   );
   // Everyone who is not yet in this workspace, for the "add people" picker (searchable, capped).
@@ -94,14 +96,16 @@ export function workspaceRouter(db) {
       })
       .parse(req.query);
     res.json(
-      db
-        .prepare(
-          `SELECT id,username,name FROM users
+      withAvatar(
+        db
+          .prepare(
+            `SELECT id,username,name,avatar_v FROM users
            WHERE id NOT IN (SELECT user_id FROM workspace_members WHERE workspace_id=?)
              AND (?='' OR instr(lower(username),lower(?))>0 OR instr(lower(name),lower(?))>0)
            ORDER BY name COLLATE NOCASE, username LIMIT ?`,
-        )
-        .all(req.wid, q, q, q, limit),
+          )
+          .all(req.wid, q, q, q, limit),
+      ),
     );
   });
   r.post("/:wid/members", W("members:manage"), (req, res) => {

@@ -11,8 +11,8 @@ export async function api(method, path, body) {
   try {
     res = await fetch("/api" + path, {
       method,
-      headers: { "Content-Type": "application/json", "X-Requested-With": "api-client" },
-      body: body === undefined ? undefined : JSON.stringify(body),
+      headers: { "Content-Type": body instanceof Blob ? body.type : "application/json", "X-Requested-With": "api-client" },
+      body: body === undefined ? undefined : body instanceof Blob ? body : JSON.stringify(body),
     });
   } catch {
     throw new ApiError(0, "Cannot reach the server. Check your connection.");

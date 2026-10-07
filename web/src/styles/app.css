@@ -218,3 +218,7 @@ mark { background: color-mix(in srgb, var(--warn) 40%, transparent); color: inhe
 input.mono { font-family: var(--mono); font-size: 12px; }
 .admin-search input:not([type=checkbox]):not([type=file]) { padding-left: 32px; }
 @media (max-width: 640px) { .atable th:nth-child(3), .atable td:nth-child(3), .atable th:nth-child(4), .atable td:nth-child(4) { display: none; } .atable td { padding: 9px 6px; } }
+
+/* ===== settings ===== */
+.settings-in { max-width: 680px; } .settings-sec { display: flex; flex-direction: column; gap: 10px; padding-bottom: 16px; border-bottom: 1px solid var(--border); } .settings-sec:last-child { border: 0; padding-bottom: 0; }
+.photo-row { gap: 18px; align-items: center; } img.avatar { display: block; }

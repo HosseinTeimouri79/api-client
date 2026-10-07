@@ -38,9 +38,10 @@ export function TopBar() {
         </>
       )}
       <IconButton icon={theme === "dark" ? "sun" : "moon"} label="Toggle theme" onClick={() => setTheme(theme === "dark" ? "light" : "dark")} />
-      <button ref={userBtn} className="user-btn" aria-label="Account" onClick={() => userMenu.show(userBtn.current)}><Avatar name={user.name} size={30} /></button>
+      <button ref={userBtn} className="user-btn" aria-label="Account" onClick={() => userMenu.show(userBtn.current)}><Avatar name={user.name} src={user.avatar} size={30} /></button>
       <Menu {...userMenu} onClose={userMenu.hide} placement="bottom-end" items={[
         { label: `${user.name} (@${user.username})`, icon: "circle-user", disabled: true },
+        { label: "Settings", icon: "gear", onClick: () => set({ view: "settings" }) },
         ...(user.is_admin ? [{ label: "Admin panel", icon: "user-shield", onClick: () => set({ view: "admin" }) }] : []),
         "-",
         { label: "Sign out", icon: "right-from-bracket", onClick: logout },

@@ -8,6 +8,7 @@ import { authenticate, csrfGuard, HttpError } from "./middleware/auth.js";
 import { authRouter } from "./routes/auth.js";
 import { workspaceRouter } from "./routes/workspaces.js";
 import { contentRouter } from "./routes/content.js";
+import { meRouter, usersRouter } from "./routes/me.js";
 import { adminRouter } from "./routes/admin.js";
 import { interopRouter } from "./routes/interop.js";
 
@@ -41,6 +42,8 @@ export function createApp(db) {
   const api = express.Router();
   api.use("/auth", authRouter(db));
   api.use(authenticate(db), csrfGuard);
+  api.use("/me", meRouter(db));
+  api.use("/users", usersRouter(db));
   api.use("/admin", adminRouter(db));
   api.use("/workspaces", workspaceRouter(db));
   api.use("/workspaces/:wid", contentRouter(db));

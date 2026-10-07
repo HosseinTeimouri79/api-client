@@ -65,7 +65,7 @@ export function MembersModal({ close }) {
         <div className="members">
           {members?.map((m) => (
             <div className="member" key={m.id}>
-              <Avatar name={m.name} size={34} />
+              <Avatar name={m.name} src={m.avatar} size={34} />
               <div className="grow"><b>{m.name}</b><div className="muted">@{m.username}</div></div>
               {m.role === "owner" || !c.admin || m.id === user.id ? <span className="role-badge">{m.role}</span> : (
                 <Select value={m.role} onChange={(r) => { setMembers(members.map((x) => (x.id === m.id ? { ...x, role: r } : x))); changeRole(m, r); }} options={roles.map((r) => ({ value: r, label: r }))} aria-label={`Role of ${m.name}`} size="sm" />

@@ -6,6 +6,7 @@ import {
   HttpError,
   audit,
   requireAdmin,
+  withAvatar,
   setCookie,
   signToken,
 } from "../middleware/auth.js";
@@ -59,16 +60,17 @@ export function adminRouter(db) {
       total: db
         .prepare(`SELECT COUNT(*) n FROM users WHERE ${where}`)
         .get(q, q, q).n,
-      users: db
+      users: withAvatar(
+        db
         .prepare(
-          `SELECT id,username,name,is_admin,disabled,created_at,
+          `SELECT id,username,name,avatar_v,is_admin,disabled,created_at,
                   (SELECT COUNT(*) FROM workspaces w WHERE w.owner_id=users.id) owned_workspaces,
                   (SELECT COUNT(*) FROM workspace_members m WHERE m.user_id=users.id) workspaces
            FROM users WHERE ${where}
            ORDER BY created_at DESC, rowid DESC LIMIT ? OFFSET ?`,
         )
-        .all(q, q, q, limit, offset)
-        .map((u) => ({ ...u, is_admin: !!u.is_admin, disabled: !!u.disabled })),
+        .all(q, q, q, limit, offset),
+      ).map((u) => ({ ...u, is_admin: !!u.is_admin, disabled: !!u.disabled })),
     });
   });
 

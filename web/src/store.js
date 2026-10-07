@@ -65,6 +65,8 @@ export const useStore = create((set, get) => {
       set({ workspaces: await api("GET", "/workspaces") });
       await actions.openWorkspace(w.id);
     },
+    /** Updates the signed-in user from a profile response (name, avatar…). */
+    setUser(user) { set({ user }); },
     setTheme(theme) { LS.set("theme", theme); document.documentElement.dataset.theme = theme; set({ theme }); },
     refreshEnvs: guard(async () => {
       const [envs, ws] = await Promise.all([api("GET", W("/environments")), api("GET", W())]);

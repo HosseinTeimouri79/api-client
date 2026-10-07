@@ -15,6 +15,7 @@ import { RequestTabs } from "./features/RequestTabs.jsx";
 import { RequestEditor } from "./features/RequestEditor.jsx";
 import { CollectionSettings } from "./features/CollectionSettings.jsx";
 import { AdminPanel } from "./features/AdminPanel.jsx";
+import { SettingsPage } from "./features/SettingsPage.jsx";
 import { Console } from "./features/Console.jsx";
 
 const LS = (k, v) => { try { localStorage.setItem(k, String(v)); } catch { /* private mode */ } };
@@ -54,6 +55,8 @@ function Shell() {
       <TopBar />
       {view === "admin" && user.is_admin ? (
         <AdminPanel />
+      ) : view === "settings" ? (
+        <SettingsPage />
       ) : ws ? (
         <div className="body">
           <Sidebar />
@@ -63,7 +66,7 @@ function Shell() {
       ) : (
         <div className="empty body"><div><Icon name="briefcase" className="big" /><h2>Welcome</h2><p className="muted">Create a workspace to get started.</p><Button variant="primary" icon="plus" onClick={createWorkspace}>New workspace</Button></div></div>
       )}
-      {ws && view !== "admin" && <Console />}
+      {ws && view === "app" && <Console />}
     </div>
   );
 }
@@ -74,7 +77,7 @@ export default function App() {
   useEffect(() => {
     const key = (e) => {
       const s = useStore.getState(), mod = e.ctrlKey || e.metaKey;
-      if (!s.ws || s.view === "admin" || document.querySelector(".modal")) return;
+      if (!s.ws || s.view !== "app" || document.querySelector(".modal")) return;
       const k = e.key.toLowerCase();
       if (mod && e.key === "Enter") { e.preventDefault(); s.send(); }
       else if (mod && k === "s") { e.preventDefault(); s.save(); }

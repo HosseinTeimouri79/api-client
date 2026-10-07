@@ -65,4 +65,15 @@ export const migrations = [
       );
     },
   },
+  {
+    // Self-service profile: avatar image (re-encoded by the client, validated by magic bytes on upload),
+    // `avatar_v` = upload time, used as the cache-busting version and as the "has avatar" flag, and UI language.
+    id: 4,
+    name: "profile",
+    sql: `
+    ALTER TABLE users ADD COLUMN avatar BLOB;
+    ALTER TABLE users ADD COLUMN avatar_v INTEGER;
+    ALTER TABLE users ADD COLUMN locale TEXT;
+  `,
+  },
 ];

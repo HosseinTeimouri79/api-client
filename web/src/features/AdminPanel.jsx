@@ -122,7 +122,7 @@ function Users({ me, reload }) {
                 const self = u.id === me.id;
                 return (
                   <tr key={u.id} className={u.disabled ? "off" : undefined}>
-                    <td><div className="row"><Avatar name={u.name} size={30} /><div><b>{u.name}</b>{self && <span className="muted"> (you)</span>}<div className="muted" dir="ltr">@{u.username}</div></div></div></td>
+                    <td><div className="row"><Avatar name={u.name} src={u.avatar} size={30} /><div><b>{u.name}</b>{self && <span className="muted"> (you)</span>}<div className="muted" dir="ltr">@{u.username}</div></div></div></td>
                     <td><span className="row wrap">{u.is_admin && <span className="role-badge admin-badge">admin</span>}{u.disabled && <span className="role-badge off-badge">disabled</span>}{!u.is_admin && !u.disabled && <span className="muted">active</span>}</span></td>
                     <td className="num">{u.workspaces}</td>
                     <td className="muted">{day(u.created_at)}</td>

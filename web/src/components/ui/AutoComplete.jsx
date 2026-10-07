@@ -115,8 +115,8 @@ export function AutoComplete({
 export const personOption = (u) => ({ value: u.id, label: u.name || u.username, description: `@${u.username}`, user: u });
 export const renderPerson = (o, { query } = {}) => (
   <>
-    <Avatar name={o.user?.name || o.label} size={26} />
+    <Avatar name={o.user?.name || o.label} src={o.user?.avatar} size={26} />
     <span className="opt-main"><span className="opt-label">{o.label}</span><span className="opt-desc">{o.description}</span></span>
   </>
 );
-export const renderPersonChip = (o) => (<><Avatar name={o.label} size={18} /><span className="chip-label">{o.label}</span></>);
+export const renderPersonChip = (o) => (<><Avatar name={o.label} src={o.user?.avatar} size={18} /><span className="chip-label">{o.label}</span></>);
