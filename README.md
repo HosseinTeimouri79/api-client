@@ -265,6 +265,10 @@ All configuration is through environment variables (`.env.example` lists the com
 | `MAX_REQUEST_TIMEOUT_MS`      | `600000` (10 min)      | Ceiling for the per-user timeout in Settings (`0` lifts the ceiling).                           |
 | `MAX_RESPONSE_BYTES_LIMIT`    | `104857600` (100 MB)   | Ceiling for the per-user response size in Settings (`0` lifts the ceiling).                     |
 | `CONNECT_ATTEMPT_TIMEOUT_MS`  | `5000`                 | Connect budget per resolved address.                                                            |
+| `MAX_SESSIONS_PER_USER`       | `10`                   | Open live connections (WebSocket, ...) one user may hold at the same time.                      |
+| `MAX_SESSIONS_TOTAL`          | `200`                  | Open live connections on the whole server.                                                      |
+| `SESSION_IDLE_MS`             | `900000` (15 min)      | A live connection nobody watches or uses for this long is closed.                               |
+| `SESSION_EVENT_LIMIT`         | `5000`                 | Events kept per live connection (what a reconnecting browser can still replay).                 |
 | `CHROME_PATH`                 | auto-detected          | Chromium/Chrome binary for the end-to-end tests.                                                |
 
 **Per-user limits.** Each user can set a request timeout and maximum response size under **Settings → General → Request**.
@@ -309,6 +313,30 @@ variables are never substituted into generated code snippets.
 ### Code snippets
 
 The **Code** button next to Save generates code for the request exactly as edited (see [Code snippets](#code-snippets)).
+
+### Protocols
+
+Pick the protocol in the box left of the URL. HTTP sends one request and shows one response; the other protocols keep a
+connection open (a *session*) and show everything that happens on it in the right-hand pane. Protocols that are not built yet
+are listed as "soon". Requests of every protocol are saved in collections like any other; Postman and Hoppscotch exports leave
+non-HTTP requests out and say so in the warnings.
+
+**HTTP.** GET, POST, PUT, PATCH, DELETE, HEAD, OPTIONS, TRACE and CONNECT. `TRACE` and `CONNECT` are sent without a body.
+For `CONNECT` the URL is the proxy and the tunnel target is its path, e.g. `http://proxy:3128/example.com:443`; the proxy's
+answer is shown and the tunnel is closed again.
+
+**WebSocket.** Connect, Send, Ping, Pong and Close.
+
+- The URL can be `ws://`, `wss://`, `http://` or `https://` (mapped to `ws`/`wss`); query params, headers and auth work as in HTTP.
+  Subprotocols go in the **Settings** tab (comma separated; the server picks one, shown next to the status).
+- **Message** tab: compose text or binary (base64 / hex) messages with `{{variables}}`; **Ctrl+Enter** sends. Ping and Pong
+  take an optional payload (up to 125 bytes); the browser sends a pong for you when the server pings. **Close** takes a code
+  (1000 or 3000–4999) and a reason. The draft is saved with the request.
+- The right pane lists connection events, messages in both directions (JSON is pretty-printed when opened), pings, pongs and the
+  close code, with filters (all / sent / received / events), a **Handshake** tab with the response headers, and Clear.
+- A connection ends when you disconnect, close the tab, switch workspace or sign out, and after `SESSION_IDLE_MS` without
+  anyone watching it. Viewers may connect (like running an HTTP request). Private addresses are blocked like in HTTP unless
+  `ALLOW_PRIVATE_TARGETS=true`.
 
 ### History and console
 
@@ -543,6 +571,7 @@ curl -s http://localhost:3000/api/workspaces -H "authorization: Bearer $TOKEN"
 | Workspaces | `GET`/`POST /workspaces`, `GET`/`PATCH`/`DELETE /workspaces/:wid`, members, audit, environments                            |
 | Content    | `GET /workspaces/:wid/tree`, collections (`POST`, `PATCH`, `DELETE`, duplicate, scripts, auth), requests (`POST`, `PUT`, move, duplicate, `DELETE`) |
 | Running    | `POST /workspaces/:wid/run` (with optional `limits`), `GET`/`DELETE /workspaces/:wid/history`                              |
+| Live       | `POST /workspaces/:wid/sessions` (open a connection), `GET .../sessions/:id/events?since=` (Server-Sent Events), `POST .../sessions/:id/act` (`send`, `ping`, `pong`, `close`), `DELETE .../sessions/:id`, `GET .../sessions` |
 | Interop    | `GET /workspaces/:wid/export?format=postman\|hoppscotch&collection=…\|environment=…`, `POST /workspaces/:wid/import`        |
 | Admin      | `/admin/stats`, `/admin/users` (list, create, `PATCH`, password, `DELETE`), `/admin/workspaces`, `/admin/audit`, `/admin/settings` |
 | Health     | `GET /healthz`                                                                                                             |
@@ -568,8 +597,9 @@ src/
   app.js server.js config.js
   db/            index.js (open + migrate)  migrations.js (append-only)
   middleware/    auth.js (authenticate, csrfGuard, requireWorkspace, requireAdmin, audit)
-  routes/        auth.js me.js admin.js workspaces.js content.js interop.js
-  services/      permissions.js variables.js executor.js runner.js scriptEngine.js ssrf.js
+  routes/        auth.js me.js admin.js workspaces.js content.js interop.js sessions.js
+  services/      permissions.js variables.js executor.js runner.js scriptEngine.js ssrf.js sessions.js
+  protocols/     index.js (protocol list) common.js websocket.js (one module per live protocol)
                  interop.js (Postman/Hoppscotch) settings.js userSettings.js locales.js
 web/             index.html vite.config.js
   src/           main.jsx App.jsx store.js api.js
@@ -686,9 +716,10 @@ Current version: **1.0.0**.
 ## Roadmap
 
 Not yet available: file upload in multipart bodies, inviting people who have no account yet, share-by-link, XML pretty-printing,
-WebSocket / GraphQL / gRPC requests, a collection runner, mock servers, OpenAPI import, and per-secret encryption. The code is
-structured so these can be added without rewriting the core: a `protocol` column and a new executor for other protocols, a
-runner route on top of `runner.js` (which already returns test results), and new routes and services reading the same tables.
+a collection runner, mock servers, OpenAPI import, and per-secret encryption. gRPC, GraphQL, SSE, TCP, UDP, MQTT and AMQP are
+being added one protocol at a time (see the changelog). The code is structured so these can be added without rewriting the
+core: a `protocol` column, one module per live protocol in `src/protocols/` behind the session manager, a runner route on top of
+`runner.js` (which already returns test results), and new routes and services reading the same tables.
 
 ---
 

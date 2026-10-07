@@ -11,6 +11,16 @@ The version is shown in **Settings → General → About** and returned by `GET 
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-10-08
+
+### Added
+- **WebSocket** requests: Connect, Send (text, base64 or hex), Ping, Pong and Close, with subprotocols, headers, auth,
+  variables and a live log of events, messages and the handshake.
+- Live sessions: a protocol-independent session manager (event log with replay over Server-Sent Events, per-user and global
+  limits, idle timeout), used by WebSocket and by the protocols that follow. API: `/workspaces/:wid/sessions`.
+- Protocol picker next to the URL; the sidebar and tabs show the protocol instead of a method for live protocols.
+- Settings for the operator: `MAX_SESSIONS_PER_USER`, `MAX_SESSIONS_TOTAL`, `SESSION_IDLE_MS`, `SESSION_EVENT_LIMIT`.
+
 ## [1.1.0] - 2026-10-08
 
 First step of multi-protocol support.
