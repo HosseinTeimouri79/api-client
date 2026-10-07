@@ -7,12 +7,17 @@ import { cx } from "../../lib/utils.js";
 export function Popover({ anchor, open, onClose, matchWidth, placement = "bottom-start", className, children, maxHeight = 320, ignore }) {
   const ref = useRef(null);
   const [pos, setPos] = useState(null);
+  const last = useRef(null); // { anchor, r }: last real geometry of the anchor
 
   const place = () => {
     const el = ref.current;
     if (!el || !anchor) return;
     const isPoint = !("getBoundingClientRect" in anchor);
-    const r = isPoint ? { left: anchor.x, right: anchor.x, top: anchor.y, bottom: anchor.y, width: 0 } : anchor.getBoundingClientRect();
+    let r = isPoint ? { left: anchor.x, right: anchor.x, top: anchor.y, bottom: anchor.y, width: 0 } : anchor.getBoundingClientRect();
+    // An anchor that is hidden (display:none once the pointer leaves its row) or unmounted measures as all zeros;
+    // trusting that would fling the popover to the top-left corner, so keep using the last real position.
+    if (!isPoint && (!anchor.isConnected || (r.width === 0 && r.height === 0))) r = last.current?.anchor === anchor ? last.current.r : r;
+    else last.current = { anchor, r };
     const w = matchWidth ? r.width : undefined;
     const pw = w ?? el.offsetWidth,
       ph = Math.min(el.scrollHeight, maxHeight);
