@@ -61,3 +61,19 @@ export function assertPublicHost(urlStr) {
       { code: "SSRF_BLOCKED" },
     );
 }
+
+// For clients that cannot take a `lookup` hook (gRPC): resolves the name once, checks every address and returns the one to
+// connect to, so the connection goes to exactly the address that was validated.
+export async function resolvePublicAddress(hostname) {
+  const host = hostname.replace(/^\[|\]$/g, "");
+  if (net.isIP(host)) {
+    if (!config.allowPrivateTargets && isPrivateIp(host))
+      throw Object.assign(new Error(`Blocked: ${host} is a private/internal address (SSRF protection)`), { code: "SSRF_BLOCKED" });
+    return { address: host, family: net.isIPv6(host) ? 6 : 4 };
+  }
+  const addrs = await dns.promises.lookup(host, { all: true });
+  const ok = addrs.filter((a) => config.allowPrivateTargets || !isPrivateIp(a.address));
+  if (!ok.length)
+    throw Object.assign(new Error(`Blocked: ${host} resolves to a private/internal address (SSRF protection)`), { code: "SSRF_BLOCKED" });
+  return ok[0];
+}

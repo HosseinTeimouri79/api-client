@@ -259,3 +259,5 @@ input.mono { font-family: var(--mono); font-size: 12px; }
 .ev-badge { flex: none; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .03em; color: var(--muted); border: 1px solid var(--border); border-radius: 4px; padding: 0 5px; } .ev-badge.bin { color: var(--warn); }
 .ev-text { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: var(--mono); font-size: 12px; } .ev-size, .ev-time { flex: none; color: var(--muted); font-size: 11px; }
 .ev-detail { padding: 4px 12px 10px 34px; display: flex; flex-direction: column; align-items: flex-start; gap: 6px; } .ev-detail .raw { align-self: stretch; margin: 0; max-height: 260px; overflow: auto; }
+.rt-state.s-closed.bad i { background: var(--err); } .kind { font-style: normal; font-size: 11px; color: var(--muted); margin-inline-start: 6px; }
+.proto-src { flex: 1; min-height: 240px; } .note.err { background: color-mix(in srgb, var(--err) 14%, transparent); color: var(--err); white-space: pre-wrap; } input.short { max-width: 140px; }

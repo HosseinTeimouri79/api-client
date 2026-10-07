@@ -2,8 +2,8 @@
 // Keep `implemented` in line with src/protocols/index.js (tests/protocols.test.js checks it).
 export const PROTOCOLS = [
   { id: "http", label: "HTTP", tag: "HTTP", icon: "globe", live: false, implemented: true },
-  { id: "websocket", label: "WebSocket", tag: "WS", icon: "plug", live: true, implemented: true, urlKey: "ws.urlPlaceholder", firstTab: "message" },
-  { id: "grpc", label: "gRPC", tag: "gRPC", icon: "diagram-project", live: true, implemented: false },
+  { id: "websocket", label: "WebSocket", tag: "WS", icon: "plug", live: true, implemented: true, urlKey: "ws.urlPlaceholder", firstTab: "message", actionKeys: ["rt.connect", "rt.disconnect"], detailsKey: "rt.handshake" },
+  { id: "grpc", label: "gRPC", tag: "gRPC", icon: "diagram-project", live: true, implemented: true, urlKey: "grpc.urlPlaceholder", firstTab: "message", actionKeys: ["grpc.invoke", "grpc.cancel"], detailsKey: "rt.metadata" },
   { id: "graphql", label: "GraphQL", tag: "GQL", icon: "circle-nodes", live: false, implemented: false },
   { id: "sse", label: "SSE", tag: "SSE", icon: "tower-broadcast", live: true, implemented: false },
   { id: "tcp", label: "TCP", tag: "TCP", icon: "network-wired", live: true, implemented: false },
@@ -18,4 +18,5 @@ export const isLive = (req) => !!protocolOf(req?.protocol).live;
 export const PROTOCOL_DEFAULTS = {
   http: {},
   websocket: { subprotocols: "", message: "", messageFormat: "text" },
+  grpc: { proto: "", service: "", method: "", message: "{}", tlsInsecure: false, deadlineMs: 0 },
 };

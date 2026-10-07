@@ -6,6 +6,7 @@ import { Button } from "../../components/ui/Button.jsx";
 import { Icon, Spinner } from "../../components/ui/Icon.jsx";
 import { toast } from "../../components/ui/Toasts.jsx";
 import { highlightJson } from "../../lib/highlight.jsx";
+import { protocolOf } from "../../lib/protocols.js";
 import { t as tr, useT } from "../../i18n/index.js";
 
 const copy = (text) => navigator.clipboard?.writeText(text).then(() => toast(tr("common.copied"), "ok"), () => toast(tr("common.copyFailed"), "error"));
@@ -27,7 +28,7 @@ function Entry({ e }) {
   const message = isMessage(e) || e.type === "ping" || e.type === "pong";
   const json = isMessage(e) && !e.binary ? pretty(e.data) : null;
   const label = t(`rt.ev.${e.type}`);
-  const head = e.type === "closed" ? [e.code && `${e.code}`, e.reason].filter(Boolean).join(" ") || e.reason : e.type === "error" ? e.message : e.type === "open" ? e.url : e.type === "closing" ? `${e.code} ${e.reason}`.trim() : null;
+  const head = e.text !== undefined ? e.text : e.type === "closed" ? [e.code && `${e.code}`, e.reason].filter(Boolean).join(" ") || e.reason : e.type === "error" ? e.message : e.type === "open" ? e.url : e.type === "closing" ? `${e.code} ${e.reason}`.trim() : null;
   const text = message ? (e.binary ? e.data : e.data) : head;
   return (
     <div className={cx("ev", `ev-${e.type}`, e.direction && `ev-${e.direction}`)}>
@@ -64,18 +65,22 @@ export function EventLog({ tab }) {
   const events = rt?.events ?? [];
   const shown = useMemo(() => events.filter(KINDS[kind]), [events, kind]);
   const opened = events.find((e) => e.type === "open");
+  const withHeaders = events.filter((e) => Array.isArray(e.headers));
+  const last = events.at(-1);
+  const bad = status === "closed" && last?.type === "closed" && last.ok === false;
   useEffect(() => {
     const el = box.current;
     if (el && stick.current) el.scrollTop = el.scrollHeight;
   }, [shown.length, view]);
   const bar = [
     { id: "events", label: t("rt.messages"), badge: events.filter(isMessage).length || false },
-    { id: "handshake", label: t("rt.handshake") },
+    { id: "handshake", label: t(protocolOf(tab.req.protocol).detailsKey ?? "rt.handshake") },
   ];
   return (
     <div className="resp rt-log">
       <div className="resp-meta">
-        <span className={cx("rt-state", `s-${status}`)}><i />{t(`rt.status.${status}`)}</span>
+        <span className={cx("rt-state", `s-${status}`, bad && "bad")}><i />{t(`rt.status.${status}`)}</span>
+        {bad && <span className="err">{last.reason}</span>}
         {status === "connecting" && <Spinner />}
         {opened?.protocol && <span className="muted">{t("rt.subprotocol", { name: opened.protocol })}</span>}
         {rt?.error && <span className="err">{rt.error.message}</span>}
@@ -97,10 +102,13 @@ export function EventLog({ tab }) {
       ) : (
         <div className="stack pad">
           {rt?.error?.status && <div className="note"><Icon name="circle-info" /> {rt.error.message}</div>}
-          {opened ? (<><div className="sent-line"><code>{opened.url}</code><span className="ok">{opened.status}</span></div>
-            <table className="htable"><tbody>{opened.headers.map((h, i) => <tr key={i}><th>{h.key}</th><td>{h.value}</td></tr>)}</tbody></table></>) :
-            rt?.error?.headers?.length ? <table className="htable"><tbody>{rt.error.headers.map((h, i) => <tr key={i}><th>{h.key}</th><td>{h.value}</td></tr>)}</tbody></table> :
-            <div className="muted">{t("rt.noHandshake")}</div>}
+          {withHeaders.map((e) => (
+            <div key={e.seq} className="stack">
+              <div className="sent-line"><b>{t(`rt.ev.${e.type}`)}</b>{e.url && <code>{e.url}</code>}{e.status ? <span className="ok">{e.status}</span> : null}</div>
+              {e.headers.length ? <table className="htable"><tbody>{e.headers.map((h, i) => <tr key={i}><th>{h.key}</th><td>{h.value}</td></tr>)}</tbody></table> : <div className="muted">{t("rt.noMetadata")}</div>}
+            </div>
+          ))}
+          {!withHeaders.length && (rt?.error?.headers?.length ? <table className="htable"><tbody>{rt.error.headers.map((h, i) => <tr key={i}><th>{h.key}</th><td>{h.value}</td></tr>)}</tbody></table> : <div className="muted">{t("rt.noHandshake")}</div>)}
         </div>
       )}
     </div>

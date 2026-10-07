@@ -6,9 +6,10 @@ import { sessionContext } from "../services/runner.js";
 import { RequestSchema } from "./content.js";
 import { IMPLEMENTED } from "../protocols/index.js";
 import { connectWebSocket } from "../protocols/websocket.js";
+import { connectGrpc, describeProto } from "../protocols/grpc.js";
 
 // One connector per live protocol: (context) -> Promise<driver>
-const CONNECTORS = { websocket: connectWebSocket };
+const CONNECTORS = { websocket: connectWebSocket, grpc: connectGrpc };
 
 const toHttp = (e) => (e instanceof SessionError ? new HttpError(e.status, e.message) : e);
 
@@ -44,7 +45,7 @@ export function sessionsRouter(db, sessions = new SessionManager()) {
     } catch (e) {
       if (e instanceof SessionError || e instanceof z.ZodError) throw e;
       // connecting failed: a normal outcome the UI shows, not a server error
-      return res.status(200).json({ ok: false, error: { phase: "network", message: e.message, status: e.status ?? null, headers: Object.entries(e.headers ?? {}).map(([key, value]) => ({ key, value: String(value) })) } });
+      return res.status(200).json({ ok: false, error: { phase: e.phase ?? "network", message: e.message, status: e.status ?? null, headers: Object.entries(e.headers ?? {}).map(([key, value]) => ({ key, value: String(value) })) } });
     }
     audit(db, req, "session.open", `${protocol} ${s.label}`.slice(0, 200));
     res.status(201).json({ ok: true, ...summary(s) });
@@ -77,6 +78,12 @@ export function sessionsRouter(db, sessions = new SessionManager()) {
   r.delete("/sessions/:id", W("request:run"), wrap(async (req, res) => {
     sessions.close(own(req));
     res.json({ ok: true });
+  }));
+
+  // gRPC: reads a .proto and lists its services and methods (with an example message for each input type)
+  r.post("/grpc/describe", W("request:run"), wrap(async (req, res) => {
+    const b = z.object({ proto: z.string().max(500_000) }).parse(req.body);
+    res.json(await describeProto(b.proto));
   }));
 
   r.sessions = sessions;

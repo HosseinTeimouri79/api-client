@@ -13,6 +13,7 @@ import { AuthEditor } from "../components/editor/AuthEditor.jsx";
 import { ScriptEditor } from "../components/editor/ScriptEditor.jsx";
 import { CodeSnippetModal } from "./CodeSnippet.jsx";
 import { WebSocketMessage, WebSocketSettings } from "./realtime/WebSocketPanels.jsx";
+import { GrpcMessage, GrpcProto, GrpcSettings } from "./realtime/GrpcPanels.jsx";
 import { PROTOCOLS, PROTOCOL_DEFAULTS, protocolOf } from "../lib/protocols.js";
 import { modals } from "../components/ui/modals.js";
 import { t as tr, useT } from "../i18n/index.js";
@@ -58,6 +59,7 @@ export function RequestEditor({ tab }) {
   const docs = http.at(-1);
   const byProtocol = {
     websocket: [{ id: "message", label: t("ws.message"), badge: r.protocol_data?.message?.trim() ? "●" : false }, http[0], http[1], http[3], { id: "settings", label: t("ws.settings"), badge: r.protocol_data?.subprotocols?.trim() ? "●" : false }, docs],
+    grpc: [{ id: "message", label: t("grpc.message"), badge: r.protocol_data?.method ? "●" : false }, { id: "proto", label: t("grpc.proto"), badge: r.protocol_data?.proto?.trim() ? "●" : false }, { ...http[1], label: t("grpc.metadata") }, http[3], { id: "settings", label: t("ws.settings"), badge: r.protocol_data?.tlsInsecure || r.protocol_data?.deadlineMs ? "●" : false }, docs],
   };
   const tabs = byProtocol[r.protocol] ?? http;
   const sub = tabs.some((x) => x.id === tab.sub) ? tab.sub : tabs[0].id;
@@ -80,17 +82,18 @@ export function RequestEditor({ tab }) {
           <VarInput className="url-input" value={r.url} placeholder={proto.live ? t(proto.urlKey) : t("req.urlPlaceholder")} aria-label={t("req.url")} inputRef={urlRef}
             onChange={(url) => set({ url })} onBlur={extractQuery} onKeyDown={(e) => { if (e.key === "Enter" && !e.ctrlKey && !e.metaKey) { extractQuery(); send(); } }} />
           {proto.live ? (
-            <Button variant={connected ? "danger" : "primary"} icon={connected ? "plug-circle-xmark" : "plug"} id="sendBtn" loading={rt === "connecting"} onClick={() => send()} title="Ctrl+Enter">{connected ? t("rt.disconnect") : t("rt.connect")}</Button>
+            <Button variant={connected ? "danger" : "primary"} icon={connected ? "plug-circle-xmark" : "plug"} id="sendBtn" loading={rt === "connecting"} onClick={() => send()} title="Ctrl+Enter">{t(proto.actionKeys[connected ? 1 : 0])}</Button>
           ) : (
             <Button variant="primary" icon="paper-plane" id="sendBtn" loading={tab.running} onClick={() => send()} title="Ctrl+Enter">{t("req.send")}</Button>
           )}
         </div>
         <Tabs items={tabs} value={sub} onChange={(s) => setSub(tab.key, s)} />
         <div className="editor-body">
-          {sub === "message" && <WebSocketMessage tab={tab} />}
-          {sub === "settings" && <WebSocketSettings tab={tab} />}
+          {sub === "message" && (r.protocol === "grpc" ? <GrpcMessage tab={tab} /> : <WebSocketMessage tab={tab} />)}
+          {sub === "proto" && <GrpcProto tab={tab} />}
+          {sub === "settings" && (r.protocol === "grpc" ? <GrpcSettings tab={tab} /> : <WebSocketSettings tab={tab} />)}
           {sub === "params" && <KeyValueEditor rows={r.params} readOnly={ro} onChange={(params) => set({ params })} keyPlaceholder={t("req.parameter")} />}
-          {sub === "headers" && <KeyValueEditor rows={r.headers} readOnly={ro} onChange={(headers) => set({ headers })} keySuggestions={HEADER_SUGG} valueSuggestions={(k) => HEADER_VALUES[k.toLowerCase()]} keyPlaceholder={t("req.header")} />}
+          {sub === "headers" && <KeyValueEditor rows={r.headers} readOnly={ro} onChange={(headers) => set({ headers })} keySuggestions={proto.live ? undefined : HEADER_SUGG} valueSuggestions={proto.live ? undefined : (k) => HEADER_VALUES[k.toLowerCase()]} keyPlaceholder={r.protocol === "grpc" ? t("grpc.metadataKey") : t("req.header")} />}
           {sub === "body" && <BodyEditor body={r.body} readOnly={ro} onChange={(body) => set({ body })} />}
           {sub === "auth" && <AuthEditor auth={r.auth} readOnly={ro} onChange={(auth) => set({ auth })} />}
           {sub === "pre" && <ScriptEditor kind="pre" value={r.pre_script} readOnly={ro} inherited={inh} onEditInherited={editInherited} onChange={(pre_script) => set({ pre_script })} />}

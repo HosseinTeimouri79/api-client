@@ -5,7 +5,7 @@ import http from "node:http";
 import { openDb } from "../src/db/index.js";
 import { createApp } from "../src/app.js";
 import { config } from "../src/config.js";
-import { HTTP_METHODS } from "../src/protocols/index.js";
+import { HTTP_METHODS, PROTOCOLS, IMPLEMENTED } from "../src/protocols/index.js";
 import { parseImport } from "../src/services/interop.js";
 
 let server, base, target, tbase, proxy, pbase, seen, connects, tok, ws, col;
@@ -106,8 +106,9 @@ test("saved requests carry a protocol and protocol data; TRACE and CONNECT are v
   const copied = tree.requests.filter((r) => r.collection_id === colDup.body.id);
   assert.ok(copied.length >= 2 && copied.every((r) => r.protocol === "http"));
   assert.equal((await call("GET", `/workspaces/${ws}/requests/${copied[0].id}`)).body.protocol_data !== undefined, true);
-  // protocols that are not implemented yet are refused
-  assert.equal((await call("POST", `/workspaces/${ws}/collections/${col}/requests`, { name: "W", protocol: "grpc" })).status, 400);
+  // protocols that are not implemented yet (and unknown ones) are refused
+  for (const protocol of [...PROTOCOLS.filter((p) => !IMPLEMENTED.includes(p)), "carrier-pigeon"])
+    assert.equal((await call("POST", `/workspaces/${ws}/collections/${col}/requests`, { name: "W", protocol })).status, 400, protocol);
   assert.equal((await call("POST", `/workspaces/${ws}/collections/${col}/requests`, { name: "bad", method: "BREW" })).status, 400);
 });
 

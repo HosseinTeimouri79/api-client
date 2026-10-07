@@ -402,6 +402,16 @@ export const useStore = create((set, get) => {
       if (t?.rt?.status !== "open") return;
       return api("POST", W(`/sessions/${t.rt.id}/act`), { action, payload });
     }),
+    /** gRPC: parses the tab's .proto on the server (services, methods, example messages). */
+    async describeProto(key) {
+      const t = get().tabs.find((x) => x.key === key);
+      if (!t) return;
+      const proto = t.req.protocol_data?.proto ?? "";
+      let grpc;
+      try { grpc = { ...(await api("POST", W("/grpc/describe"), { proto })), forProto: proto }; }
+      catch (e) { grpc = { ok: false, error: e.message, services: [], forProto: proto }; }
+      patchTab(key, { grpc: { services: grpc.services ?? [], error: grpc.ok ? null : grpc.error, forProto: proto } });
+    },
     clearEvents(key) { patchTab(key, (x) => (x.rt ? { rt: { ...x.rt, events: [] } } : {})); },
     async disconnect(key) {
       const t = get().tabs.find((x) => x.key === key);

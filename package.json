@@ -36,6 +36,7 @@
     "test": "node --test --no-warnings --test-concurrency=1 tests/*.test.js"
   },
   "dependencies": {
+    "@grpc/grpc-js": "^1.14.5",
     "bcryptjs": "^3.0.3",
     "cookie-parser": "^1.4.7",
     "crypto-js": "^4.2.0",
@@ -43,6 +44,7 @@
     "express-rate-limit": "^8.7.1",
     "helmet": "^8.3.0",
     "jsonwebtoken": "^9.0.3",
+    "protobufjs": "^8.8.0",
     "quickjs-emscripten": "^0.32.0",
     "ws": "^8.22.0",
     "zod": "^4.6.5"
