@@ -267,6 +267,7 @@ All configuration is through environment variables (`.env.example` lists the com
 | `CONNECT_ATTEMPT_TIMEOUT_MS`  | `5000`                 | Connect budget per resolved address.                                                            |
 | `MAX_SESSIONS_PER_USER`       | `10`                   | Open live connections (WebSocket, ...) one user may hold at the same time.                      |
 | `MAX_SESSIONS_TOTAL`          | `200`                  | Open live connections on the whole server.                                                      |
+| `UDP_LISTEN_PORTS`            | *(empty: listening off)* | Local UDP ports (or ranges, `40000-40100,50000`) a user may *listen* on; with Docker, publish them too.        |
 | `SESSION_IDLE_MS`             | `900000` (15 min)      | A live connection nobody watches or uses for this long is closed.                               |
 | `SESSION_EVENT_LIMIT`         | `5000`                 | Events kept per live connection (what a reconnecting browser can still replay).                 |
 | `CHROME_PATH`                 | auto-detected          | Chromium/Chrome binary for the end-to-end tests.                                                |
@@ -395,6 +396,19 @@ answer is shown and the tunnel is closed again.
   certificate name override.
 - Disconnecting closes the socket; the received data is limited like HTTP responses (Settings → Request, default 10 MB per
   connection). Private addresses are refused unless `ALLOW_PRIVATE_TARGETS=true`.
+
+**UDP.** Send and Receive datagrams.
+
+- The address is `udp://host:port` (a bare `host:port` works too; a port is required). **Open socket** creates a socket on a random
+  local port; the **Message** tab (text with optional LF/CRLF, base64 or hex, `{{variables}}`) sends a datagram to the address and
+  the answers appear in the log with the address they came from. A datagram holds at most 65,507 bytes.
+- By default only datagrams that come from the address are shown (others are listed as *ignored*); **Settings** can switch that
+  off to read answers from another address or port.
+- **Listen mode** binds a local port on the server so you can receive datagrams sent by other devices. Because that opens a port
+  on the machine that runs the app, it is **off** unless the administrator allows ports with `UDP_LISTEN_PORTS` (for example
+  `40000-40100`; publish the same range with Docker). The URL is then optional and only used for sending.
+- Hosts are resolved once and private addresses are refused unless `ALLOW_PRIVATE_TARGETS=true`; the response limit applies to
+  what a socket receives.
 
 ### History and console
 
@@ -657,7 +671,7 @@ src/
   middleware/    auth.js (authenticate, csrfGuard, requireWorkspace, requireAdmin, audit)
   routes/        auth.js me.js admin.js workspaces.js content.js interop.js sessions.js protocolTools.js
   services/      permissions.js variables.js executor.js runner.js scriptEngine.js ssrf.js sessions.js
-  protocols/     index.js (protocol list) common.js websocket.js grpc.js graphql.js sse.js tcp.js (one module per protocol)
+  protocols/     index.js (protocol list) common.js websocket.js grpc.js graphql.js sse.js tcp.js udp.js (one module per protocol)
                  interop.js (Postman/Hoppscotch) settings.js userSettings.js locales.js
 web/             index.html vite.config.js
   src/           main.jsx App.jsx store.js api.js
@@ -774,7 +788,7 @@ Current version: **1.0.0**.
 ## Roadmap
 
 Not yet available: file upload in multipart bodies, inviting people who have no account yet, share-by-link, XML pretty-printing,
-a collection runner, mock servers, OpenAPI import, and per-secret encryption. UDP, MQTT and AMQP are
+a collection runner, mock servers, OpenAPI import, and per-secret encryption. MQTT and AMQP are
 being added one protocol at a time (see the changelog). The code is structured so these can be added without rewriting the
 core: a `protocol` column, one module per live protocol in `src/protocols/` behind the session manager, a runner route on top of
 `runner.js` (which already returns test results), and new routes and services reading the same tables.

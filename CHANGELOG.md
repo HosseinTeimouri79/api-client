@@ -11,6 +11,13 @@ The version is shown in **Settings → General → About** and returned by `GET 
 
 ## [Unreleased]
 
+## [1.7.0] - 2026-10-08
+
+### Added
+- **UDP**: Send and Receive datagrams (text, base64 or hex) with the peer address of each one; answers from other sources
+  are ignored unless switched off. Optional **listen mode** on a local port, available only for ports the administrator allows
+  with the new `UDP_LISTEN_PORTS` setting (off by default).
+
 ## [1.6.0] - 2026-10-08
 
 ### Added
