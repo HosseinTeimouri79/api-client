@@ -102,3 +102,35 @@ test("admin actions are audited", async () => {
   const a = await root.c("GET", "/admin/audit");
   assert.ok(a.body.some((x) => x.action === "admin.user.password_reset" && x.target === "carol" && x.user === "root"));
 });
+
+test("admin can close self-registration; only admins can then create users", async () => {
+  assert.equal((await api()("GET", "/auth/config")).body.registration, true);
+  const plain = await signup("plain");
+  assert.equal((await plain.c("PATCH", "/admin/settings", { registration_open: false })).status, 403);
+  assert.equal((await root.c("PATCH", "/admin/settings", { registration_open: false })).status, 200);
+  assert.equal((await root.c("GET", "/admin/settings")).body.registration_open, false);
+  assert.equal((await api()("GET", "/auth/config")).body.registration, false);
+  const denied = await api()("POST", "/auth/register", { username: "mallory", password: "password123" });
+  assert.equal(denied.status, 403);
+  assert.equal((await api()("POST", "/auth/login", { username: "mallory", password: "password123" })).status, 401);
+  // the admin creates the account and the user signs in with the password they were given
+  assert.equal((await root.c("POST", "/admin/users", { username: "frank", password: "given-pass-1" })).status, 201);
+  assert.equal((await api()("POST", "/auth/login", { username: "frank", password: "given-pass-1" })).status, 200);
+  // reopen
+  await root.c("PATCH", "/admin/settings", { registration_open: true });
+  assert.equal((await api()("POST", "/auth/register", { username: "mallory", password: "password123" })).status, 201);
+});
+
+test("registration closed still allows the very first account", async () => {
+  const db = openDb(":memory:");
+  const s = createApp(db).listen(0);
+  try {
+    const url = `http://127.0.0.1:${s.address().port}/api`;
+    db.prepare("INSERT INTO settings(key,value) VALUES('registration_open','false')").run();
+    const reg = (u) => fetch(url + "/auth/register", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ username: u, password: "password123" }) });
+    assert.equal((await (await fetch(url + "/auth/config")).json()).registration, true);
+    assert.equal((await reg("first")).status, 201);
+    assert.equal((await (await fetch(url + "/auth/config")).json()).registration, false);
+    assert.equal((await reg("second")).status, 403);
+  } finally { s.close(); }
+});

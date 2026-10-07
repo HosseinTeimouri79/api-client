@@ -5,6 +5,7 @@ import rateLimit from "express-rate-limit";
 import { uid } from "../db/index.js";
 import { HttpError, signToken, authenticate, publicUser, setCookie } from "../middleware/auth.js";
 import { config } from "../config.js";
+import { registrationOpen } from "../services/settings.js";
 
 export const usernameSchema = z
   .string()
@@ -22,6 +23,13 @@ export function authRouter(db) {
     standardHeaders: true,
     legacyHeaders: false,
   });
+  // Public: lets the sign-in screen hide "Create account" when only admins can add users.
+  r.get("/config", (_req, res) =>
+    res.json({
+      registration:
+        registrationOpen(db) || !db.prepare("SELECT 1 FROM users LIMIT 1").get(),
+    }),
+  );
   r.post("/register", limiter, (req, res) => {
     const b = z
       .object({
@@ -30,10 +38,15 @@ export function authRouter(db) {
         name: z.string().trim().max(100).optional(),
       })
       .parse(req.body);
+    // The very first account bootstraps the admin panel and is always allowed.
+    const first = !db.prepare("SELECT 1 FROM users LIMIT 1").get();
+    if (!first && !registrationOpen(db))
+      throw new HttpError(
+        403,
+        "Registration is disabled. Ask an administrator to create your account",
+      );
     if (db.prepare("SELECT 1 FROM users WHERE username=?").get(b.username))
       throw new HttpError(409, "Username already taken");
-    // The very first account bootstraps the admin panel.
-    const first = !db.prepare("SELECT 1 FROM users LIMIT 1").get();
     const user = { id: uid(), username: b.username, name: b.name || b.username, is_admin: first };
     db.prepare(
       "INSERT INTO users(id,username,name,password_hash,is_admin) VALUES(?,?,?,?,?)",

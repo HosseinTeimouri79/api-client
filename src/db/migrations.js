@@ -76,4 +76,10 @@ export const migrations = [
     ALTER TABLE users ADD COLUMN locale TEXT;
   `,
   },
+  {
+    // Instance-wide settings editable from the admin panel (e.g. `registration_open`).
+    id: 5,
+    name: "settings",
+    sql: "CREATE TABLE settings(key TEXT PRIMARY KEY, value TEXT NOT NULL)",
+  },
 ];

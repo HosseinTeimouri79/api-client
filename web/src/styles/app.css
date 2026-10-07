@@ -222,3 +222,4 @@ input.mono { font-family: var(--mono); font-size: 12px; }
 /* ===== settings ===== */
 .settings-in { max-width: 680px; } .settings-sec { display: flex; flex-direction: column; gap: 10px; padding-bottom: 16px; border-bottom: 1px solid var(--border); } .settings-sec:last-child { border: 0; padding-bottom: 0; }
 .photo-row { gap: 18px; align-items: center; } img.avatar { display: block; }
+.auth-closed { font-size: 12px; border: 1px dashed var(--line); border-radius: var(--r); padding: 8px 10px; }

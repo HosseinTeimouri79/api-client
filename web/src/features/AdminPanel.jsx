@@ -178,8 +178,26 @@ function Workspaces({ reload }) {
 
 const ACTION_LABEL = {
   "admin.user.create": "created user", "admin.user.update": "updated user", "admin.user.password_reset": "reset password of",
-  "admin.user.delete": "deleted user", "admin.workspace.delete": "deleted workspace",
+  "admin.user.delete": "deleted user", "admin.workspace.delete": "deleted workspace", "admin.settings.update": "changed setting",
 };
+function SettingsTab() {
+  const [open, setOpen] = useState(null);
+  useEffect(() => { run(async () => setOpen((await api("GET", "/admin/settings")).registration_open)); }, []);
+  const toggle = (v) => run(async () => {
+    setOpen(v); // optimistic; the server answer is the truth
+    try { setOpen((await api("PATCH", "/admin/settings", { registration_open: v })).registration_open); toast("Saved", "ok"); }
+    catch (e) { setOpen(!v); throw e; }
+  });
+  if (open === null) return <div className="muted pad"><Spinner /></div>;
+  return (
+    <section className="settings-sec stack">
+      <h3>Allow self-registration</h3>
+      <label className="row"><Checkbox checked={open} label="Allow self-registration" onChange={toggle} /> <span>{open ? "Anyone can create an account" : "Only admins can create accounts"}</span></label>
+      <span className="muted">When off, the “Create account” option is hidden and only admins can add users (Users → New user). Share the password with the person; they sign in with it.</span>
+    </section>
+  );
+}
+
 function Activity() {
   const [rows, setRows] = useState(null);
   useEffect(() => { run(async () => setRows(await api("GET", "/admin/audit"))); }, []);
@@ -205,9 +223,9 @@ export function AdminPanel() {
       <div className="admin-in">
         <div className="row admin-head"><Button icon="arrow-left" onClick={() => setView("app")}>Back to app</Button><h2 className="grow">Admin panel</h2></div>
         <div className="admin-tiles">{tiles?.map(([label, n, icon]) => <div className="admin-tile" key={label}><Icon name={icon} /><div><b>{n}</b><span className="muted">{label}</span></div></div>)}</div>
-        <Tabs value={tab} onChange={setTab} items={[{ id: "users", label: "Users", badge: stats?.users }, { id: "workspaces", label: "Workspaces", badge: stats?.workspaces }, { id: "activity", label: "Activity" }]} />
+        <Tabs value={tab} onChange={setTab} items={[{ id: "users", label: "Users", badge: stats?.users }, { id: "workspaces", label: "Workspaces", badge: stats?.workspaces }, { id: "activity", label: "Activity" }, { id: "settings", label: "Settings" }]} />
         <div className="admin-card">
-          {tab === "users" ? <Users me={me} reload={reload} /> : tab === "workspaces" ? <Workspaces reload={reload} /> : <Activity />}
+          {tab === "users" ? <Users me={me} reload={reload} /> : tab === "workspaces" ? <Workspaces reload={reload} /> : tab === "settings" ? <SettingsTab /> : <Activity />}
         </div>
       </div>
     </div>

@@ -11,6 +11,7 @@ import {
   signToken,
 } from "../middleware/auth.js";
 import { usernameSchema } from "./auth.js";
+import { registrationOpen, setRegistrationOpen } from "../services/settings.js";
 
 const password = z.string().min(8).max(200);
 const name = z.string().trim().min(1).max(100);
@@ -31,6 +32,16 @@ export function adminRouter(db) {
     db
       .prepare("SELECT 1 FROM users WHERE username=? AND id<>?")
       .get(username, exceptId);
+
+  r.get("/settings", (_req, res) =>
+    res.json({ registration_open: registrationOpen(db) }),
+  );
+  r.patch("/settings", (req, res) => {
+    const b = z.object({ registration_open: bool }).parse(req.body);
+    setRegistrationOpen(db, b.registration_open);
+    audit(db, req, "admin.settings.update", `registration_open=${b.registration_open}`);
+    res.json({ registration_open: registrationOpen(db) });
+  });
 
   r.get("/stats", (_req, res) =>
     res.json(

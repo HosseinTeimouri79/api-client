@@ -66,6 +66,15 @@ test("E2E: admin creates a user, resets their password and disables them", { ski
   // activity + back
   await page.getByRole("tab", { name: "Activity" }).click();
   await page.getByText("reset password of").waitFor();
+  // close self-registration: the sign-in screen then offers no "Create account"
+  await page.getByRole("tab", { name: "Settings" }).click();
+  await page.getByRole("checkbox", { name: "Allow self-registration" }).uncheck();
+  await page.locator(".toast", { hasText: "Saved" }).waitFor();
+  const anon = await (await browser.newContext()).newPage();
+  await anon.goto(base);
+  await anon.getByRole("button", { name: "Sign in" }).last().waitFor();
+  await anon.getByText("New accounts are created by an administrator").waitFor();
+  assert.equal(await anon.getByRole("tab", { name: "Create account" }).count(), 0);
   await page.getByRole("button", { name: "Back to app" }).click();
   await page.getByRole("heading", { name: "Welcome" }).waitFor();
   assert.deepEqual(errors, []);
