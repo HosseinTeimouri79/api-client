@@ -6,14 +6,13 @@ import { uid } from "../db/index.js";
 import { HttpError, signToken, authenticate } from "../middleware/auth.js";
 import { config } from "../config.js";
 
-const cred = z.object({
-  email: z
-    .string()
-    .email()
-    .max(200)
-    .transform((s) => s.toLowerCase()),
-  password: z.string().min(8).max(200),
-});
+const username = z
+  .string()
+  .trim()
+  .min(3)
+  .max(32)
+  .regex(/^[A-Za-z0-9._-]+$/, "Only letters, digits, . _ - are allowed")
+  .transform((s) => s.toLowerCase());
 const setCookie = (res, user) =>
   res.cookie("token", signToken(user), {
     httpOnly: true,
@@ -31,28 +30,37 @@ export function authRouter(db) {
     legacyHeaders: false,
   });
   r.post("/register", limiter, (req, res) => {
-    const { email, password } = cred
-      .extend({ name: z.string().min(1).max(100) })
+    const b = z
+      .object({
+        username,
+        password: z.string().min(8).max(200),
+        name: z.string().trim().max(100).optional(),
+      })
       .parse(req.body);
-    if (db.prepare("SELECT 1 FROM users WHERE email=?").get(email))
-      throw new HttpError(409, "Email already registered");
-    const user = { id: uid(), email, name: req.body.name };
+    if (db.prepare("SELECT 1 FROM users WHERE username=?").get(b.username))
+      throw new HttpError(409, "Username already taken");
+    const user = { id: uid(), username: b.username, name: b.name || b.username };
     db.prepare(
-      "INSERT INTO users(id,email,name,password_hash) VALUES(?,?,?,?)",
-    ).run(user.id, email, user.name, bcrypt.hashSync(password, 11));
+      "INSERT INTO users(id,username,name,password_hash) VALUES(?,?,?,?)",
+    ).run(user.id, user.username, user.name, bcrypt.hashSync(b.password, 11));
     setCookie(res, user);
     res.status(201).json({ user, token: signToken(user) });
   });
   r.post("/login", limiter, (req, res) => {
-    const { email, password } = cred.parse(req.body);
-    const u = db.prepare("SELECT * FROM users WHERE email=?").get(email);
+    const b = z
+      .object({
+        username: z.string().trim().min(1).max(200).transform((s) => s.toLowerCase()),
+        password: z.string().min(1).max(200),
+      })
+      .parse(req.body);
+    const u = db.prepare("SELECT * FROM users WHERE username=?").get(b.username);
     const ok = bcrypt.compareSync(
-      password,
+      b.password,
       u?.password_hash ??
         "$2a$11$invalidinvalidinvalidinvalidinvalidinvalidinvalidinvali",
     ); // constant-ish time
-    if (!u || !ok) throw new HttpError(401, "Invalid email or password");
-    const user = { id: u.id, email: u.email, name: u.name };
+    if (!u || !ok) throw new HttpError(401, "Invalid username or password");
+    const user = { id: u.id, username: u.username, name: u.name };
     setCookie(res, user);
     res.json({ user, token: signToken(user) });
   });

@@ -26,17 +26,23 @@ export function migrate(db) {
   );
   for (const m of migrations) {
     if (done.has(m.id)) continue;
+    if (m.fkOff) db.exec("PRAGMA foreign_keys=OFF"); // must be set outside a transaction
     db.exec("BEGIN");
     try {
-      db.exec(m.sql);
+      if (m.up) m.up(db);
+      else db.exec(m.sql);
       db.prepare("INSERT INTO _migrations(id,name) VALUES(?,?)").run(
         m.id,
         m.name,
       );
+      if (m.fkOff && db.prepare("PRAGMA foreign_key_check").all().length)
+        throw new Error(`Migration ${m.id} left dangling foreign keys`);
       db.exec("COMMIT");
     } catch (e) {
       db.exec("ROLLBACK");
       throw e;
+    } finally {
+      if (m.fkOff) db.exec("PRAGMA foreign_keys=ON");
     }
   }
 }

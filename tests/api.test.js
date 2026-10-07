@@ -51,7 +51,7 @@ const api = (token) => async (method, path, body) => {
 const signup = async (name) => {
   const r = await api()("POST", "/auth/register", {
     name,
-    email: `${name}@t.io`,
+    username: name,
     password: "password123",
   });
   assert.equal(r.status, 201);
@@ -68,7 +68,7 @@ test("auth: register/login/me, bad credentials, unauthenticated", async () => {
     (
       await api()("POST", "/auth/register", {
         name: "x",
-        email: "owner@t.io",
+        username: "Owner", // case-insensitive duplicate
         password: "password123",
       })
     ).status,
@@ -77,7 +77,7 @@ test("auth: register/login/me, bad credentials, unauthenticated", async () => {
   assert.equal(
     (
       await api()("POST", "/auth/login", {
-        email: "owner@t.io",
+        username: "owner",
         password: "wrongwrong",
       })
     ).status,
@@ -86,7 +86,7 @@ test("auth: register/login/me, bad credentials, unauthenticated", async () => {
   assert.equal(
     (
       await api()("POST", "/auth/login", {
-        email: "owner@t.io",
+        username: "owner",
         password: "password123",
       })
     ).status,
@@ -94,15 +94,15 @@ test("auth: register/login/me, bad credentials, unauthenticated", async () => {
   );
   assert.equal((await api()("GET", "/workspaces")).status, 401);
   assert.equal(
-    (await owner.c("GET", "/auth/me")).body.user.email,
-    "owner@t.io",
+    (await owner.c("GET", "/auth/me")).body.user.username,
+    "owner",
   );
 });
 test("csrf: cookie-authenticated mutation requires custom header", async () => {
   const login = await fetch(base + "/auth/login", {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({ email: "owner@t.io", password: "password123" }),
+    body: JSON.stringify({ username: "owner", password: "password123" }),
   });
   const cookie = login.headers.get("set-cookie").split(";")[0];
   const bad = await fetch(base + "/workspaces", {
@@ -132,7 +132,7 @@ test("workspace + members + RBAC", async () => {
     assert.equal(
       (
         await owner.c("POST", `/workspaces/${ws}/members`, {
-          email: u.email,
+          user_ids: [u.id],
           role,
         })
       ).status,
@@ -152,7 +152,7 @@ test("workspace + members + RBAC", async () => {
   assert.equal(
     (
       await editor.c("POST", `/workspaces/${ws}/members`, {
-        email: out.email,
+        user_ids: [out.id],
         role: "viewer",
       })
     ).status,
@@ -161,7 +161,7 @@ test("workspace + members + RBAC", async () => {
   assert.equal(
     (
       await admin.c("POST", `/workspaces/${ws}/members`, {
-        email: out.email,
+        user_ids: [out.id],
         role: "admin",
       })
     ).status,
@@ -171,7 +171,7 @@ test("workspace + members + RBAC", async () => {
   assert.equal(
     (
       await admin.c("POST", `/workspaces/${ws}/members`, {
-        email: out.email,
+        user_ids: [out.id],
         role: "viewer",
       })
     ).status,

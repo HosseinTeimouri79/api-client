@@ -6,9 +6,9 @@
 | ------------- | ----------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Backend       | Node 22 + Express 5-style routers, zod validation           | small, well understood, easy to extend                                                                                                              |
 | DB            | SQLite (`node:sqlite`, WAL, FK on) + versioned migrations   | zero ops, single file, no native build; the data layer is isolated in `src/db` so Postgres is a contained swap (ADR-1)                              |
-| Auth          | bcrypt + JWT in httpOnly/SameSite=Strict cookie (or Bearer) | CSRF-resistant (custom header required for cookie auth)                                                                                             |
+| Auth          | username + password (bcrypt), JWT in httpOnly/SameSite=Strict cookie (or Bearer) | CSRF-resistant (custom header required for cookie auth)                                                                                             |
 | Script engine | QuickJS compiled to WASM (`quickjs-emscripten`)             | real sandbox: no fs/net/process, CPU + memory limits (ADR-2)                                                                                        |
-| Frontend      | Vanilla ES modules, no build step                           | no toolchain to maintain; safe DOM building (no `innerHTML` for user data). Components are isolated modules (`editors.js`, `response.js`, `app.js`) |
+| Frontend      | React 19 + Vite + zustand (`web/`, built to `dist/`)        | custom component library (no UI kit); React escapes by default, no `dangerouslySetInnerHTML`; Vite is a build-time dependency only                  |
 
 ## Layout
 
@@ -19,18 +19,23 @@ src/
   middleware/    auth.js  (authenticate, csrfGuard, requireWorkspace, audit)
   routes/        auth.js  workspaces.js (members, environments, audit)  content.js (tree, collections, requests, run, history)
   services/      permissions.js variables.js executor.js scriptEngine.js runner.js ssrf.js
-public/          index.html style.css js/{app,api,editors,response,util}.js
+web/             index.html vite.config.js src/{main,App,store,api}.js(x)
+                 src/components/ui     AutoComplete Select Popover Menu Modal Toasts Splitter ... (custom, no UI kit)
+                 src/components/editor VarInput CodeEditor KeyValueEditor BodyEditor AuthEditor ScriptEditor
+                 src/components/response ResponseViewer JsonTree
+                 src/features          TopBar Sidebar RequestEditor Console + Members/Env/Interop/Collection dialogs
+dist/            build output served by Express (npm run build)
 tests/           unit.test.js api.test.js e2e.test.js
 ```
 
 ## Data model
 
-`users` · `workspaces`(variables) · `workspace_members(role)` · `collections`(parent_id tree, variables, auth, pre/post script) · `requests`(method,url,params,headers,body,auth,variables,scripts) · `environments` · `history`(per user) · `audit_log`.
+`users`(username unique NOCASE; legacy nullable `email`) · `workspaces`(variables) · `workspace_members(role)` · `collections`(parent_id tree, variables, auth, pre/post script) · `requests`(method,url,params,headers,body,auth,variables,scripts) · `environments` · `history`(per user) · `audit_log`.
 Collections carry variables/auth/scripts already, so **auth inheritance, collection scripts and collection variables work today** and tests/mock/etc. can be added as new columns/tables via migrations.
 
 ## Request pipeline (`services/runner.js`)
 
-1. Load scopes. 2. Run pre-scripts (collection root→leaf, then request). 3. Resolve `{{vars}}` — precedence **runtime > request > collection(nearest) > environment > workspace**. 4. Build request (params, auth incl. inherited, body modes). 5. Execute (manual redirects, SSRF check on every hop and every connected IP). 6. Run post-scripts + tests. 7. Persist environment changes **only if the caller may write**. 8. Record history (unresolved request, never resolved secrets).
+1. Load scopes. 2. Run pre-scripts (collection root→leaf, then request); a script may rewrite url/method/headers/params/body (`pm.request.*`), which later scripts and the sender see. 3. Resolve `{{vars}}` — precedence **runtime > request > collection(nearest) > environment > workspace**. 4. Build request (params, auth incl. inherited, body modes). 5. Execute (manual redirects, SSRF check on every hop and every connected IP). 6. Run post-scripts + tests; a script may rewrite status/headers/body (`pm.response.set*`) before the response is returned to the UI. 7. Persist environment changes **only if the caller may write**. 8. Record history (unresolved request, never resolved secrets).
    Every step appends a structured log (`ts, level, message, context`) returned to the Console.
 
 ## Authorization
@@ -58,4 +63,5 @@ WebSocket/GraphQL/gRPC → add a `protocol` column on `requests` + a new executo
 - **ADR-1 SQLite first.** Chosen for zero-ops team deployments. Consequence: single-writer; mitigated by WAL. Revisit at >~50 concurrent writers.
 - **ADR-2 QuickJS-WASM over `vm`/`isolated-vm`.** Node `vm` is not a security boundary; `isolated-vm` needs native builds. QuickJS gives hard limits with no native deps at some perf cost.
 - **ADR-3 Server-side execution.** Requests run from the backend (no CORS, history/logging, consistent scripting) at the price of SSRF risk, handled above. A browser-agent mode for localhost APIs is a possible future add-on.
-- **ADR-4 No frontend build.** Fewer moving parts; migrate to a bundler/TypeScript when the UI outgrows modules.
+- **ADR-4 React + Vite frontend.** The vanilla-module UI had outgrown itself (1.9k-line `app.js`, hand-rolled re-rendering). React with a small zustand store and in-house components (AutoComplete, Select, Menu, Modal, VarInput, CodeEditor) keeps the dependency surface tiny; Vite/React are devDependencies and the production image only ships `dist/`.
+- **ADR-5 Username login.** Email was never verified or used for anything, so it was dropped; migration 2 rebuilds `users` (foreign keys off, then `foreign_key_check`) and derives usernames from existing emails.

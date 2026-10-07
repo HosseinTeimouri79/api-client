@@ -7,7 +7,7 @@ A self-hostable, team-oriented API client (Postman-style): collections & sub-col
 ```bash
 cp .env.example .env && sed -i "s/^JWT_SECRET=.*/JWT_SECRET=$(openssl rand -hex 32)/" .env
 docker compose up -d --build
-open http://localhost:3000        # register the first user, create a workspace
+open http://localhost:3000        # create an account (username + password), create a workspace
 ```
 
 Data lives in the `apiclient-data` volume (`/data/app.db`). Back up that volume.
@@ -16,9 +16,11 @@ Data lives in the `apiclient-data` volume (`/data/app.db`). Back up that volume.
 
 ```bash
 npm install
-npm run dev            # http://localhost:3000, DB in ./data/app.db, random JWT secret per start
+npm run build          # builds the React UI (web/) into dist/
+npm run dev            # API + built UI on http://localhost:3000, DB in ./data/app.db, random JWT secret per start
+npm run dev:web        # (second terminal) UI with hot reload on http://localhost:5173, proxies /api to :3000
 ALLOW_PRIVATE_TARGETS=true npm run dev   # to call localhost APIs from the app
-npm test               # unit + integration + E2E (E2E needs Chromium; set CHROME_PATH or it is skipped)
+npm test               # builds the UI, then unit + integration + E2E (E2E needs Chromium; set CHROME_PATH or it is skipped)
 ```
 
 Requires Node ≥ 22.13 (built-in `node:sqlite`).
@@ -43,21 +45,47 @@ Migrations run automatically at start (`src/db/migrations.js`, append-only, tran
 
 Run behind HTTPS (nginx/Traefik/Caddy), set `COOKIE_SECURE=true`, `TRUST_PROXY=true`, a strong `JWT_SECRET`, keep `ALLOW_PRIVATE_TARGETS=false` on public deployments. Container runs as non-root with a read-only root FS. Health: `GET /healthz`.
 
+## Accounts
+
+Sign in with a **username and password** (no email). Usernames are 3–32 characters (`A–Z a–z 0–9 . _ -`), case-insensitive. On upgrade, existing accounts keep their password and get a username from the part of their email before the `@` (made unique with a number if needed).
+
+To add people to a workspace open **Members**: the picker lists every user that is not a member yet, searchable by name or username as you type, so you can select several at once and give them a role.
+
 ## Scripting
 
+Scripts run in a WASM sandbox (no network, filesystem or `process`). Postman scripts work as-is for the common API.
+
+### Pre-request: change the request before it is sent
+
 ```js
-// pre-request
-pm.variables.set("timestamp", Date.now());
-pm.request.headers.add("X-Trace", "1");
-// post-request
-const data = response.json();
-if (data.token) pm.environment.set("token", data.token);
-test("Status should be 200", () => expect(response.status).toBe(200));
+const body = JSON.parse(pm.request.body.raw);                 // the body as typed in the Body tab
+const sum  = CryptoJS.SHA1(JSON.stringify(body.params) + pm.variables.get("api_key"));
+postman.setGlobalVariable("checksum", sum);                    // or pm.globals.set(...)
+pm.request.body.raw = { checksum: "{{checksum}}", params: body.params, uid: body.uid }; // objects are stringified
+pm.request.headers.upsert("X-Trace", Date.now());
+pm.request.params.add("ts", new Date().toISOString());
+pm.request.url = pm.request.url + "/v2";                       // pm.request.method = "POST" works too
 ```
 
-Collection-level pre/post scripts run for every request inside the collection and its sub-collections (outermost first, then the request's own). In the request editor the **Pre-request / Post-request** tabs show a badge and an expandable, read-only reference to each inherited script (with a shortcut to edit it); collections that define scripts are marked with a `</>` icon in the tree.
+`pm.request`: `url`, `method`, `headers` / `params` (`add upsert remove get has toObject all clear`), `body` (`raw`, `mode`, `urlencoded`, `formdata`, `update()`). `{{variables}}` are resolved **after** the script, so the value you just set is used. The **Request** tab of the response shows what was actually sent (with a badge when a script changed it) and the Console logs `Request modified by pre-request script`.
 
-Available: `pm.variables / environment / collectionVariables` (`get,set,unset,has`), `response` (`status, json(), text(), headers`), `test`, `expect(...).toBe/toEqual/toContain/toBeTruthy/…/not`, `console.*`. Scripts run in a WASM sandbox (no network, filesystem, `require`). `pm.environment.set` persists to the selected environment for Editors+; Viewers' runs never persist.
+### Post-request: change what the UI receives, test, store values
+
+```js
+const data = pm.response.json();
+if (data.token) pm.environment.set("token", data.token);
+pm.response.setBody({ count: data.items.length, items: data.items }); // object or string
+pm.response.setStatus(200, "OK");  pm.response.setHeader("X-Processed", "1");
+pm.test("Status is 200", () => pm.response.to.have.status(200));
+```
+
+The response panel is marked **modified by script** when a post script changed it. Collection scripts run first (outermost → nearest), each seeing the previous one's result.
+
+### Reference
+
+`pm.variables / environment / globals / collectionVariables` (`get set unset has clear toObject`; `pm.variables.get` and `replaceIn` resolve every scope), `postman.setGlobalVariable / getGlobalVariable / setEnvironmentVariable …`, `pm.response` (`json() text() code status headers.get() responseTime`, `to.have.status/header/jsonBody`, `to.be.ok/success/error`), `pm.test`, `pm.expect` (jest `toBe toEqual …` **and** chai `to.equal .eql .include .have.property .be.a("string") …`), `CryptoJS` / `require("crypto-js")` (SHA1/256/MD5, HMAC, Base64, AES …), `btoa/atob`, `console.*`. Not supported: `pm.sendRequest` (network is blocked by design). `pm.environment.set` and `pm.globals.set` persist for Editors+ (globals are the workspace variables); Viewers' runs never persist.
+
+In the editor, type `pm.` for completions and use **Snippets** for ready-made examples.
 
 ## Environments import / export
 
@@ -78,5 +106,5 @@ Available: `pm.variables / environment / collectionVariables` (`get,set,unset,ha
 
 ## Status vs. spec
 
-Done: auth, workspaces, RBAC, collections tree (+drag & drop, duplicate, sort), all methods/body types, auth (bearer/basic/API key, inheritance), environments + 5-level variables, pre/post scripts (request + collection), response viewer (JSON tree/search/raw, HTML sandboxed preview, headers, binary), console, history, audit log, dark/light, tests, Docker.
+Done: username login, member picker (autocomplete), React UI with custom components (AutoComplete, Select, Menu, Modal, variable-aware inputs, code editor with completions), auth, workspaces, RBAC, collections tree (+drag & drop, duplicate, sort), all methods/body types, auth (bearer/basic/API key, inheritance), environments + 5-level variables, pre/post scripts (request + collection), scripts that rewrite the request and the response, response viewer (JSON tree/search/raw, HTML sandboxed preview, headers, sent-request view, binary), console, history, audit log, dark/light, tests, Docker.
 Not yet: file upload in multipart, invitation of not-yet-registered users, share-by-link, XML pretty-printing, TypeScript types. See `docs/ARCHITECTURE.md` for the roadmap hooks.

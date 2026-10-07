@@ -20,7 +20,7 @@ export function authenticate(db) {
     try {
       const { sub } = jwt.verify(token, config.jwtSecret);
       const user = db
-        .prepare("SELECT id,email,name FROM users WHERE id=?")
+        .prepare("SELECT id,username,name FROM users WHERE id=?")
         .get(sub);
       if (!user) throw new Error();
       req.user = user;

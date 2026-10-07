@@ -11,10 +11,7 @@ export async function api(method, path, body) {
   try {
     res = await fetch("/api" + path, {
       method,
-      headers: {
-        "Content-Type": "application/json",
-        "X-Requested-With": "api-client",
-      },
+      headers: { "Content-Type": "application/json", "X-Requested-With": "api-client" },
       body: body === undefined ? undefined : JSON.stringify(body),
     });
   } catch {
@@ -22,10 +19,10 @@ export async function api(method, path, body) {
   }
   const data = await res.json().catch(() => null);
   if (!res.ok)
-    throw new ApiError(
-      res.status,
-      data?.error ?? `Request failed (${res.status})`,
-      data?.details,
-    );
+    throw new ApiError(res.status, data?.error ?? `Request failed (${res.status})`, data?.details);
   return data;
 }
+export const errorText = (e) =>
+  e instanceof ApiError && e.details?.[0]
+    ? `${e.details[0].path}: ${e.details[0].message}`
+    : (e?.message ?? "Unexpected error");

@@ -100,7 +100,7 @@ export function contentRouter(db) {
     res.json({
       collections: db
         .prepare(
-          "SELECT id,parent_id,name,position,(length(trim(pre_script))>0) AS has_pre,(length(trim(post_script))>0) AS has_post FROM collections WHERE workspace_id=? ORDER BY position,name",
+          "SELECT id,parent_id,name,position,(length(trim(pre_script, ' '||char(9)||char(10)||char(13)))>0) AS has_pre,(length(trim(post_script, ' '||char(9)||char(10)||char(13)))>0) AS has_post FROM collections WHERE workspace_id=? ORDER BY position,name",
         )
         .all(req.wid)
         .map((c) => ({ ...c, has_pre: !!c.has_pre, has_post: !!c.has_post })),

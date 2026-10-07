@@ -80,40 +80,64 @@ export function workspaceRouter(db) {
     res.json(
       db
         .prepare(
-          "SELECT u.id,u.name,u.email,m.role FROM workspace_members m JOIN users u ON u.id=m.user_id WHERE m.workspace_id=? ORDER BY m.role,u.name",
+          "SELECT u.id,u.name,u.username,m.role FROM workspace_members m JOIN users u ON u.id=m.user_id WHERE m.workspace_id=? ORDER BY m.role,u.name",
         )
         .all(req.wid),
     ),
   );
+  // Everyone who is not yet in this workspace, for the "add people" picker (searchable, capped).
+  r.get("/:wid/members/candidates", W("members:manage"), (req, res) => {
+    const { q, limit } = z
+      .object({
+        q: z.string().max(100).default(""),
+        limit: z.coerce.number().int().min(1).max(200).default(50),
+      })
+      .parse(req.query);
+    res.json(
+      db
+        .prepare(
+          `SELECT id,username,name FROM users
+           WHERE id NOT IN (SELECT user_id FROM workspace_members WHERE workspace_id=?)
+             AND (?='' OR instr(lower(username),lower(?))>0 OR instr(lower(name),lower(?))>0)
+           ORDER BY name COLLATE NOCASE, username LIMIT ?`,
+        )
+        .all(req.wid, q, q, q, limit),
+    );
+  });
   r.post("/:wid/members", W("members:manage"), (req, res) => {
-    // invite by email (user must have an account in v1)
-    const { email, role } = z
-      .object({ email: z.string().email(), role: z.enum(ROLES) })
+    // add existing users by id (picker) or by username
+    const b = z
+      .object({
+        user_ids: z.array(z.string().max(100)).min(1).max(100).optional(),
+        username: z.string().min(1).max(100).optional(),
+        role: z.enum(ROLES),
+      })
+      .refine((x) => x.user_ids || x.username, "user_ids or username required")
       .parse(req.body);
+    const { role } = b;
     if (role === "owner" || (role === "admin" && req.role !== "owner"))
       throw new HttpError(
         403,
         "Only the owner can grant admin; ownership is not grantable",
       );
-    const u = db
-      .prepare("SELECT id FROM users WHERE email=?")
-      .get(email.toLowerCase());
-    if (!u) throw new HttpError(404, "No user with that email");
-    if (
-      db
-        .prepare(
-          "SELECT 1 FROM workspace_members WHERE workspace_id=? AND user_id=?",
-        )
-        .get(req.wid, u.id)
-    )
-      throw new HttpError(409, "Already a member");
-    db.prepare("INSERT INTO workspace_members VALUES(?,?,?)").run(
-      req.wid,
-      u.id,
-      role,
+    const users = b.user_ids
+      ? [...new Set(b.user_ids)].map((id) => db.prepare("SELECT id FROM users WHERE id=?").get(id))
+      : [db.prepare("SELECT id FROM users WHERE username=?").get(b.username.toLowerCase())];
+    if (users.some((u) => !u)) throw new HttpError(404, "User not found");
+    const isMember = db.prepare(
+      "SELECT 1 FROM workspace_members WHERE workspace_id=? AND user_id=?",
     );
-    audit(db, req, "member.add", `${u.id}:${role}`);
-    res.status(201).json({ ok: true });
+    if (users.some((u) => isMember.get(req.wid, u.id)))
+      throw new HttpError(409, "Already a member");
+    for (const u of users) {
+      db.prepare("INSERT INTO workspace_members VALUES(?,?,?)").run(
+        req.wid,
+        u.id,
+        role,
+      );
+      audit(db, req, "member.add", `${u.id}:${role}`);
+    }
+    res.status(201).json({ ok: true, added: users.length });
   });
   const target = (req) => {
     const t = db

@@ -17,4 +17,37 @@ export const migrations = [
     CREATE TABLE audit_log(id INTEGER PRIMARY KEY AUTOINCREMENT, workspace_id TEXT, user_id TEXT, action TEXT NOT NULL, target TEXT, created_at TEXT NOT NULL DEFAULT (datetime('now')));
   `,
   },
+  {
+    // Login is by username + password. `email` is kept as a nullable legacy column (no longer used or required);
+    // existing accounts get their username from the local part of their email (made unique).
+    // users is rebuilt (SQLite cannot drop NOT NULL/UNIQUE), so this runs with foreign keys off.
+    id: 2,
+    name: "username-login",
+    fkOff: true,
+    up(db) {
+      const taken = new Set();
+      const pick = (email, id) => {
+        let base = String(email ?? "")
+          .split("@")[0]
+          .toLowerCase()
+          .replace(/[^a-z0-9._-]/g, "_")
+          .slice(0, 28);
+        if (base.length < 3) base = (base + "user").slice(0, 28);
+        let u = base,
+          n = 1;
+        while (taken.has(u)) u = `${base}${++n}`;
+        taken.add(u);
+        return u;
+      };
+      db.exec(
+        "CREATE TABLE users_new(id TEXT PRIMARY KEY, username TEXT NOT NULL UNIQUE COLLATE NOCASE, name TEXT NOT NULL, email TEXT, password_hash TEXT NOT NULL, created_at TEXT NOT NULL DEFAULT (datetime('now')))",
+      );
+      const ins = db.prepare(
+        "INSERT INTO users_new(id,username,name,email,password_hash,created_at) VALUES(?,?,?,?,?,?)",
+      );
+      for (const u of db.prepare("SELECT * FROM users ORDER BY created_at, rowid").all())
+        ins.run(u.id, pick(u.email, u.id), u.name, u.email, u.password_hash, u.created_at);
+      db.exec("DROP TABLE users; ALTER TABLE users_new RENAME TO users");
+    },
+  },
 ];

@@ -25,7 +25,7 @@ const call = async (m, p, b) => {
 test("tree flags + inherited scripts endpoint (root -> leaf, only collections that define scripts)", async () => {
   const reg = await call("POST", "/auth/register", {
     name: "o",
-    email: "cs@t.io",
+    username: "cs_user",
     password: "password123",
   });
   assert.equal(reg.status, 201);
@@ -33,7 +33,7 @@ test("tree flags + inherited scripts endpoint (root -> leaf, only collections th
   if (!tok)
     tok = (
       await call("POST", "/auth/login", {
-        email: "cs@t.io",
+        username: "cs_user",
         password: "password123",
       })
     ).body.token;

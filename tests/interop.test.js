@@ -206,14 +206,14 @@ const call = async (m, p, b) => {
 test("api: import postman+hoppscotch, export both, errors", async () => {
   const reg = await call("POST", "/auth/register", {
     name: "o",
-    email: "o@t.io",
+    username: "o_user",
     password: "password123",
   });
   assert.equal(reg.status, 201);
   tok = reg.body.token ?? tok;
   if (!tok) {
     const l = await call("POST", "/auth/login", {
-      email: "o@t.io",
+      username: "o_user",
       password: "password123",
     });
     tok = l.body.token;

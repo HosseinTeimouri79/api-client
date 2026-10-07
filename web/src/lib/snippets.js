@@ -1,0 +1,100 @@
+// Completions + ready-made snippets for the script editors.
+export const PM_COMPLETIONS = [
+  ["pm.request.url", "string - read/assign the URL"],
+  ["pm.request.method", "string - read/assign the HTTP method"],
+  ["pm.request.headers.add(", "(key, value) add a header"],
+  ["pm.request.headers.upsert(", "(key, value) add or replace a header"],
+  ["pm.request.headers.remove(", "(key) remove a header"],
+  ["pm.request.headers.get(", "(key) read a header"],
+  ["pm.request.params.add(", "(key, value) add a query parameter"],
+  ["pm.request.params.upsert(", "(key, value) add or replace a query parameter"],
+  ["pm.request.params.remove(", "(key) remove a query parameter"],
+  ["pm.request.body.raw", "string - read/assign the raw body (objects are JSON-stringified)"],
+  ["pm.request.body.mode", "'raw' | 'urlencoded' | 'formdata' | 'none'"],
+  ["pm.request.body.urlencoded.add(", "(key, value) add a form field"],
+  ["pm.request.body.formdata.add(", "(key, value) add a multipart field"],
+  ["pm.request.body.update(", "(string | {mode, raw, urlencoded, formdata})"],
+  ["pm.variables.get(", "(key) any scope: runtime, request, collection, env, workspace"],
+  ["pm.variables.set(", "(key, value) runtime variable for this run"],
+  ["pm.variables.replaceIn(", "(text) resolve {{vars}} in a string"],
+  ["pm.environment.get(", "(key) selected environment"],
+  ["pm.environment.set(", "(key, value) persisted for editors"],
+  ["pm.environment.unset(", "(key)"],
+  ["pm.globals.get(", "(key) workspace-wide variable"],
+  ["pm.globals.set(", "(key, value) persisted for editors"],
+  ["pm.collectionVariables.get(", "(key)"],
+  ["pm.collectionVariables.set(", "(key, value)"],
+  ["pm.response.json()", "parsed response body (post-request only)"],
+  ["pm.response.text()", "response body as text"],
+  ["pm.response.code", "status code"],
+  ["pm.response.headers.get(", "(name) case-insensitive"],
+  ["pm.response.setBody(", "(string | object) replace the body shown in the UI"],
+  ["pm.response.setStatus(", "(code, text?) change the status shown in the UI"],
+  ["pm.response.setHeader(", "(key, value) change a response header"],
+  ["pm.response.removeHeader(", "(key)"],
+  ["pm.response.to.have.status(", "(code | text) assertion"],
+  ["pm.response.to.be.ok", "assertion: 200"],
+  ["pm.test(", "(name, fn) define a test"],
+  ["pm.expect(", "(value) chai/jest style assertions"],
+  ["postman.setGlobalVariable(", "(key, value) Postman compat"],
+  ["postman.setEnvironmentVariable(", "(key, value) Postman compat"],
+  ["CryptoJS.SHA1(", "hash: SHA1, SHA256, MD5, HmacSHA256 ..."],
+  ["CryptoJS.SHA256(", ""],
+  ["CryptoJS.MD5(", ""],
+  ["CryptoJS.HmacSHA256(", "(message, key)"],
+  ["CryptoJS.enc.Base64", "encoder"],
+  ["console.log(", "shows in the Console panel"],
+  ["btoa(", ""],
+  ["atob(", ""],
+].map(([value, description]) => ({ value, label: value, description }));
+
+export const SNIPPETS = {
+  pre: [
+    {
+      title: "Add / replace a header",
+      code: `pm.request.headers.upsert("X-Trace", Date.now());\n`,
+    },
+    {
+      title: "Add a query parameter",
+      code: `pm.request.params.upsert("ts", new Date().toISOString());\n`,
+    },
+    {
+      title: "Rewrite the JSON body",
+      code: `const body = JSON.parse(pm.request.body.raw);\nbody.sentAt = new Date().toISOString();\npm.request.body.raw = body; // objects are stringified for you\n`,
+    },
+    {
+      title: "SHA1 checksum of params (Postman style)",
+      code: `const body = JSON.parse(pm.request.body.raw);\nconst checksum = CryptoJS.SHA1(JSON.stringify(body.params) + pm.variables.get("api_key"));\npostman.setGlobalVariable("checksum", checksum);\nbody.checksum = "{{checksum}}";\npm.request.body.raw = body;\n`,
+    },
+    {
+      title: "HMAC-SHA256 signature header",
+      code: `const sig = CryptoJS.HmacSHA256(pm.request.body.raw, pm.variables.get("secret"));\npm.request.headers.upsert("X-Signature", sig.toString(CryptoJS.enc.Hex));\n`,
+    },
+    {
+      title: "Change URL / method",
+      code: `pm.request.url = pm.request.url + "/v2";\npm.request.method = "POST";\n`,
+    },
+  ],
+  post: [
+    {
+      title: "Test the status code",
+      code: `pm.test("Status is 200", () => pm.response.to.have.status(200));\n`,
+    },
+    {
+      title: "Save a token from the response",
+      code: `const data = pm.response.json();\nif (data.token) pm.environment.set("token", data.token);\n`,
+    },
+    {
+      title: "Reshape the body shown in the UI",
+      code: `const data = pm.response.json();\npm.response.setBody({ count: data.items?.length ?? 0, items: data.items });\n`,
+    },
+    {
+      title: "Change status / add a header in the UI",
+      code: `pm.response.setStatus(200, "OK (normalised)");\npm.response.setHeader("X-Processed", "true");\n`,
+    },
+    {
+      title: "Log something",
+      code: `console.log("took", pm.response.responseTime, "ms");\n`,
+    },
+  ],
+};

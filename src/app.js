@@ -41,10 +41,11 @@ export function createApp(db) {
   api.use("/workspaces/:wid", interopRouter(db));
   api.use((_req, _res, next) => next(new HttpError(404, "Not found")));
   app.use("/api", api);
-  app.use(
-    express.static(
-      path.join(path.dirname(fileURLToPath(import.meta.url)), "../public"),
-    ),
+  // The React UI is built to /dist (`npm run build`); unknown non-API paths fall back to the SPA shell.
+  const dist = path.join(path.dirname(fileURLToPath(import.meta.url)), "../dist");
+  app.use(express.static(dist));
+  app.get(/^\/(?!api\/|healthz).*/, (_req, res, next) =>
+    res.sendFile(path.join(dist, "index.html"), (e) => e && next()),
   );
   // Central error handler: never crashes the process, never leaks internals.
   app.use((err, _req, res, _next) => {
