@@ -674,4 +674,16 @@ export default {
   "gql.connectionParamsHint": "Dikirim bersama connection_init, misalnya token autentikasi.",
   "gql.subscribe": "Berlangganan",
   "gql.unsubscribe": "Berhenti berlangganan",
+  // rt
+  "rt.ev.comment": "Komentar",
+  "rt.ev.retry": "Coba lagi",
+  "rt.ev.reconnecting": "Menyambung ulang",
+  "rt.response": "Respons",
+  // sse
+  "sse.urlPlaceholder": "https://api.example.com/events   atau   {{baseUrl}}/stream",
+  "sse.start": "Mulai stream",
+  "sse.stop": "Hentikan",
+  "sse.reconnect": "Sambung ulang saat server mengakhiri stream",
+  "sse.reconnectHint": "Membuka kembali stream setelah jeda yang diminta server (retry:, bawaan 3 detik) dan melanjutkan dengan header Last-Event-ID, seperti EventSource di peramban.",
+  "sse.maxReconnects": "Menyerah setelah sekian kali sambung ulang",
 };

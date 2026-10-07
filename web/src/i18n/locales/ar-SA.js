@@ -674,4 +674,16 @@ export default {
   "gql.connectionParamsHint": "تُرسل مع connection_init، مثل رمز المصادقة.",
   "gql.subscribe": "اشتراك",
   "gql.unsubscribe": "إلغاء الاشتراك",
+  // rt
+  "rt.ev.comment": "تعليق",
+  "rt.ev.retry": "إعادة المحاولة",
+  "rt.ev.reconnecting": "جارٍ إعادة الاتصال",
+  "rt.response": "الاستجابة",
+  // sse
+  "sse.urlPlaceholder": "https://api.example.com/events   أو   {{baseUrl}}/stream",
+  "sse.start": "بدء التدفق",
+  "sse.stop": "إيقاف",
+  "sse.reconnect": "إعادة الاتصال عندما ينهي الخادم التدفق",
+  "sse.reconnectHint": "يعيد فتح التدفق بعد المهلة التي طلبها الخادم (retry:، الافتراضي 3 ثوانٍ) ويتابع بالترويسة Last-Event-ID، مثل EventSource في المتصفح.",
+  "sse.maxReconnects": "التوقف بعد هذا العدد من إعادات الاتصال",
 };

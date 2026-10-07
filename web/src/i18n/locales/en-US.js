@@ -670,4 +670,15 @@ export default {
   "gql.connectionParamsHint": "Sent with connection_init, for example an authentication token.",
   "gql.subscribe": "Subscribe",
   "gql.unsubscribe": "Unsubscribe",
+  // SSE
+  "rt.ev.comment": "Comment",
+  "rt.ev.retry": "Retry",
+  "rt.ev.reconnecting": "Reconnecting",
+  "rt.response": "Response",
+  "sse.urlPlaceholder": "https://api.example.com/events   or   {{baseUrl}}/stream",
+  "sse.start": "Stream",
+  "sse.stop": "Stop",
+  "sse.reconnect": "Reconnect when the server ends the stream",
+  "sse.reconnectHint": "Reopens the stream after the delay the server asked for (retry:, 3 seconds by default) and resumes with the Last-Event-ID header, like a browser's EventSource.",
+  "sse.maxReconnects": "Give up after this many reconnects",
 };

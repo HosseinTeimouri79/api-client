@@ -674,4 +674,16 @@ export default {
   "gql.connectionParamsHint": "Отправляются с connection_init, например токен аутентификации.",
   "gql.subscribe": "Подписаться",
   "gql.unsubscribe": "Отписаться",
+  // rt
+  "rt.ev.comment": "Комментарий",
+  "rt.ev.retry": "Повтор",
+  "rt.ev.reconnecting": "Переподключение",
+  "rt.response": "Ответ",
+  // sse
+  "sse.urlPlaceholder": "https://api.example.com/events   или   {{baseUrl}}/stream",
+  "sse.start": "Запустить поток",
+  "sse.stop": "Остановить",
+  "sse.reconnect": "Переподключаться, когда сервер завершает поток",
+  "sse.reconnectHint": "Снова открывает поток через паузу, запрошенную сервером (retry:, по умолчанию 3 секунды), и продолжает с заголовком Last-Event-ID — как EventSource в браузере.",
+  "sse.maxReconnects": "Прекратить после стольких переподключений",
 };

@@ -14,6 +14,7 @@ import { ScriptEditor } from "../components/editor/ScriptEditor.jsx";
 import { CodeSnippetModal } from "./CodeSnippet.jsx";
 import { WebSocketMessage, WebSocketSettings } from "./realtime/WebSocketPanels.jsx";
 import { GrpcMessage, GrpcProto, GrpcSettings } from "./realtime/GrpcPanels.jsx";
+import { SseSettings } from "./realtime/SsePanels.jsx";
 import { GraphqlQuery, GraphqlSchema, GraphqlSettings } from "./realtime/GraphqlPanels.jsx";
 import { PROTOCOLS, PROTOCOL_DEFAULTS, protocolOf, liveTab } from "../lib/protocols.js";
 import { modals } from "../components/ui/modals.js";
@@ -62,6 +63,7 @@ export function RequestEditor({ tab }) {
   const byProtocol = {
     websocket: [{ id: "message", label: t("ws.message"), badge: r.protocol_data?.message?.trim() ? "●" : false }, http[0], http[1], http[3], { id: "settings", label: t("ws.settings"), badge: r.protocol_data?.subprotocols?.trim() ? "●" : false }, docs],
     graphql: [{ id: "query", label: t("gql.query"), badge: r.protocol_data?.query?.trim() ? "●" : false }, http[0], http[1], http[3], { id: "schema", label: t("gql.schema"), badge: tab.schema?.sdl ? "●" : false }, { id: "settings", label: t("ws.settings"), badge: r.protocol_data?.httpMethod === "GET" || r.protocol_data?.wsUrl?.trim() || r.protocol_data?.connectionParams?.trim() ? "●" : false }, http[4], http[5], docs],
+    sse: [http[0], http[1], ...(r.method === "POST" ? [http[2]] : []), http[3], { id: "settings", label: t("ws.settings"), badge: r.protocol_data?.reconnect ? "●" : false }, docs],
     grpc: [{ id: "message", label: t("grpc.message"), badge: r.protocol_data?.method ? "●" : false }, { id: "proto", label: t("grpc.proto"), badge: r.protocol_data?.proto?.trim() ? "●" : false }, { ...http[1], label: t("grpc.metadata") }, http[3], { id: "settings", label: t("ws.settings"), badge: r.protocol_data?.tlsInsecure || r.protocol_data?.deadlineMs ? "●" : false }, docs],
   };
   const tabs = byProtocol[r.protocol] ?? http;
@@ -81,7 +83,7 @@ export function RequestEditor({ tab }) {
         <div className="urlbar">
           <Select className="protocol-select" value={r.protocol ?? "http"} options={PROTOCOL_OPTS} disabled={connected} title={connected ? t("proto.locked") : undefined} onChange={switchProtocol} aria-label={t("proto.label")}
             renderValue={(o) => <span className="proto-t">{o.label}</span>} renderOption={(o) => <span className="proto-opt">{o.label}{o.disabled && <em>{t("proto.soon")}</em>}</span>} />
-          {!proto.live && !proto.noMethod && <Select className="method-select" value={r.method} options={METHOD_OPTS} onChange={(method) => set({ method })} aria-label={t("req.method")} renderValue={(o) => <span className={`m-t m-${o.value}`}>{o.label}</span>} renderOption={(o) => <span className={`m-t m-${o.value}`}>{o.label}</span>} />}
+          {!proto.noMethod && (!proto.live || proto.methods) && <Select className="method-select" value={r.method} options={proto.methods ? METHOD_OPTS.filter((o) => proto.methods.includes(o.value)) : METHOD_OPTS} onChange={(method) => set({ method })} aria-label={t("req.method")} renderValue={(o) => <span className={`m-t m-${o.value}`}>{o.label}</span>} renderOption={(o) => <span className={`m-t m-${o.value}`}>{o.label}</span>} />}
           <VarInput className="url-input" value={r.url} placeholder={proto.urlKey ? t(proto.urlKey) : t("req.urlPlaceholder")} aria-label={t("req.url")} inputRef={urlRef}
             onChange={(url) => set({ url })} onBlur={extractQuery} onKeyDown={(e) => { if (e.key === "Enter" && !e.ctrlKey && !e.metaKey) { extractQuery(); send(); } }} />
           {live ? (
@@ -96,7 +98,7 @@ export function RequestEditor({ tab }) {
           {sub === "query" && <GraphqlQuery tab={tab} />}
           {sub === "schema" && <GraphqlSchema tab={tab} />}
           {sub === "proto" && <GrpcProto tab={tab} />}
-          {sub === "settings" && (r.protocol === "grpc" ? <GrpcSettings tab={tab} /> : r.protocol === "graphql" ? <GraphqlSettings tab={tab} /> : <WebSocketSettings tab={tab} />)}
+          {sub === "settings" && (r.protocol === "grpc" ? <GrpcSettings tab={tab} /> : r.protocol === "sse" ? <SseSettings tab={tab} /> : r.protocol === "graphql" ? <GraphqlSettings tab={tab} /> : <WebSocketSettings tab={tab} />)}
           {sub === "params" && <KeyValueEditor rows={r.params} readOnly={ro} onChange={(params) => set({ params })} keyPlaceholder={t("req.parameter")} />}
           {sub === "headers" && <KeyValueEditor rows={r.headers} readOnly={ro} onChange={(headers) => set({ headers })} keySuggestions={proto.live ? undefined : HEADER_SUGG} valueSuggestions={proto.live ? undefined : (k) => HEADER_VALUES[k.toLowerCase()]} keyPlaceholder={r.protocol === "grpc" ? t("grpc.metadataKey") : t("req.header")} />}
           {sub === "body" && <BodyEditor body={r.body} readOnly={ro} onChange={(body) => set({ body })} />}

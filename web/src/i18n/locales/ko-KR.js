@@ -674,4 +674,16 @@ export default {
   "gql.connectionParamsHint": "connection_init과 함께 전송됩니다. 예: 인증 토큰.",
   "gql.subscribe": "구독",
   "gql.unsubscribe": "구독 취소",
+  // rt
+  "rt.ev.comment": "주석",
+  "rt.ev.retry": "재시도",
+  "rt.ev.reconnecting": "다시 연결하는 중",
+  "rt.response": "응답",
+  // sse
+  "sse.urlPlaceholder": "https://api.example.com/events   또는   {{baseUrl}}/stream",
+  "sse.start": "스트림 시작",
+  "sse.stop": "중지",
+  "sse.reconnect": "서버가 스트림을 끝내면 다시 연결",
+  "sse.reconnectHint": "서버가 요청한 대기 시간(retry:, 기본 3초) 뒤에 스트림을 다시 열고, 브라우저의 EventSource처럼 Last-Event-ID 헤더로 이어서 받습니다.",
+  "sse.maxReconnects": "이 횟수만큼 다시 연결한 뒤 포기",
 };

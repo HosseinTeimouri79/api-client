@@ -674,4 +674,16 @@ export default {
   "gql.connectionParamsHint": "همراه connection_init ارسال می‌شود، مثلاً یک توکن احراز هویت.",
   "gql.subscribe": "اشتراک",
   "gql.unsubscribe": "لغو اشتراک",
+  // rt
+  "rt.ev.comment": "توضیح",
+  "rt.ev.retry": "تلاش مجدد",
+  "rt.ev.reconnecting": "در حال اتصال دوباره",
+  "rt.response": "پاسخ",
+  // sse
+  "sse.urlPlaceholder": "https://api.example.com/events   یا   {{baseUrl}}/stream",
+  "sse.start": "شروع جریان",
+  "sse.stop": "توقف",
+  "sse.reconnect": "وقتی سرور جریان را پایان داد دوباره متصل شو",
+  "sse.reconnectHint": "جریان را پس از مهلتی که سرور خواسته (retry:، پیش‌فرض ۳ ثانیه) دوباره باز می‌کند و مانند EventSource مرورگر با سرآیند Last-Event-ID ادامه می‌دهد.",
+  "sse.maxReconnects": "پس از این تعداد اتصال دوباره منصرف شو",
 };

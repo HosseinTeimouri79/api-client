@@ -674,4 +674,16 @@ export default {
   "gql.connectionParamsHint": "connection_init के साथ भेजे जाते हैं, जैसे प्रमाणीकरण टोकन।",
   "gql.subscribe": "सब्सक्राइब करें",
   "gql.unsubscribe": "सब्सक्रिप्शन रद्द करें",
+  // rt
+  "rt.ev.comment": "टिप्पणी",
+  "rt.ev.retry": "पुनः प्रयास",
+  "rt.ev.reconnecting": "फिर से कनेक्ट हो रहा है",
+  "rt.response": "प्रतिक्रिया",
+  // sse
+  "sse.urlPlaceholder": "https://api.example.com/events   या   {{baseUrl}}/stream",
+  "sse.start": "स्ट्रीम शुरू करें",
+  "sse.stop": "रोकें",
+  "sse.reconnect": "सर्वर के स्ट्रीम समाप्त करने पर फिर से कनेक्ट करें",
+  "sse.reconnectHint": "सर्वर द्वारा माँगी गई देरी (retry:, डिफ़ॉल्ट 3 सेकंड) के बाद स्ट्रीम फिर खोलता है और ब्राउज़र के EventSource की तरह Last-Event-ID हेडर के साथ आगे बढ़ता है।",
+  "sse.maxReconnects": "इतने बार फिर से कनेक्ट करने के बाद हार मानें",
 };

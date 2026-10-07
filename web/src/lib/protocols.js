@@ -5,7 +5,7 @@ export const PROTOCOLS = [
   { id: "websocket", label: "WebSocket", tag: "WS", icon: "plug", live: true, implemented: true, urlKey: "ws.urlPlaceholder", firstTab: "message", actionKeys: ["rt.connect", "rt.disconnect"], detailsKey: "rt.handshake" },
   { id: "grpc", label: "gRPC", tag: "gRPC", icon: "diagram-project", live: true, implemented: true, urlKey: "grpc.urlPlaceholder", firstTab: "message", actionKeys: ["grpc.invoke", "grpc.cancel"], detailsKey: "rt.metadata" },
   { id: "graphql", label: "GraphQL", tag: "GQL", icon: "circle-nodes", live: false, implemented: true, noMethod: true, urlKey: "gql.urlPlaceholder", firstTab: "query", actionKeys: ["gql.subscribe", "gql.unsubscribe"], detailsKey: "rt.handshake" },
-  { id: "sse", label: "SSE", tag: "SSE", icon: "tower-broadcast", live: true, implemented: false },
+  { id: "sse", label: "SSE", tag: "SSE", icon: "tower-broadcast", live: true, implemented: true, methods: ["GET", "POST"], urlKey: "sse.urlPlaceholder", firstTab: "params", actionKeys: ["sse.start", "sse.stop"], detailsKey: "rt.response" },
   { id: "tcp", label: "TCP", tag: "TCP", icon: "network-wired", live: true, implemented: false },
   { id: "udp", label: "UDP", tag: "UDP", icon: "satellite-dish", live: true, implemented: false },
   { id: "mqtt", label: "MQTT", tag: "MQTT", icon: "rss", live: true, implemented: false },
@@ -21,5 +21,6 @@ export const PROTOCOL_DEFAULTS = {
   http: {},
   websocket: { subprotocols: "", message: "", messageFormat: "text" },
   graphql: { query: "", variables: "", operationName: "", httpMethod: "POST", transport: "graphql-transport-ws", wsUrl: "", connectionParams: "" },
+  sse: { reconnect: false, maxReconnects: 10 },
   grpc: { proto: "", service: "", method: "", message: "{}", tlsInsecure: false, deadlineMs: 0 },
 };

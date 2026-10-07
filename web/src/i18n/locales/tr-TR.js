@@ -674,4 +674,16 @@ export default {
   "gql.connectionParamsHint": "connection_init ile gönderilir, örneğin bir kimlik doğrulama jetonu.",
   "gql.subscribe": "Abone ol",
   "gql.unsubscribe": "Abonelikten çık",
+  // rt
+  "rt.ev.comment": "Yorum",
+  "rt.ev.retry": "Yeniden deneme",
+  "rt.ev.reconnecting": "Yeniden bağlanıyor",
+  "rt.response": "Yanıt",
+  // sse
+  "sse.urlPlaceholder": "https://api.example.com/events   veya   {{baseUrl}}/stream",
+  "sse.start": "Akışı başlat",
+  "sse.stop": "Durdur",
+  "sse.reconnect": "Sunucu akışı bitirince yeniden bağlan",
+  "sse.reconnectHint": "Akışı sunucunun istediği bekleme süresinden sonra (retry:, varsayılan 3 saniye) yeniden açar ve bir tarayıcının EventSource'u gibi Last-Event-ID başlığıyla devam eder.",
+  "sse.maxReconnects": "Bu kadar yeniden bağlanmadan sonra vazgeç",
 };

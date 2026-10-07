@@ -674,4 +674,16 @@ export default {
   "gql.connectionParamsHint": "Enviados com connection_init, por exemplo um token de autenticação.",
   "gql.subscribe": "Assinar",
   "gql.unsubscribe": "Cancelar assinatura",
+  // rt
+  "rt.ev.comment": "Comentário",
+  "rt.ev.retry": "Nova tentativa",
+  "rt.ev.reconnecting": "Reconectando",
+  "rt.response": "Resposta",
+  // sse
+  "sse.urlPlaceholder": "https://api.example.com/events   ou   {{baseUrl}}/stream",
+  "sse.start": "Transmitir",
+  "sse.stop": "Parar",
+  "sse.reconnect": "Reconectar quando o servidor encerrar o stream",
+  "sse.reconnectHint": "Reabre o stream após a espera pedida pelo servidor (retry:, 3 segundos por padrão) e continua com o cabeçalho Last-Event-ID, como o EventSource de um navegador.",
+  "sse.maxReconnects": "Desistir após esta quantidade de reconexões",
 };

@@ -674,4 +674,16 @@ export default {
   "gql.connectionParamsHint": "随 connection_init 发送，例如身份验证令牌。",
   "gql.subscribe": "订阅",
   "gql.unsubscribe": "取消订阅",
+  // rt
+  "rt.ev.comment": "注释",
+  "rt.ev.retry": "重试",
+  "rt.ev.reconnecting": "正在重新连接",
+  "rt.response": "响应",
+  // sse
+  "sse.urlPlaceholder": "https://api.example.com/events   或   {{baseUrl}}/stream",
+  "sse.start": "开始流式接收",
+  "sse.stop": "停止",
+  "sse.reconnect": "服务器结束流后自动重连",
+  "sse.reconnectHint": "按服务器要求的等待时间（retry:，默认 3 秒）重新打开流，并像浏览器的 EventSource 一样携带 Last-Event-ID 请求头继续接收。",
+  "sse.maxReconnects": "重连达到此次数后放弃",
 };

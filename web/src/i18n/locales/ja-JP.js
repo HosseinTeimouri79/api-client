@@ -674,4 +674,16 @@ export default {
   "gql.connectionParamsHint": "connection_init とともに送信されます（例: 認証トークン）。",
   "gql.subscribe": "サブスクライブ",
   "gql.unsubscribe": "サブスクライブ解除",
+  // rt
+  "rt.ev.comment": "コメント",
+  "rt.ev.retry": "再試行",
+  "rt.ev.reconnecting": "再接続中",
+  "rt.response": "レスポンス",
+  // sse
+  "sse.urlPlaceholder": "https://api.example.com/events   または   {{baseUrl}}/stream",
+  "sse.start": "ストリーム開始",
+  "sse.stop": "停止",
+  "sse.reconnect": "サーバーがストリームを終了したら再接続する",
+  "sse.reconnectHint": "サーバーが指定した待ち時間（retry:、既定は3秒）の後にストリームを開き直し、ブラウザーの EventSource と同様に Last-Event-ID ヘッダーで続きから受信します。",
+  "sse.maxReconnects": "この回数再接続したら諦める",
 };

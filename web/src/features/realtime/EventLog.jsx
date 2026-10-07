@@ -37,8 +37,10 @@ function Entry({ e }) {
           <Icon name={e.direction === "out" ? "arrow-up" : e.direction === "in" ? "arrow-down" : e.type === "error" ? "triangle-exclamation" : "circle-info"} />
         </span>
         {!isMessage(e) && <span className="ev-badge">{label}</span>}
+        {isMessage(e) && e.event && e.event !== "message" && <span className="ev-badge">{e.event}</span>}
         {e.binary && <span className="ev-badge bin">{t("rt.binary")}</span>}
         <span className="ev-text">{text || <i className="muted">{t("rt.emptyMessage")}</i>}</span>
+        {e.id ? <span className="ev-size">#{e.id}</span> : null}
         {e.size != null && <span className="ev-size">{fmtBytes(e.size)}</span>}
         <span className="ev-time">{clock(e.ts)}</span>
       </div>
