@@ -219,7 +219,12 @@ input.mono { font-family: var(--mono); font-size: 12px; }
 .admin-search input:not([type=checkbox]):not([type=file]) { padding-left: 32px; }
 @media (max-width: 640px) { .atable th:nth-child(3), .atable td:nth-child(3), .atable th:nth-child(4), .atable td:nth-child(4) { display: none; } .atable td { padding: 9px 6px; } }
 
-/* ===== settings ===== */
+/* ===== settings, language, RTL ===== */
 .settings-in { max-width: 680px; } .settings-sec { display: flex; flex-direction: column; gap: 10px; padding-bottom: 16px; border-bottom: 1px solid var(--border); } .settings-sec:last-child { border: 0; padding-bottom: 0; }
 .photo-row { gap: 18px; align-items: center; } img.avatar { display: block; }
+.auth-lang { display: flex; justify-content: center; gap: 4px; } .auth-lang button { background: none; border: 0; color: var(--muted); font: inherit; cursor: pointer; padding: 2px 8px; border-radius: 6px; } .auth-lang button:hover { color: var(--text); } .auth-lang button.on { color: var(--accent); font-weight: 600; }
+/* The request builder, sidebar and console are technical content and keep their left-to-right layout in every language. */
+.side, .main, .console, .side-split { direction: ltr; }
+[dir="rtl"] .admin-search > i { left: auto; right: 10px; } [dir="rtl"] .admin-search input:not([type=checkbox]):not([type=file]) { padding-left: 10px; padding-right: 32px; }
+[dir="rtl"] .atable th, [dir="rtl"] .atable .num { text-align: right; } [dir="rtl"] .fa-chevron-left, [dir="rtl"] .fa-chevron-right, [dir="rtl"] .fa-arrow-left { transform: scaleX(-1); }
 .auth-closed { font-size: 12px; border: 1px dashed var(--line); border-radius: var(--r); padding: 8px 10px; }

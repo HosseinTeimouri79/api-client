@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { cx } from "../../lib/utils.js";
 import { IconButton } from "./Button.jsx";
 import { modals } from "./modals.js";
+import { useT } from "../../i18n/index.js";
 
 export function ModalHost() {
   const list = useSyncExternalStore(modals.subscribe, modals.get);
@@ -12,6 +13,7 @@ const Slot = ({ m }) => m.render(m.close);
 
 /** Frame used by every dialog. Esc closes the topmost one; backdrop click closes; focus returns to the opener. */
 export function Modal({ title, onClose, size = "md", children, footer, icon }) {
+  const t = useT();
   const ref = useRef(null);
   useEffect(() => {
     const prev = document.activeElement;
@@ -35,7 +37,7 @@ export function Modal({ title, onClose, size = "md", children, footer, icon }) {
       <div ref={ref} className={cx("modal", `modal-${size}`)} role="dialog" aria-modal="true" aria-label={title} tabIndex={-1}>
         <header className="modal-h">
           <h2>{title}</h2>
-          <IconButton icon="xmark" label="Close" onClick={onClose} />
+          <IconButton icon="xmark" label={t("common.close")} onClick={onClose} />
         </header>
         <div className="modal-body">{children}</div>
         {footer && <footer className="modal-f">{footer}</footer>}

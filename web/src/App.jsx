@@ -16,6 +16,7 @@ import { RequestEditor } from "./features/RequestEditor.jsx";
 import { CollectionSettings } from "./features/CollectionSettings.jsx";
 import { AdminPanel } from "./features/AdminPanel.jsx";
 import { SettingsPage } from "./features/SettingsPage.jsx";
+import { applyLocale, useI18n, useT } from "./i18n/index.js";
 import { Console } from "./features/Console.jsx";
 
 const LS = (k, v) => { try { localStorage.setItem(k, String(v)); } catch { /* private mode */ } };
@@ -49,6 +50,7 @@ function Workspace() {
 
 function Shell() {
   const { ws, sidebarW, view, user } = useStore();
+  const t = useT();
   const { set, createWorkspace } = useStore.getState();
   return (
     <div className="app">
@@ -64,7 +66,7 @@ function Shell() {
           <Workspace />
         </div>
       ) : (
-        <div className="empty body"><div><Icon name="briefcase" className="big" /><h2>Welcome</h2><p className="muted">Create a workspace to get started.</p><Button variant="primary" icon="plus" onClick={createWorkspace}>New workspace</Button></div></div>
+        <div className="empty body"><div><Icon name="briefcase" className="big" /><h2>{t("welcome.title")}</h2><p className="muted">{t("welcome.text")}</p><Button variant="primary" icon="plus" onClick={createWorkspace}>{t("welcome.new")}</Button></div></div>
       )}
       {ws && view === "app" && <Console />}
     </div>
@@ -73,7 +75,7 @@ function Shell() {
 
 export default function App() {
   const { user, booting, theme } = useStore();
-  useEffect(() => { document.documentElement.dataset.theme = theme; useStore.getState().boot(); }, []);
+  useEffect(() => { document.documentElement.dataset.theme = theme; applyLocale(useI18n.getState().locale); useStore.getState().boot(); }, []);
   useEffect(() => {
     const key = (e) => {
       const s = useStore.getState(), mod = e.ctrlKey || e.metaKey;

@@ -5,6 +5,7 @@ import { clone } from "./lib/utils.js";
 import { toast } from "./components/ui/Toasts.jsx";
 import { prompt, confirm } from "./components/ui/dialogs.jsx";
 import { pickCollection } from "./features/pickers.jsx";
+import { applyLocale, t } from "./i18n/index.js";
 
 const LS = {
   get: (k, d) => { try { return localStorage.getItem(k) ?? d; } catch { return d; } },
@@ -32,6 +33,7 @@ export const useStore = create((set, get) => {
     // ---------- session ----------
     async boot() {
       try { set({ user: (await api("GET", "/auth/me")).user }); } catch { set({ user: null }); }
+      if (get().user?.locale) applyLocale(get().user.locale); // the saved account language wins over the device default
       if (get().user) await actions.loadWorkspaces();
       set({ booting: false });
     },
@@ -58,15 +60,19 @@ export const useStore = create((set, get) => {
       set({ tree, envs, envId: envs[0]?.id ?? null });
     }),
     async createWorkspace() {
-      const name = await prompt({ title: "New workspace", label: "Workspace name", okText: "Create" });
+      const name = await prompt({ title: t("ws.newTitle"), label: t("ws.name"), okText: t("common.create") });
       if (!name) return;
       const w = await guard(() => api("POST", "/workspaces", { name }))();
       if (!w) return;
       set({ workspaces: await api("GET", "/workspaces") });
       await actions.openWorkspace(w.id);
     },
-    /** Updates the signed-in user from a profile response (name, avatar…). */
+    /** Updates the signed-in user from a profile response (name, avatar, language…). */
     setUser(user) { set({ user }); },
+    async setLocale(id) {
+      applyLocale(id);
+      if (get().user) await guard(async () => set({ user: (await api("PATCH", "/me", { locale: id })).user }))();
+    },
     setTheme(theme) { LS.set("theme", theme); document.documentElement.dataset.theme = theme; set({ theme }); },
     refreshEnvs: guard(async () => {
       const [envs, ws] = await Promise.all([api("GET", W("/environments")), api("GET", W())]);
