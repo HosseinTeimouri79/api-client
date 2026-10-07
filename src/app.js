@@ -26,8 +26,12 @@ export function createApp(db) {
           objectSrc: ["'none'"],
           baseUri: ["'self'"],
           formAction: ["'self'"],
+          upgradeInsecureRequests: null, // <-- این خط
         },
       },
+      strictTransportSecurity: false, // <-- و این
+      crossOriginOpenerPolicy: false, // اگر هنوز هشدار COOP را نمی‌خواهید
+      originAgentCluster: false,
     }),
   );
   app.use(cookieParser());
@@ -42,7 +46,10 @@ export function createApp(db) {
   api.use((_req, _res, next) => next(new HttpError(404, "Not found")));
   app.use("/api", api);
   // The React UI is built to /dist (`npm run build`); unknown non-API paths fall back to the SPA shell.
-  const dist = path.join(path.dirname(fileURLToPath(import.meta.url)), "../dist");
+  const dist = path.join(
+    path.dirname(fileURLToPath(import.meta.url)),
+    "../dist",
+  );
   app.use(express.static(dist));
   app.get(/^\/(?!api\/|healthz).*/, (_req, res, next) =>
     res.sendFile(path.join(dist, "index.html"), (e) => e && next()),
@@ -50,15 +57,13 @@ export function createApp(db) {
   // Central error handler: never crashes the process, never leaks internals.
   app.use((err, _req, res, _next) => {
     if (err instanceof ZodError)
-      return res
-        .status(400)
-        .json({
-          error: "Validation failed",
-          details: err.issues.map((i) => ({
-            path: i.path.join("."),
-            message: i.message,
-          })),
-        });
+      return res.status(400).json({
+        error: "Validation failed",
+        details: err.issues.map((i) => ({
+          path: i.path.join("."),
+          message: i.message,
+        })),
+      });
     if (err?.type === "entity.too.large")
       return res.status(413).json({ error: "Payload too large" });
     if (err?.type === "entity.parse.failed")
