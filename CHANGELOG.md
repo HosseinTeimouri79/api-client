@@ -11,6 +11,13 @@ The version is shown in **Settings → General → About** and returned by `GET 
 
 ## [Unreleased]
 
+## [1.5.0] - 2026-10-08
+
+### Added
+- **SSE** (Server-Sent Events): stream an endpoint with GET or POST and read events with their names, ids and multi-line data,
+  comments and `retry:` hints. Optional reconnect that resumes with `Last-Event-ID`. A standards-based incremental parser
+  (any line ending, chunk boundaries anywhere, BOM). Redirects are followed with the address check on every hop.
+
 ## [1.4.0] - 2026-10-08
 
 ### Added

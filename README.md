@@ -372,6 +372,17 @@ answer is shown and the tunnel is closed again.
 - **Schema** tab: *Fetch schema* runs an introspection query through the same request (auth, scripts and address checks) and
   shows the schema as SDL with descriptions; the filter keeps the matching type blocks.
 
+**SSE (Server-Sent Events).** Start a stream and watch the events arrive.
+
+- `GET` (default) or `POST` with a body, for the APIs that stream over POST. The request is sent with
+  `Accept: text/event-stream`; params, headers, auth and `{{variables}}` work as in HTTP. Redirects are followed.
+- Each event appears in the log with its name (`event:`), id and data (multi-line `data:` is joined, JSON is pretty-printed when
+  opened); comments (keep-alive lines), `retry:` hints and reconnects are listed as events. The **Response** tab shows the
+  status and headers. An answer that is not `text/event-stream`, or an error status, is shown with the server's reply.
+- **Settings:** *Reconnect when the server ends the stream* waits for the server's `retry:` delay (3 seconds by default), reopens the
+  stream with `Last-Event-ID` and gives up after the chosen number of reconnects. **Stop** ends the stream.
+- A single event cannot be larger than the response limit from Settings (default 10 MB).
+
 ### History and console
 
 History is stored per user and workspace (latest 200 runs). The console shows structured logs of every run, including
@@ -633,7 +644,7 @@ src/
   middleware/    auth.js (authenticate, csrfGuard, requireWorkspace, requireAdmin, audit)
   routes/        auth.js me.js admin.js workspaces.js content.js interop.js sessions.js protocolTools.js
   services/      permissions.js variables.js executor.js runner.js scriptEngine.js ssrf.js sessions.js
-  protocols/     index.js (protocol list) common.js websocket.js grpc.js graphql.js (one module per protocol)
+  protocols/     index.js (protocol list) common.js websocket.js grpc.js graphql.js sse.js (one module per protocol)
                  interop.js (Postman/Hoppscotch) settings.js userSettings.js locales.js
 web/             index.html vite.config.js
   src/           main.jsx App.jsx store.js api.js
@@ -750,7 +761,7 @@ Current version: **1.0.0**.
 ## Roadmap
 
 Not yet available: file upload in multipart bodies, inviting people who have no account yet, share-by-link, XML pretty-printing,
-a collection runner, mock servers, OpenAPI import, and per-secret encryption. SSE, TCP, UDP, MQTT and AMQP are
+a collection runner, mock servers, OpenAPI import, and per-secret encryption. TCP, UDP, MQTT and AMQP are
 being added one protocol at a time (see the changelog). The code is structured so these can be added without rewriting the
 core: a `protocol` column, one module per live protocol in `src/protocols/` behind the session manager, a runner route on top of
 `runner.js` (which already returns test results), and new routes and services reading the same tables.
