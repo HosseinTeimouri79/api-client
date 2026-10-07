@@ -11,13 +11,15 @@ import { toast } from "../components/ui/Toasts.jsx";
 import { prompt, confirm } from "../components/ui/dialogs.jsx";
 import { KeyValueEditor } from "../components/editor/KeyValueEditor.jsx";
 import { exportRemote } from "./InteropModal.jsx";
+import { t as tr, useT } from "../i18n/index.js";
 
 const WS = "__ws";
 export function EnvModal({ close }) {
+  const t = useT();
   const { ws, envs, envId, wsVars } = useStore();
   const { W, guard, refreshEnvs } = useStore.getState();
   const c = can(ws);
-  const [items, setItems] = useState(() => [{ id: WS, name: "Workspace (global) variables", variables: clone(wsVars) }, ...clone(envs)]);
+  const [items, setItems] = useState(() => [{ id: WS, name: tr("env.globals"), variables: clone(wsVars) }, ...clone(envs)]);
   const [selId, setSelId] = useState(() => (items.find((i) => i.id === envId) ?? items[1] ?? items[0]).id);
   const [fmt, setFmt] = useState("postman");
   const [dirty, setDirty] = useState(false);
@@ -33,15 +35,15 @@ export function EnvModal({ close }) {
     else await api("PUT", W(`/environments/${sel.id}`), { name: sel.name, variables });
     setDirty(false);
   };
-  const done = async () => { if (dirty && !ro && !(await confirm({ title: "Unsaved changes", message: "Close without saving?", okText: "Discard" }))) return; await refreshEnvs(); close(); };
+  const done = async () => { if (dirty && !ro && !(await confirm({ title: t("dlg.unsavedTitle"), message: t("env.closeUnsaved"), okText: t("dlg.discard") }))) return; await refreshEnvs(); close(); };
   const create = guard(async () => {
-    const name = await prompt({ title: "New environment", label: "Environment name", okText: "Create" });
+    const name = await prompt({ title: t("env.newTitle"), label: t("env.nameLabel"), okText: t("common.create") });
     if (!name) return;
     const e = await api("POST", W("/environments"), { name, variables: [] });
     setItems((l) => [...l, e]); setSelId(e.id);
   });
   const del = guard(async () => {
-    if (!(await confirm({ title: "Delete environment", message: `Delete “${sel.name}”?` }))) return;
+    if (!(await confirm({ title: t("env.deleteTitle"), message: t("env.deleteMsg", { name: sel.name }) }))) return;
     await api("DELETE", W(`/environments/${sel.id}`));
     setItems((l) => l.filter((i) => i.id !== sel.id)); setSelId(items[0].id); setDirty(false);
   });
@@ -50,35 +52,35 @@ export function EnvModal({ close }) {
     let added = 0;
     for (const f of files) {
       try { added += (await api("POST", W("/import"), { data: JSON.parse(await f.text()), only: "environment" })).environments; }
-      catch (x) { toast(`${f.name}: ${x instanceof SyntaxError ? "not valid JSON" : x.message}`, "error"); }
+      catch (x) { toast(`${f.name}: ${x instanceof SyntaxError ? t("interop.notJson") : x.message}`, "error"); }
     }
     if (!added) return;
     const fresh = await api("GET", W("/environments")), news = fresh.filter((e2) => !items.some((i) => i.id === e2.id));
     setItems((l) => [...l, ...news]); if (news[0]) setSelId(news[0].id);
-    toast(`Imported ${added} environment${added > 1 ? "s" : ""}`, "ok");
+    toast(t("env.imported", { n: added }), "ok");
   });
   const exp = guard(async () => {
-    if (dirty && !ro && isEnv) { await saveSel(); toast("Saved", "ok"); }
+    if (dirty && !ro && isEnv) { await saveSel(); toast(t("common.saved"), "ok"); }
     await exportRemote({ format: fmt, environment: sel.id });
   });
 
   return (
-    <Modal title="Environments & variables" size="lg" onClose={done}
+    <Modal title={t("env.title")} size="lg" onClose={done}
       footer={<>
-        {isEnv && c.write && <Button variant="danger" icon="trash-can" className="mr-auto" onClick={del}>Delete</Button>}
-        <Button onClick={done}>Close</Button>
-        {!ro && <Button variant="primary" icon="floppy-disk" onClick={guard(async () => { await saveSel(); toast("Saved", "ok"); })}>Save</Button>}
+        {isEnv && c.write && <Button variant="danger" icon="trash-can" className="mr-auto" onClick={del}>{t("common.delete")}</Button>}
+        <Button onClick={done}>{t("common.close")}</Button>
+        {!ro && <Button variant="primary" icon="floppy-disk" onClick={guard(async () => { await saveSel(); toast(t("common.saved"), "ok"); })}>{t("common.save")}</Button>}
       </>}>
       <div className="row wrap">
-        <div className="grow"><Select value={selId} onChange={(v) => setSelId(v)} options={options} aria-label="Environment" /></div>
-        {c.write && <Button icon="plus" onClick={create}>New</Button>}
-        {c.write && <label className="btn btn-default btn-md" title="Import Postman or Hoppscotch environment .json file(s)"><Icon name="file-import" /><span className="btn-label">Import</span><input type="file" accept=".json,application/json" multiple hidden onChange={importFiles} /></label>}
-        <Select value={fmt} onChange={setFmt} aria-label="Export format" options={[{ value: "postman", label: "Postman (v2.1)" }, { value: "hoppscotch", label: "Hoppscotch" }]} />
-        <Button icon="file-export" disabled={!isEnv} title={!isEnv ? "Pick an environment to export" : "Download as JSON"} onClick={exp}>Export</Button>
+        <div className="grow"><Select value={selId} onChange={(v) => setSelId(v)} options={options} aria-label={t("top.environment")} /></div>
+        {c.write && <Button icon="plus" onClick={create}>{t("common.new")}</Button>}
+        {c.write && <label className="btn btn-default btn-md" title={t("env.importTitle")}><Icon name="file-import" /><span className="btn-label">{t("common.import")}</span><input type="file" accept=".json,application/json" multiple hidden onChange={importFiles} /></label>}
+        <Select value={fmt} onChange={setFmt} aria-label={t("interop.format")} options={[{ value: "postman", label: "Postman (v2.1)" }, { value: "hoppscotch", label: "Hoppscotch" }]} />
+        <Button icon="file-export" disabled={!isEnv} title={!isEnv ? t("env.pickToExport") : t("env.downloadJson")} onClick={exp}>{t("common.export")}</Button>
       </div>
-      {isEnv && <Field label="Name"><input value={sel.name} disabled={ro} onChange={(e) => update({ name: e.target.value })} /></Field>}
-      <KeyValueEditor rows={sel.variables} readOnly={ro} onChange={(variables) => update({ variables })} keyPlaceholder="Variable" />
-      <div className="muted">Use as <code>{"{{name}}"}</code>. Precedence: runtime &gt; request &gt; collection &gt; environment &gt; workspace (globals).</div>
+      {isEnv && <Field label={t("env.name")}><input value={sel.name} disabled={ro} onChange={(e) => update({ name: e.target.value })} /></Field>}
+      <KeyValueEditor rows={sel.variables} readOnly={ro} onChange={(variables) => update({ variables })} keyPlaceholder={t("col.variable")} />
+      <div className="muted">{t("env.help", { example: "{{name}}" })}</div>
     </Modal>
   );
 }

@@ -137,7 +137,7 @@ pm.test("hello is world", () => pm.expect(d.hello).to.equal("world"));`,
   await page.getByRole("combobox", { name: "People to add" }).fill("ali");
   await page.getByRole("option", { name: /Ali Reza/ }).click();
   await page.getByRole("button", { name: /^Add 2/ }).click();
-  await page.getByText("2 members added").waitFor();
+  await page.getByText("Members added: 2").waitFor();
   const row = page.locator(".member", { hasText: "Sara Lee" });
   await row.getByRole("combobox").click();
   await page.getByRole("option", { name: "editor" }).click();

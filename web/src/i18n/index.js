@@ -1,33 +1,41 @@
 import { create } from "zustand";
-import { en } from "./en.js";
-import { fa } from "./fa.js";
+import enUS from "./locales/en-US.js";
+import { LOCALES, DEFAULT_LOCALE, normalizeLocale, matchLocale } from "./locales.js";
 
-// Tiny i18n: flat keys, `{name}` placeholders, English fallback. Add a language = add a dictionary + an entry here.
-export const LOCALES = [
-  { id: "en", label: "English", dir: "ltr" },
-  { id: "fa", label: "فارسی", dir: "rtl" },
-];
-const DICT = { en, fa };
+export { LOCALES, DEFAULT_LOCALE };
+// Flat keys, `{name}` placeholders, English fallback. Dictionaries load on demand, one chunk per language.
+// Add a language: a file in ./locales, an entry in ./locales.js and in src/services/locales.js.
+const loaders = import.meta.glob(["./locales/*.js", "!./locales/en-US.js"]);
+const DICT = { [DEFAULT_LOCALE]: enUS };
 const read = () => { try { return localStorage.getItem("locale"); } catch { return null; } };
-const initial = () => {
-  const saved = read();
+
+export const useI18n = create(() => ({ locale: DEFAULT_LOCALE }));
+
+async function load(id) {
+  if (DICT[id]) return;
+  try { DICT[id] = (await loaders[`./locales/${id}.js`]()).default; } catch { /* keep the fallback */ }
+}
+export const initialLocale = () => {
+  const saved = normalizeLocale(read());
   if (LOCALES.some((l) => l.id === saved)) return saved;
-  return navigator.language?.toLowerCase().startsWith("fa") ? "fa" : "en";
+  for (const tag of navigator.languages ?? [navigator.language]) { const m = matchLocale(tag); if (m) return m; }
+  return DEFAULT_LOCALE;
 };
-
-export const useI18n = create(() => ({ locale: initial() }));
-
-/** Applies direction/lang to <html> and remembers the choice for the sign-in screen. */
-export function applyLocale(id) {
-  const l = LOCALES.find((x) => x.id === id) ?? LOCALES[0];
+/** Loads a language, sets <html lang dir> (the whole page follows the direction) and remembers the choice. */
+export async function applyLocale(id) {
+  const l = LOCALES.find((x) => x.id === normalizeLocale(id)) ?? LOCALES[0];
+  await load(l.id);
   try { localStorage.setItem("locale", l.id); } catch { /* private mode */ }
   document.documentElement.lang = l.id;
   document.documentElement.dir = l.dir;
   useI18n.setState({ locale: l.id });
 }
+/** Called once before the first render. */
+export const initI18n = () => applyLocale(initialLocale());
+export const isRtl = () => document.documentElement.dir === "rtl";
 
 export function translate(locale, key, vars) {
-  const s = DICT[locale]?.[key] ?? en[key] ?? key;
+  const s = DICT[locale]?.[key] ?? enUS[key] ?? key;
   return vars ? s.replace(/\{(\w+)\}/g, (m, k) => (k in vars ? String(vars[k]) : m)) : s;
 }
 /** For code outside React (toasts, store actions). */

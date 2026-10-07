@@ -4,29 +4,32 @@ import { Button, IconButton } from "../ui/Button.jsx";
 import { Menu, useMenu } from "../ui/Menu.jsx";
 import { Icon } from "../ui/Icon.jsx";
 import { SNIPPETS } from "../../lib/snippets.js";
+import { useT } from "../../i18n/index.js";
 
+// left column: the API (code, never translated); right column: i18n key of its description
 const HELP = {
   pre: [
-    ["pm.request.url / .method", "read or assign"],
-    ["pm.request.headers.upsert(k, v)", "add / replace / remove / get"],
-    ["pm.request.params.add(k, v)", "query parameters"],
-    ["pm.request.body.raw = obj", "rewrite the body (objects are stringified)"],
-    ["pm.variables.get(k)", "resolves in every scope"],
-    ["pm.globals.set(k, v)", "workspace variable (persisted for editors)"],
-    ["CryptoJS.SHA1 / SHA256 / MD5 / HmacSHA256", "hashing + encoders"],
+    ["pm.request.url / .method", "help.pre.1"],
+    ["pm.request.headers.upsert(k, v)", "help.pre.2"],
+    ["pm.request.params.add(k, v)", "help.pre.3"],
+    ["pm.request.body.raw = obj", "help.pre.4"],
+    ["pm.variables.get(k)", "help.pre.5"],
+    ["pm.globals.set(k, v)", "help.pre.6"],
+    ["CryptoJS.SHA1 / SHA256 / MD5 / HmacSHA256", "help.pre.7"],
   ],
   post: [
-    ["pm.response.json() / text() / code", "read the response"],
-    ["pm.response.setBody(x)", "change what the UI shows (object or string)"],
-    ["pm.response.setStatus(code, text)", "change the status shown"],
-    ["pm.response.setHeader(k, v)", "add / replace a header shown"],
-    ["pm.environment.set(k, v)", "save a value for later requests"],
-    ["pm.test(name, fn) + pm.expect(x).to…", "assertions (jest and chai style)"],
+    ["pm.response.json() / text() / code", "help.post.1"],
+    ["pm.response.setBody(x)", "help.post.2"],
+    ["pm.response.setStatus(code, text)", "help.post.3"],
+    ["pm.response.setHeader(k, v)", "help.post.4"],
+    ["pm.environment.set(k, v)", "help.post.5"],
+    ["pm.test(name, fn) + pm.expect(x).to…", "help.post.6"],
   ],
 };
 
 /** Script box with inherited collection scripts, snippets and an API cheat-sheet. */
 export function ScriptEditor({ kind, value, onChange, readOnly, inherited = [], onEditInherited }) {
+  const t = useT();
   const menu = useMenu();
   const btn = useRef(null);
   const [help, setHelp] = useState(false);
@@ -39,14 +42,14 @@ export function ScriptEditor({ kind, value, onChange, readOnly, inherited = [], 
         <div className="inh">
           <div className="inh-h">
             <Icon name="folder-tree" />
-            <b>{list.length} inherited {kind === "pre" ? "pre-request" : "post-request"} script{list.length > 1 ? "s" : ""}</b>
-            <span className="muted">run first (outermost → nearest collection), then this request’s own script.</span>
+            <b>{t(kind === "pre" ? "script.inheritedPre" : "script.inheritedPost", { n: list.length })}</b>
+            <span className="muted">{t("script.inheritedHint")}</span>
           </div>
           {list.map((x, i) => (
             <details className="inh-item" key={x.id}>
               <summary>
                 <span className="inh-n">{i + 1}</span><Icon name="folder" /><span className="nm" title={x.path}>{x.path}</span>
-                {onEditInherited && <IconButton icon="pen" label="Edit in collection settings" size="sm" onClick={(e) => { e.preventDefault(); onEditInherited(x.id); }} />}
+                {onEditInherited && <IconButton icon="pen" label={t("script.editInCollection")} size="sm" onClick={(e) => { e.preventDefault(); onEditInherited(x.id); }} />}
               </summary>
               <div className="inh-code"><CodeEditor value={x[field]} lang="js" readOnly /></div>
             </details>
@@ -54,19 +57,19 @@ export function ScriptEditor({ kind, value, onChange, readOnly, inherited = [], 
         </div>
       )}
       <div className="row between">
-        <div className="muted">{kind === "pre" ? "Runs before the request is sent. It can change the URL, method, headers, params and body." : "Runs after the response arrives. It can change what the UI shows and write tests."}</div>
+        <div className="muted">{t(kind === "pre" ? "script.preHint" : "script.postHint")}</div>
         <div className="row">
-          {!readOnly && <Button ref={btn} size="sm" icon="wand-magic-sparkles" onClick={() => menu.show(btn.current)}>Snippets</Button>}
-          <Button size="sm" variant={help ? "soft" : "default"} icon="circle-question" onClick={() => setHelp(!help)}>API</Button>
+          {!readOnly && <Button ref={btn} size="sm" icon="wand-magic-sparkles" onClick={() => menu.show(btn.current)}>{t("script.snippets")}</Button>}
+          <Button size="sm" variant={help ? "soft" : "default"} icon="circle-question" onClick={() => setHelp(!help)}>{t("script.api")}</Button>
         </div>
       </div>
       {help && (
-        <div className="help-grid">{HELP[kind].map(([a, b]) => (<div key={a}><code>{a}</code><span>{b}</span></div>))}</div>
+        <div className="help-grid">{HELP[kind].map(([a, b]) => (<div key={a}><code>{a}</code><span>{t(b)}</span></div>))}</div>
       )}
       <div className="grow" style={{ minHeight: 220 }}>
-        <CodeEditor value={value ?? ""} lang="js" readOnly={readOnly} onChange={onChange} aria-label={kind === "pre" ? "Pre-request script" : "Post-request script"} placeholder={kind === "pre" ? '// e.g. pm.request.headers.upsert("X-Trace", Date.now());' : "// e.g. pm.test(\"ok\", () => pm.response.to.have.status(200));"} />
+        <CodeEditor value={value ?? ""} lang="js" readOnly={readOnly} onChange={onChange} aria-label={t(kind === "pre" ? "script.preLabel" : "script.postLabel")} placeholder={kind === "pre" ? '// pm.request.headers.upsert("X-Trace", Date.now());' : '// pm.test("ok", () => pm.response.to.have.status(200));'} />
       </div>
-      <Menu {...menu} onClose={menu.hide} items={SNIPPETS[kind].map((s) => ({ label: s.title, icon: "code", onClick: () => add(s.code) }))} />
+      <Menu {...menu} onClose={menu.hide} items={SNIPPETS[kind].map((s) => ({ label: t(s.title), icon: "code", onClick: () => add(s.code) }))} />
     </div>
   );
 }

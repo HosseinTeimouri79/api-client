@@ -58,11 +58,11 @@ test("E2E: code snippet — cURL by default, switch language with the autocomple
   assert.equal(await page.locator(".optlist").count(), 0, "the language list starts closed");
   await page.waitForFunction(() => document.querySelector("pre.snippet")?.textContent.includes("inherited-token"));
   assert.match(await code.textContent(), /^curl --location 'https:\/\/api\.example\.com\/users' \\\n  --header 'Authorization: Bearer inherited-token'/);
-  assert.equal(await page.getByRole("combobox", { name: "Language" }).inputValue(), "");
+  assert.equal(await page.locator(".modal").getByRole("combobox", { name: "Language" }).inputValue(), "");
   assert.ok(await page.locator(".ac-single").textContent() === "cURL");
 
   // switch through the autocomplete: type, arrow, enter
-  const combo = page.getByRole("combobox", { name: "Language" });
+  const combo = page.locator(".modal").getByRole("combobox", { name: "Language" });
   await combo.click();
   assert.ok((await page.locator(".opt-group").allTextContents()).includes("Node.js"), "variants are grouped by language");
   await combo.fill("py req");

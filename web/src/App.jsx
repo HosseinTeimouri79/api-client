@@ -22,6 +22,7 @@ import { Console } from "./features/Console.jsx";
 const LS = (k, v) => { try { localStorage.setItem(k, String(v)); } catch { /* private mode */ } };
 
 function Workspace() {
+  const t = useT();
   const tab = useStore(activeTab);
   const { splitDir, editorFrac, sidebarW } = useStore();
   const { set, addTab } = useStore.getState();
@@ -37,12 +38,12 @@ function Workspace() {
           <div className="pane" style={{ flexBasis: `${editorFrac * 100}%` }}><RequestEditor key={tab.key} tab={tab} /></div>
           <Splitter dir={vertical ? "col" : "row"} onDrag={(d) => { const r = split.current.getBoundingClientRect(); set((s) => ({ editorFrac: Math.min(0.85, Math.max(0.15, s.editorFrac + d / (vertical ? r.width : r.height))) })); }} onEnd={() => LS("editorFrac", useStore.getState().editorFrac)} />
           <div className="pane grow">
-            <div className="pane-tools"><IconButton icon={vertical ? "table-columns" : "table-cells-large"} size="sm" label="Switch layout" onClick={() => useStore.getState().updateSettings({ ui: { layout: vertical ? "stacked" : "side" } })} /></div>
+            <div className="pane-tools"><IconButton icon={vertical ? "table-columns" : "table-cells-large"} size="sm" label={t("app.switchLayout")} onClick={() => useStore.getState().updateSettings({ ui: { layout: vertical ? "stacked" : "side" } })} /></div>
             <ResponseViewer tab={tab} />
           </div>
         </div>
       ) : (
-        <div className="empty"><div><Icon name="paper-plane" className="big" /><h2>No request open</h2><p className="muted">Open a request from the sidebar, or start a new one.</p><Button variant="primary" icon="plus" onClick={() => addTab(blankReq())}>New request</Button></div></div>
+        <div className="empty"><div><Icon name="paper-plane" className="big" /><h2>{t("app.noRequest")}</h2><p className="muted">{t("app.noRequestHint")}</p><Button variant="primary" icon="plus" onClick={() => addTab(blankReq())}>{t("app.newRequest")}</Button></div></div>
       )}
     </div>
   );

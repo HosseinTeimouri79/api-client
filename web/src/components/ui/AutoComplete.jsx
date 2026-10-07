@@ -4,6 +4,7 @@ import { Popover } from "./Popover.jsx";
 import { OptionList } from "./OptionList.jsx";
 import { Icon, Spinner } from "./Icon.jsx";
 import { Avatar } from "./Avatar.jsx";
+import { useT } from "../../i18n/index.js";
 
 /**
  * AutoComplete / combobox.
@@ -17,9 +18,10 @@ import { Avatar } from "./Avatar.jsx";
  */
 export function AutoComplete({
   options = [], loadOptions, value, onChange, multiple = false, placeholder, disabled, clearable = true,
-  creatable, onCreate, emptyText = "No results", renderOption, renderChip, filter, className, autoFocus, id: idProp, "aria-label": ariaLabel,
+  creatable, onCreate, emptyText, renderOption, renderChip, filter, className, autoFocus, id: idProp, "aria-label": ariaLabel,
 }) {
   const uid = useId();
+  const t = useT();
   const id = idProp ?? uid;
   const wrapRef = useRef(null), inputRef = useRef(null);
   const [query, setQuery] = useState("");
@@ -58,7 +60,7 @@ export function AutoComplete({
     if (multiple) out = out.filter((o) => !isSel(o));
     const q = query.trim();
     if (creatable && q && !out.some((o) => (o.label ?? o.value) === q))
-      out = [...out, { value: q, label: `Create “${q}”`, create: true, icon: "plus" }];
+      out = [...out, { value: q, label: t("ui.create", { q }), create: true, icon: "plus" }];
     return out;
   }, [remote, options, query, value, loadOptions, filter, creatable, multiple]);
   useEffect(() => setActive(0), [list.length, query]);
@@ -87,7 +89,7 @@ export function AutoComplete({
         <span className="chip" key={o.value}>
           {chip(o)}
           {!disabled && (
-            <button type="button" className="chip-x" aria-label={`Remove ${o.label}`} onClick={(e) => { e.stopPropagation(); onChange(selected.filter((s) => s.value !== o.value)); }}>
+            <button type="button" className="chip-x" aria-label={t("ui.removeItem", { name: o.label })} onClick={(e) => { e.stopPropagation(); onChange(selected.filter((s) => s.value !== o.value)); }}>
               <Icon name="xmark" />
             </button>
           )}
@@ -104,10 +106,10 @@ export function AutoComplete({
         onKeyDown={onKey}
       />
       {loading ? <Spinner className="ac-spin" /> : clearable && !multiple && value && !disabled ? (
-        <button type="button" className="ac-clear" aria-label="Clear" onClick={(e) => { e.stopPropagation(); onChange(null); }}><Icon name="xmark" /></button>
+        <button type="button" className="ac-clear" aria-label={t("ui.clear")} onClick={(e) => { e.stopPropagation(); onChange(null); }}><Icon name="xmark" /></button>
       ) : <Icon name="chevron-down" className="ac-caret" />}
       <Popover anchor={wrapRef.current} open={open && !disabled} onClose={() => setOpen(false)} matchWidth>
-        <OptionList id={`${id}-list`} options={list} active={active} onHover={setActive} onPick={commit} query={query} selected={isSel} renderOption={renderOption} empty={loading ? "Searching…" : emptyText} />
+        <OptionList id={`${id}-list`} options={list} active={active} onHover={setActive} onPick={commit} query={query} selected={isSel} renderOption={renderOption} empty={loading ? t("ui.searching") : (emptyText ?? t("ui.noResults"))} />
       </Popover>
     </div>
   );

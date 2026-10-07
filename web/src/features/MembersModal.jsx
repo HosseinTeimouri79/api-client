@@ -35,7 +35,7 @@ export function MembersModal({ close }) {
     setBusy(true);
     try {
       await api("POST", W("/members"), { user_ids: picked.map((p) => p.value), role });
-      toast(picked.length > 1 ? t("members.added", { n: picked.length }) : t("members.addedOne"), "ok");
+      toast(t("members.added", { n: picked.length }), "ok");
       setPicked([]);
       await load();
     } finally { setBusy(false); }

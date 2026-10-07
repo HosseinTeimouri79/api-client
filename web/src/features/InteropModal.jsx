@@ -9,19 +9,22 @@ import { Tabs } from "../components/ui/Tabs.jsx";
 import { Field } from "../components/ui/Switch.jsx";
 import { Icon, Spinner } from "../components/ui/Icon.jsx";
 import { toast } from "../components/ui/Toasts.jsx";
+import { t as tr, useT } from "../i18n/index.js";
 
-const LABELS = { "postman-collection": "Postman collection", "postman-environment": "Postman environment", "hoppscotch-collection": "Hoppscotch collection", "hoppscotch-environment": "Hoppscotch environment" };
+// format names are product names; only the noun is translated
+const LABELS = { "postman-collection": () => tr("interop.postmanCollection"), "postman-environment": () => tr("interop.postmanEnvironment"), "hoppscotch-collection": () => tr("interop.hoppscotchCollection"), "hoppscotch-environment": () => tr("interop.hoppscotchEnvironment") };
 export async function exportRemote(query) {
   const { W } = useStore.getState();
   const r = await api("GET", W("/export?" + new URLSearchParams(query)));
   downloadJson(r.filename, r.data);
-  toast(r.warnings?.length ? `Exported ${r.filename} (${r.warnings.length} notes)` : `Exported ${r.filename}`, r.warnings?.length ? "info" : "ok");
+  toast(r.warnings?.length ? tr("interop.exportedNotes", { file: r.filename, n: r.warnings.length }) : tr("interop.exported", { file: r.filename }), r.warnings?.length ? "info" : "ok");
   return r;
 }
 const flatten = (cols, parent = null, depth = 0) => cols.filter((c) => (c.parent_id ?? null) === parent).flatMap((c) => [{ ...c, depth }, ...flatten(cols, c.id, depth + 1)]);
 const indent = (c) => "  ".repeat(c.depth) + (c.depth ? "↳ " : "") + c.name;
 
 export function InteropModal({ close }) {
+  const t = useT();
   const { ws, tree, envs } = useStore();
   const { W, reloadTree, refreshEnvs } = useStore.getState();
   const c = can(ws);
@@ -42,17 +45,17 @@ export function InteropModal({ close }) {
       try {
         const r = await api("POST", W("/import"), { data: JSON.parse(await f.text()), parent_id: dest || null });
         imported.current = true;
-        line = { ok: true, text: `${f.name} — ${LABELS[r.format] ?? r.format}: ${r.environments ? `${r.environments} environment(s)` : `${r.collections} collection(s), ${r.requests} request(s)`}`, warnings: r.warnings };
-      } catch (e) { line = { ok: false, text: `${f.name} — ${e instanceof SyntaxError ? "not valid JSON" : e.message}` }; }
+        line = { ok: true, text: `${f.name} — ${LABELS[r.format]?.() ?? r.format}: ${r.environments ? t("interop.resultEnvs", { n: r.environments }) : t("interop.resultCols", { c: r.collections, r: r.requests })}`, warnings: r.warnings };
+      } catch (e) { line = { ok: false, text: `${f.name} — ${e instanceof SyntaxError ? t("interop.notJson") : e.message}` }; }
       setResults((l) => [...l, line]);
     }
     setBusy(false);
   };
   const finish = async () => { if (imported.current) { await reloadTree(); await refreshEnvs(); } close(); };
   const whatOptions = [
-    ...(fmt === "hoppscotch" ? [{ value: "c:", label: "All top-level collections", group: "Collections" }] : []),
-    ...cols.map((x) => ({ value: `c:${x.id}`, label: indent(x), group: "Collections" })),
-    ...envs.map((e) => ({ value: `e:${e.id}`, label: e.name, group: "Environments" })),
+    ...(fmt === "hoppscotch" ? [{ value: "c:", label: t("interop.allTop"), group: t("interop.collections") }] : []),
+    ...cols.map((x) => ({ value: `c:${x.id}`, label: indent(x), group: t("interop.collections") })),
+    ...envs.map((e) => ({ value: `e:${e.id}`, label: e.name, group: t("interop.environments") })),
   ];
   const doExport = async () => {
     setBusy(true);
@@ -61,26 +64,26 @@ export function InteropModal({ close }) {
     setBusy(false);
   };
   return (
-    <Modal title="Import / Export" onClose={finish}>
-      <Tabs variant="pill" value={tab} onChange={setTab} items={[...(c.write ? [{ id: "import", label: "Import" }] : []), { id: "export", label: "Export" }]} />
+    <Modal title={t("top.importExport")} onClose={finish}>
+      <Tabs variant="pill" value={tab} onChange={setTab} items={[...(c.write ? [{ id: "import", label: t("common.import") }] : []), { id: "export", label: t("common.export") }]} />
       {tab === "import" ? (
         <div className="stack">
-          <label className="dropzone"><Icon name="cloud-arrow-up" /><span>{files.length ? files.map((f) => f.name).join(", ") : "Click to choose Postman or Hoppscotch .json files"}</span>
+          <label className="dropzone"><Icon name="cloud-arrow-up" /><span>{files.length ? files.map((f) => f.name).join(", ") : t("interop.choose")}</span>
             <input type="file" accept=".json,application/json" multiple hidden onChange={(e) => { setFiles([...e.target.files]); setResults([]); }} /></label>
-          <Field label="Destination (collections only)"><Select value={dest} onChange={setDest} options={[{ value: "", label: "Workspace root", icon: "house" }, ...cols.map((x) => ({ value: x.id, label: indent(x), icon: "folder" }))]} /></Field>
-          <div className="row end"><Button variant="primary" icon="file-import" disabled={!files.length} loading={busy} onClick={run}>Import</Button></div>
+          <Field label={t("interop.dest")}><Select value={dest} onChange={setDest} options={[{ value: "", label: t("interop.root"), icon: "house" }, ...cols.map((x) => ({ value: x.id, label: indent(x), icon: "folder" }))]} /></Field>
+          <div className="row end"><Button variant="primary" icon="file-import" disabled={!files.length} loading={busy} onClick={run}>{t("common.import")}</Button></div>
           {results.map((r, i) => (
             <div key={i} className={`interop-result ${r.ok ? "ok" : "err"}`}><Icon name={r.ok ? "circle-check" : "circle-xmark"} /><span>{r.text}</span>
               {r.warnings?.length > 0 && <ul className="muted">{r.warnings.map((w, j) => <li key={j}>{w}</li>)}</ul>}</div>
           ))}
-          <p className="muted">Format is detected automatically. Variables, auth, headers, bodies and scripts are converted; unsupported parts are reported as notes.</p>
+          <p className="muted">{t("interop.importHint")}</p>
         </div>
       ) : (
         <div className="stack">
-          <Field label="Format"><Select value={fmt} onChange={(v) => { setFmt(v); setWhat(cols.length ? `c:${cols[0].id}` : envs.length ? `e:${envs[0].id}` : ""); }} options={[{ value: "postman", label: "Postman (v2.1)" }, { value: "hoppscotch", label: "Hoppscotch" }]} /></Field>
-          <Field label="What to export"><Select value={what} onChange={setWhat} options={whatOptions} searchable placeholder="Nothing to export" /></Field>
-          <div className="row end"><Button variant="primary" icon="file-export" disabled={!what && !whatOptions.length} loading={busy} onClick={doExport}>Download</Button></div>
-          <p className="muted">Environment secrets are exported with their values. Hoppscotch has no collection-level variables/scripts; inherited auth is copied into each request.</p>
+          <Field label={t("interop.format")}><Select value={fmt} onChange={(v) => { setFmt(v); setWhat(cols.length ? `c:${cols[0].id}` : envs.length ? `e:${envs[0].id}` : ""); }} options={[{ value: "postman", label: "Postman (v2.1)" }, { value: "hoppscotch", label: "Hoppscotch" }]} /></Field>
+          <Field label={t("interop.what")}><Select value={what} onChange={setWhat} options={whatOptions} searchable placeholder={t("interop.nothing")} /></Field>
+          <div className="row end"><Button variant="primary" icon="file-export" disabled={!what && !whatOptions.length} loading={busy} onClick={doExport}>{t("interop.download")}</Button></div>
+          <p className="muted">{t("interop.exportHint")}</p>
         </div>
       )}
     </Modal>

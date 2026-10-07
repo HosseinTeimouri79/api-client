@@ -1,15 +1,17 @@
 import { Select } from "../ui/Select.jsx";
 import { Field } from "../ui/Switch.jsx";
 import { VarInput } from "./VarInput.jsx";
+import { useT } from "../../i18n/index.js";
 
-const TYPES = [
-  { value: "inherit", label: "Inherit from collection", icon: "arrow-up" },
-  { value: "none", label: "No auth", icon: "ban" },
-  { value: "bearer", label: "Bearer token", icon: "key" },
-  { value: "basic", label: "Basic auth", icon: "user-lock" },
-  { value: "apikey", label: "API key", icon: "vial" },
-];
 export function AuthEditor({ auth, onChange, readOnly, allowInherit = true }) {
+  const t = useT();
+  const TYPES = [
+    { value: "inherit", label: t("auth.inherit"), icon: "arrow-up" },
+    { value: "none", label: t("auth.none"), icon: "ban" },
+    { value: "bearer", label: t("auth.bearer"), icon: "key" },
+    { value: "basic", label: t("auth.basic"), icon: "user-lock" },
+    { value: "apikey", label: t("auth.apikey"), icon: "vial" },
+  ];
   const a = auth ?? { type: allowInherit ? "inherit" : "none" };
   const set = (patch) => onChange({ ...a, ...patch });
   const f = (label, key, type) => (
@@ -17,17 +19,17 @@ export function AuthEditor({ auth, onChange, readOnly, allowInherit = true }) {
   );
   return (
     <div className="stack" style={{ maxWidth: 520 }}>
-      <Field label="Type"><Select options={TYPES.filter((t) => allowInherit || t.value !== "inherit")} value={a.type} disabled={readOnly} onChange={(type) => set({ type })} /></Field>
-      {a.type === "bearer" && f("Token", "token")}
-      {a.type === "basic" && <>{f("Username", "username")}{f("Password", "password", "password")}</>}
+      <Field label={t("auth.type")}><Select options={TYPES.filter((x) => allowInherit || x.value !== "inherit")} value={a.type} disabled={readOnly} onChange={(type) => set({ type })} /></Field>
+      {a.type === "bearer" && f(t("auth.token"), "token")}
+      {a.type === "basic" && <>{f(t("auth.username"), "username")}{f(t("auth.password"), "password", "password")}</>}
       {a.type === "apikey" && (
         <>
-          {f("Key name", "key")}
-          {f("Value", "value")}
-          <Field label="Add to"><Select options={[{ value: "header", label: "Header" }, { value: "query", label: "Query params" }]} value={a.in ?? "header"} disabled={readOnly} onChange={(v) => set({ in: v })} /></Field>
+          {f(t("auth.keyName"), "key")}
+          {f(t("auth.value"), "value")}
+          <Field label={t("auth.addTo")}><Select options={[{ value: "header", label: t("auth.inHeader") }, { value: "query", label: t("auth.inQuery") }]} value={a.in ?? "header"} disabled={readOnly} onChange={(v) => set({ in: v })} /></Field>
         </>
       )}
-      <div className="muted">Tip: type <code>{"{{"}</code> to pick a variable such as <code>{"{{token}}"}</code>.</div>
+      <div className="muted">{t("auth.tip", { open: "{{", example: "{{token}}" })}</div>
     </div>
   );
 }

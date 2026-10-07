@@ -1,6 +1,7 @@
 import { useEffect, useRef, Fragment } from "react";
 import { cx, escapeRe } from "../../lib/utils.js";
 import { Icon } from "./Icon.jsx";
+import { useT } from "../../i18n/index.js";
 
 export function Highlight({ text = "", q }) {
   if (!q) return text;
@@ -9,7 +10,8 @@ export function Highlight({ text = "", q }) {
 }
 
 // Listbox body shared by AutoComplete, Select, VarInput and the code editor.
-export function OptionList({ id, options, active, onPick, onHover, query, renderOption, selected = () => false, empty = "No results", footer }) {
+export function OptionList({ id, options, active, onPick, onHover, query, renderOption, selected = () => false, empty, footer }) {
+  const t = useT();
   const ref = useRef(null);
   useEffect(() => {
     ref.current?.querySelector('[data-active="true"]')?.scrollIntoView({ block: "nearest" });
@@ -17,7 +19,7 @@ export function OptionList({ id, options, active, onPick, onHover, query, render
   let lastGroup;
   return (
     <div ref={ref} id={id} role="listbox" className="optlist">
-      {options.length === 0 && <div className="opt-empty">{empty}</div>}
+      {options.length === 0 && <div className="opt-empty">{empty ?? t("ui.noResults")}</div>}
       {options.map((o, i) => {
         const head = o.group && o.group !== lastGroup ? <div className="opt-group">{o.group}</div> : null;
         lastGroup = o.group;

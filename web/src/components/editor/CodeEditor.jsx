@@ -5,6 +5,7 @@ import { PM_COMPLETIONS } from "../../lib/snippets.js";
 import { useVars, varOptions } from "../../lib/vars.jsx";
 import { useStore } from "../../store.js";
 import { indentUnit } from "../../lib/settings.js";
+import { useT } from "../../i18n/index.js";
 import { Popover } from "../ui/Popover.jsx";
 import { OptionList } from "../ui/OptionList.jsx";
 import { Button } from "../ui/Button.jsx";
@@ -43,6 +44,7 @@ const word = (c) => /\w/.test(c ?? "");
 export function CodeEditor({ value, onChange, lang = "text", readOnly, placeholder, className, "aria-label": aria }) {
   const ta = useRef(null), pre = useRef(null);
   const vars = useVars();
+  const t = useT();
   const ed = useStore((s) => s.settings.editor); // Settings → Editor
   const unit = indentUnit(ed);
   const [ac, setAc] = useState(null); // { kind, q, from, to, point }
@@ -125,8 +127,8 @@ export function CodeEditor({ value, onChange, lang = "text", readOnly, placehold
     <div className={cx("code-wrap", className)}>
       {lang === "json" && (
         <div className="code-tools">
-          <Button size="sm" variant="ghost" icon="align-left" onClick={format} disabled={readOnly || err !== false}>Format</Button>
-          <span className={cx("code-status", err ? "err" : err === false ? "ok" : "")}>{err === false ? "Valid JSON" : err || ""}</span>
+          <Button size="sm" variant="ghost" icon="align-left" onClick={format} disabled={readOnly || err !== false}>{t("code.format")}</Button>
+          <span className={cx("code-status", err ? "err" : err === false ? "ok" : "")}>{err === false ? t("code.validJson") : err || ""}</span>
         </div>
       )}
       <div className="code">

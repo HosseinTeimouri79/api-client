@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { api, errorText } from "../api.js";
 import { useStore } from "../store.js";
-import { LOCALES, useI18n, useT } from "../i18n/index.js";
+import { useT } from "../i18n/index.js";
+import { LanguageSelect } from "../components/ui/LanguageSelect.jsx";
 import { squareAvatar } from "../lib/image.js";
 import { Button } from "../components/ui/Button.jsx";
 import { Checkbox, Field } from "../components/ui/Switch.jsx";
@@ -144,8 +145,6 @@ function FontField({ label, value, presets, defaultLabel, onChange }) {
 function General({ sub }) {
   const t = useT();
   const [s, update] = useSettings();
-  const locale = useI18n((x) => x.locale);
-  const { setLocale } = useStore.getState();
   const e = s.editor;
   // one panel per tab; only the selected one is rendered
   const panels = {
@@ -178,7 +177,7 @@ function General({ sub }) {
           <Tabs variant="pill" value={s.app.theme} onChange={(v) => update({ app: { theme: v } })} items={[{ id: "dark", label: t("settings.dark") }, { id: "light", label: t("settings.light") }]} />
         </Field>
         <Field label={t("common.language")}>
-          <Tabs variant="pill" value={locale} onChange={setLocale} items={LOCALES.map((l) => ({ id: l.id, label: l.label }))} />
+          <LanguageSelect />
         </Field>
         <FontField label={t("settings.appFont")} value={s.app.fontFamily} presets={APP_FONTS} defaultLabel={t("settings.fontDefault")} onChange={(v) => update({ app: { fontFamily: v } })} />
         <Toggle label={t("settings.autosave")} hint={t("settings.autosaveHint")} checked={s.app.autosave} onChange={(v) => update({ app: { autosave: v } })} />

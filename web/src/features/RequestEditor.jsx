@@ -13,10 +13,10 @@ import { AuthEditor } from "../components/editor/AuthEditor.jsx";
 import { ScriptEditor } from "../components/editor/ScriptEditor.jsx";
 import { CodeSnippetModal } from "./CodeSnippet.jsx";
 import { modals } from "../components/ui/modals.js";
-import { useT } from "../i18n/index.js";
+import { t as tr, useT } from "../i18n/index.js";
 
 const METHOD_OPTS = METHODS.map((m) => ({ value: m, label: m }));
-const HEADER_SUGG = Object.entries(HEADER_NAMES).map(([value, description]) => ({ value, label: value, description }));
+const HEADER_SUGG = Object.entries(HEADER_NAMES).map(([value, key]) => ({ value, label: value, get description() { return tr(key); } }));
 
 export function RequestEditor({ tab }) {
   const t = useT();
@@ -41,13 +41,13 @@ export function RequestEditor({ tab }) {
   const inhCount = (k) => inh.filter((x) => x[k === "pre" ? "pre_script" : "post_script"]?.trim()).length;
   const filled = (l) => l.filter((x) => x.key).length;
   const tabs = [
-    { id: "params", label: "Params", badge: filled(r.params) || false },
-    { id: "headers", label: "Headers", badge: filled(r.headers) || false },
-    { id: "body", label: "Body", badge: r.body?.mode && r.body.mode !== "none" ? "●" : false },
-    { id: "auth", label: "Auth", badge: r.auth?.type && !["inherit", "none"].includes(r.auth.type) ? "●" : false },
-    { id: "pre", label: "Pre-request", badge: r.pre_script?.trim() || inhCount("pre") ? (inhCount("pre") ? `${inhCount("pre")}↑${r.pre_script?.trim() ? "+1" : ""}` : "●") : false, title: inhCount("pre") ? `${inhCount("pre")} inherited collection script(s) run first` : undefined },
-    { id: "post", label: "Post-request", badge: r.post_script?.trim() || inhCount("post") ? (inhCount("post") ? `${inhCount("post")}↑${r.post_script?.trim() ? "+1" : ""}` : "●") : false, title: inhCount("post") ? `${inhCount("post")} inherited collection script(s) run after` : undefined },
-    { id: "docs", label: "Description", badge: r.description?.trim() ? "●" : false },
+    { id: "params", label: t("req.params"), badge: filled(r.params) || false },
+    { id: "headers", label: t("req.headers"), badge: filled(r.headers) || false },
+    { id: "body", label: t("req.body"), badge: r.body?.mode && r.body.mode !== "none" ? "●" : false },
+    { id: "auth", label: t("req.auth"), badge: r.auth?.type && !["inherit", "none"].includes(r.auth.type) ? "●" : false },
+    { id: "pre", label: t("req.pre"), badge: r.pre_script?.trim() || inhCount("pre") ? (inhCount("pre") ? `${inhCount("pre")}↑${r.pre_script?.trim() ? "+1" : ""}` : "●") : false, title: inhCount("pre") ? t("req.inheritedFirst", { n: inhCount("pre") }) : undefined },
+    { id: "post", label: t("req.post"), badge: r.post_script?.trim() || inhCount("post") ? (inhCount("post") ? `${inhCount("post")}↑${r.post_script?.trim() ? "+1" : ""}` : "●") : false, title: inhCount("post") ? t("req.inheritedAfter", { n: inhCount("post") }) : undefined },
+    { id: "docs", label: t("req.description"), badge: r.description?.trim() ? "●" : false },
   ];
   const editInherited = c.write ? (id) => useStore.getState().openCollection(id, tab.sub) : undefined;
 
@@ -56,25 +56,25 @@ export function RequestEditor({ tab }) {
       <div className="editor">
         {noSave && <div className="note viewer-note" role="note"><Icon name="eye" /> {t("viewer.note")}</div>}
         <div className="req-head">
-          <input className="req-name" value={r.name} disabled={noSave} aria-label="Request name" onChange={(e) => set({ name: e.target.value })} />
+          <input className="req-name" value={r.name} disabled={noSave} aria-label={t("req.nameLabel")} onChange={(e) => set({ name: e.target.value })} />
           <Button icon="code" title={t("snippet.title")} onClick={() => modals.open((close) => <CodeSnippetModal close={close} tab={tab} />)}>{t("snippet.open")}</Button>
-          <Button icon="floppy-disk" disabled={noSave} title={noSave ? t("viewer.noSave") : "Ctrl+S"} onClick={save}>Save</Button>
+          <Button icon="floppy-disk" disabled={noSave} title={noSave ? t("viewer.noSave") : "Ctrl+S"} onClick={save}>{t("common.save")}</Button>
         </div>
         <div className="urlbar">
-          <Select className="method-select" value={r.method} options={METHOD_OPTS} onChange={(method) => set({ method })} aria-label="Method" renderValue={(o) => <span className={`m-t m-${o.value}`}>{o.label}</span>} renderOption={(o) => <span className={`m-t m-${o.value}`}>{o.label}</span>} />
-          <VarInput className="url-input" value={r.url} placeholder="https://api.example.com/users   or   {{baseUrl}}/users" aria-label="URL" inputRef={urlRef}
+          <Select className="method-select" value={r.method} options={METHOD_OPTS} onChange={(method) => set({ method })} aria-label={t("req.method")} renderValue={(o) => <span className={`m-t m-${o.value}`}>{o.label}</span>} renderOption={(o) => <span className={`m-t m-${o.value}`}>{o.label}</span>} />
+          <VarInput className="url-input" value={r.url} placeholder={t("req.urlPlaceholder")} aria-label={t("req.url")} inputRef={urlRef}
             onChange={(url) => set({ url })} onBlur={extractQuery} onKeyDown={(e) => { if (e.key === "Enter" && !e.ctrlKey && !e.metaKey) { extractQuery(); send(); } }} />
-          <Button variant="primary" icon="paper-plane" id="sendBtn" loading={tab.running} onClick={() => send()} title="Ctrl+Enter">Send</Button>
+          <Button variant="primary" icon="paper-plane" id="sendBtn" loading={tab.running} onClick={() => send()} title="Ctrl+Enter">{t("req.send")}</Button>
         </div>
         <Tabs items={tabs} value={tab.sub} onChange={(s) => setSub(tab.key, s)} />
         <div className="editor-body">
-          {tab.sub === "params" && <KeyValueEditor rows={r.params} readOnly={ro} onChange={(params) => set({ params })} keyPlaceholder="Parameter" />}
-          {tab.sub === "headers" && <KeyValueEditor rows={r.headers} readOnly={ro} onChange={(headers) => set({ headers })} keySuggestions={HEADER_SUGG} valueSuggestions={(k) => HEADER_VALUES[k.toLowerCase()]} keyPlaceholder="Header" />}
+          {tab.sub === "params" && <KeyValueEditor rows={r.params} readOnly={ro} onChange={(params) => set({ params })} keyPlaceholder={t("req.parameter")} />}
+          {tab.sub === "headers" && <KeyValueEditor rows={r.headers} readOnly={ro} onChange={(headers) => set({ headers })} keySuggestions={HEADER_SUGG} valueSuggestions={(k) => HEADER_VALUES[k.toLowerCase()]} keyPlaceholder={t("req.header")} />}
           {tab.sub === "body" && <BodyEditor body={r.body} readOnly={ro} onChange={(body) => set({ body })} />}
           {tab.sub === "auth" && <AuthEditor auth={r.auth} readOnly={ro} onChange={(auth) => set({ auth })} />}
           {tab.sub === "pre" && <ScriptEditor kind="pre" value={r.pre_script} readOnly={ro} inherited={inh} onEditInherited={editInherited} onChange={(pre_script) => set({ pre_script })} />}
           {tab.sub === "post" && <ScriptEditor kind="post" value={r.post_script} readOnly={ro} inherited={inh} onEditInherited={editInherited} onChange={(post_script) => set({ post_script })} />}
-          {tab.sub === "docs" && <textarea className="docs" rows={10} disabled={noSave} placeholder="Describe what this request does…" value={r.description} onChange={(e) => set({ description: e.target.value })} />}
+          {tab.sub === "docs" && <textarea className="docs" rows={10} disabled={noSave} placeholder={t("req.descPlaceholder")} value={r.description} onChange={(e) => set({ description: e.target.value })} />}
         </div>
       </div>
     </VarsContext.Provider>

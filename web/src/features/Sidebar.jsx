@@ -7,6 +7,7 @@ import { Menu } from "../components/ui/Menu.jsx";
 import { Icon } from "../components/ui/Icon.jsx";
 import { exportRemote, InteropModal } from "./InteropModal.jsx";
 import { modals } from "../components/ui/modals.js";
+import { useT } from "../i18n/index.js";
 
 const byPos = (a, b) => a.position - b.position || a.name.localeCompare(b.name);
 let dragging = null; // module-level: HTML5 drag payload ({type, id})
@@ -22,12 +23,13 @@ const Guides = ({ guides, last }) => (
 
 const RequestRow = memo(function RequestRow({ r, guides, last, depth, write, active, ctx }) {
   const { openRequest, send, dropOn, renameRequest, duplicateRequest, deleteRequest } = useStore.getState();
+  const t = useT();
   const [over, setOver] = useState(false);
   const items = [
-    { label: "Rename", icon: "pen", onClick: () => renameRequest(r) },
-    { label: "Duplicate", icon: "copy", onClick: () => duplicateRequest(r) },
+    { label: t("sidebar.rename"), icon: "pen", onClick: () => renameRequest(r) },
+    { label: t("sidebar.duplicate"), icon: "copy", onClick: () => duplicateRequest(r) },
     "-",
-    { label: "Delete", icon: "trash-can", danger: true, onClick: () => deleteRequest(r) },
+    { label: t("common.delete"), icon: "trash-can", danger: true, onClick: () => deleteRequest(r) },
   ];
   return (
     <div className={cx("node", active && "sel", over && "over")} draggable={write} role="treeitem" tabIndex={0}
@@ -41,8 +43,8 @@ const RequestRow = memo(function RequestRow({ r, guides, last, depth, write, act
       <span className={`m m-${r.method}`}>{r.method}</span>
       <span className="nm">{r.name}</span>
       <span className="acts">
-        <IconButton icon="play" label="Run" size="sm" onClick={async (e) => { e.stopPropagation(); await openRequest(r.id); send(); }} />
-        {write && <IconButton icon="ellipsis" label="Actions" size="sm" onClick={(e) => { e.stopPropagation(); ctx.show(e.currentTarget, items); }} />}
+        <IconButton icon="play" label={t("sidebar.run")} size="sm" onClick={async (e) => { e.stopPropagation(); await openRequest(r.id); send(); }} />
+        {write && <IconButton icon="ellipsis" label={t("sidebar.actions")} size="sm" onClick={(e) => { e.stopPropagation(); ctx.show(e.currentTarget, items); }} />}
       </span>
     </div>
   );
@@ -50,17 +52,18 @@ const RequestRow = memo(function RequestRow({ r, guides, last, depth, write, act
 
 function CollectionRow({ c, open, guides, last, depth, write, active, ctx }) {
   const { toggle, openCollection, newRequestIn, addCollection, renameCollection, duplicateCollection, moveCollectionToRoot, sortChildren, deleteCollection, dropOn } = useStore.getState();
+  const t = useT();
   const [over, setOver] = useState(false);
   const items = [
-    { label: "Rename", icon: "pen", onClick: () => renameCollection(c) },
-    { label: "Duplicate", icon: "copy", onClick: () => duplicateCollection(c) },
-    { label: "Move to root", icon: "arrow-up-from-bracket", onClick: () => moveCollectionToRoot(c) },
-    { label: "Sort A–Z", icon: "arrow-down-a-z", onClick: () => sortChildren(c.id) },
+    { label: t("sidebar.rename"), icon: "pen", onClick: () => renameCollection(c) },
+    { label: t("sidebar.duplicate"), icon: "copy", onClick: () => duplicateCollection(c) },
+    { label: t("sidebar.moveToRoot"), icon: "arrow-up-from-bracket", onClick: () => moveCollectionToRoot(c) },
+    { label: t("sidebar.sort"), icon: "arrow-down-a-z", onClick: () => sortChildren(c.id) },
     "-",
-    { label: "Export as Postman", icon: "file-export", onClick: () => useStore.getState().guard(exportRemote)({ format: "postman", collection: c.id }) },
-    { label: "Export as Hoppscotch", icon: "file-export", onClick: () => useStore.getState().guard(exportRemote)({ format: "hoppscotch", collection: c.id }) },
+    { label: t("sidebar.exportPostman"), icon: "file-export", onClick: () => useStore.getState().guard(exportRemote)({ format: "postman", collection: c.id }) },
+    { label: t("sidebar.exportHoppscotch"), icon: "file-export", onClick: () => useStore.getState().guard(exportRemote)({ format: "hoppscotch", collection: c.id }) },
     "-",
-    { label: "Delete", icon: "trash-can", danger: true, onClick: () => deleteCollection(c) },
+    { label: t("common.delete"), icon: "trash-can", danger: true, onClick: () => deleteCollection(c) },
   ];
   return (
     <div className={cx("node", active && "sel", over && "over")} draggable={write} role="treeitem" aria-expanded={open} tabIndex={0}
@@ -74,12 +77,12 @@ function CollectionRow({ c, open, guides, last, depth, write, active, ctx }) {
       <Icon name={open ? "chevron-down" : "chevron-right"} className="chev" onClick={(e) => { e.stopPropagation(); toggle(c.id); }} />
       <Icon name={open ? "folder-open" : "folder"} className="folder" />
       <span className="nm">{c.name}</span>
-      {(c.has_pre || c.has_post) && <span className="sc" title={`Collection script: ${[c.has_pre && "pre-request", c.has_post && "post-request"].filter(Boolean).join(" + ")} (inherited by every request inside)`}><Icon name="code" /></span>}
+      {(c.has_pre || c.has_post) && <span className="sc" title={t("sidebar.colScript", { kinds: [c.has_pre && t("req.pre"), c.has_post && t("req.post")].filter(Boolean).join(" + ") })}><Icon name="code" /></span>}
       {write && (
         <span className="acts">
-          <IconButton icon="file-circle-plus" label="New request" size="sm" onClick={(e) => { e.stopPropagation(); newRequestIn(c.id); }} />
-          <IconButton icon="folder-plus" label="New sub-collection" size="sm" onClick={(e) => { e.stopPropagation(); addCollection(c.id); }} />
-          <IconButton icon="ellipsis" label="Actions" size="sm" onClick={(e) => { e.stopPropagation(); ctx.show(e.currentTarget, items); }} />
+          <IconButton icon="file-circle-plus" label={t("sidebar.newRequest")} size="sm" onClick={(e) => { e.stopPropagation(); newRequestIn(c.id); }} />
+          <IconButton icon="folder-plus" label={t("sidebar.newSub")} size="sm" onClick={(e) => { e.stopPropagation(); addCollection(c.id); }} />
+          <IconButton icon="ellipsis" label={t("sidebar.actions")} size="sm" onClick={(e) => { e.stopPropagation(); ctx.show(e.currentTarget, items); }} />
         </span>
       )}
     </div>
@@ -87,6 +90,7 @@ function CollectionRow({ c, open, guides, last, depth, write, active, ctx }) {
 }
 
 function Tree() {
+  const t = useT();
   const { tree, filter, expanded, ws } = useStore();
   const activeId = useStore((s) => s.tabs.find((t) => t.key === s.active)?.id);
   const activeCid = useStore((s) => { const t = s.tabs.find((x) => x.key === s.active); return t?.kind === "collection" ? t.cid : null; });
@@ -120,23 +124,24 @@ function Tree() {
     <div className="tree" role="tree">
       {rows}
       {!tree.collections.length && (
-        <div className="empty-mini"><Icon name="folder-plus" className="big" /><p>{write ? "No collections yet" : "No collections yet."}</p>{write && <div className="row wrap empty-actions"><Button variant="primary" icon="plus" onClick={() => useStore.getState().addCollection(null)}>New collection</Button><Button icon="file-import" onClick={() => modals.open((close) => <InteropModal close={close} />)}>Import</Button></div>}</div>
+        <div className="empty-mini"><Icon name="folder-plus" className="big" /><p>{t("sidebar.noCollections")}</p>{write && <div className="row wrap empty-actions"><Button variant="primary" icon="plus" onClick={() => useStore.getState().addCollection(null)}>{t("sidebar.newCollection")}</Button><Button icon="file-import" onClick={() => modals.open((close) => <InteropModal close={close} />)}>{t("common.import")}</Button></div>}</div>
       )}
-      {f && !rows.length && tree.collections.length > 0 && <div className="muted pad">Nothing matches “{filter}”</div>}
+      {f && !rows.length && tree.collections.length > 0 && <div className="muted pad">{t("sidebar.noMatch", { q: filter })}</div>}
       <Menu anchor={ctx.m.anchor} open={ctx.m.open} onClose={ctx.hide} items={ctx.m.items} />
     </div>
   );
 }
 
 function History() {
+  const t = useT();
   const history = useStore((s) => s.history);
   const { openHistory } = useStore.getState();
-  if (!history.length) return <div className="empty-mini"><Icon name="clock-rotate-left" className="big" /><p>No history yet</p></div>;
+  if (!history.length) return <div className="empty-mini"><Icon name="clock-rotate-left" className="big" /><p>{t("sidebar.noHistory")}</p></div>;
   return (
     <div className="tree">
       {history.map((x) => (
         <div className="node" key={x.id} title={x.created_at} role="treeitem" tabIndex={0} onClick={() => openHistory(x.id)} onKeyDown={(e) => e.key === "Enter" && openHistory(x.id)}>
-          <span className={`m m-${x.method}`}>{x.method}</span><span className="nm">{x.url || "(empty)"}</span>
+          <span className={`m m-${x.method}`}>{x.method}</span><span className="nm">{x.url || t("sidebar.emptyUrl")}</span>
           <span className={x.status >= 400 || !x.status ? "err" : "ok"}>{x.status ?? "✗"}</span>
         </div>
       ))}
@@ -145,6 +150,7 @@ function History() {
 }
 
 export function Sidebar() {
+  const t = useT();
   const { side, ws, filter, sidebarOpen, sidebarW } = useStore();
   const { setSide, setFilter, addCollection, clearHistory, set } = useStore.getState();
   const write = can(ws).write;
@@ -154,14 +160,14 @@ export function Sidebar() {
     <>
       <div className={cx("scrim", sidebarOpen && "on")} onClick={() => set({ sidebarOpen: false })} />
       <aside className={cx("side", sidebarOpen && "open")} style={{ width: sidebarW }}>
-        <Tabs variant="pill" value={side} onChange={setSide} items={[{ id: "collections", label: <><Icon name="folder-tree" /> Collections</> }, { id: "history", label: <><Icon name="clock-rotate-left" /> History</> }]} />
+        <Tabs variant="pill" value={side} onChange={setSide} items={[{ id: "collections", label: <><Icon name="folder-tree" /> {t("sidebar.collections")}</> }, { id: "history", label: <><Icon name="clock-rotate-left" /> {t("sidebar.history")}</> }]} />
         {side === "collections" ? (
           <div className="side-tools">
-            <div className="searchbox"><Icon name="magnifying-glass" /><input type="search" placeholder="Search collections & requests…" value={text} aria-label="Search" onChange={(e) => { setText(e.target.value); deb(e.target.value); }} /></div>
-            {write && <IconButton icon="plus" label="New collection" onClick={() => addCollection(null)} />}
+            <div className="searchbox"><Icon name="magnifying-glass" /><input type="search" placeholder={t("sidebar.search")} value={text} aria-label={t("ui.search")} onChange={(e) => { setText(e.target.value); deb(e.target.value); }} /></div>
+            {write && <IconButton icon="plus" label={t("sidebar.newCollection")} onClick={() => addCollection(null)} />}
           </div>
         ) : (
-          <div className="side-tools"><Button size="sm" icon="trash-can" onClick={clearHistory}>Clear history</Button></div>
+          <div className="side-tools"><Button size="sm" icon="trash-can" onClick={clearHistory}>{t("sidebar.clearHistory")}</Button></div>
         )}
         <div className="side-body">{side === "collections" ? <Tree /> : <History />}</div>
       </aside>

@@ -6,8 +6,8 @@ import { config } from "../config.js";
 import { HttpError, publicUser, setCookie } from "../middleware/auth.js";
 import { usernameSchema } from "./auth.js";
 import { SettingsSchema } from "../services/userSettings.js";
+import { LOCALES, LEGACY, normalizeLocale } from "../services/locales.js";
 
-export const LOCALES = ["en", "fa"];
 const MAX_AVATAR = 400 * 1024; // the UI re-encodes to 256px, so real files are ~10-40 KB
 
 // Decide the type from the bytes, never from the client's Content-Type. SVG is deliberately not accepted (script injection).
@@ -30,7 +30,7 @@ export function meRouter(db) {
       .object({
         name: z.string().trim().min(1).max(100).optional(),
         username: usernameSchema.optional(),
-        locale: z.enum(LOCALES).optional(),
+        locale: z.enum([...LOCALES, ...Object.keys(LEGACY)]).transform(normalizeLocale).optional(),
         settings: SettingsSchema.optional(),
       })
       .parse(req.body);

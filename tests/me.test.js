@@ -2,6 +2,7 @@ import test, { before, after } from "node:test";
 import assert from "node:assert/strict";
 import { openDb } from "../src/db/index.js";
 import { createApp } from "../src/app.js";
+import { LOCALES } from "../src/services/locales.js";
 
 let server, base;
 before(() => {
@@ -29,12 +30,15 @@ const PNG = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR
 test("profile: name, username, locale", async () => {
   const a = await signup("amy");
   const b = await signup("ben");
-  const r = await a.c("PATCH", "/me", { name: "Amy Adams", locale: "fa", username: "Amy2" });
+  const r = await a.c("PATCH", "/me", { name: "Amy Adams", locale: "fa-IR", username: "Amy2" });
   assert.equal(r.status, 200);
-  assert.deepEqual([r.body.user.name, r.body.user.username, r.body.user.locale], ["Amy Adams", "amy2", "fa"]);
-  assert.equal((await a.c("GET", "/auth/me")).body.user.locale, "fa");
+  assert.deepEqual([r.body.user.name, r.body.user.username, r.body.user.locale], ["Amy Adams", "amy2", "fa-IR"]);
+  assert.equal((await a.c("GET", "/auth/me")).body.user.locale, "fa-IR");
   assert.equal((await a.c("PATCH", "/me", { username: "ben" })).status, 409);
   assert.equal((await a.c("PATCH", "/me", { locale: "xx" })).status, 400);
+  // every supported language is accepted; the old short codes are mapped to full ones
+  for (const l of LOCALES) assert.equal((await a.c("PATCH", "/me", { locale: l })).body.user.locale, l);
+  assert.equal((await a.c("PATCH", "/me", { locale: "en" })).body.user.locale, "en-US");
   assert.equal((await a.c("PATCH", "/me", { name: "  " })).status, 400);
   assert.equal((await call()("PATCH", "/me", { name: "x" })).status, 401);
   // a user can't touch someone else's profile: the route only ever targets the caller

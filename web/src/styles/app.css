@@ -242,3 +242,8 @@ input.mono { font-family: var(--mono); font-size: 12px; }
 .editor-preview { margin: 0; background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--r); padding: 10px 12px; font: var(--editor-size, 13px)/1.55 var(--editor-font, var(--mono)); tab-size: var(--indent-size, 2); white-space: pre; overflow: auto; }
 .about { margin: 0; }
 .settings-sec[role="tabpanel"] { border: 0; padding-bottom: 0; }
+
+/* ===== language picker (flag + name) ===== */
+.lang-val, .lang-opt { display: inline-flex; align-items: center; gap: 8px; min-width: 0; } .lang-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .flag { flex: none; border-radius: 3px; }
+.lang-select { min-width: 0; } .auth-lang { display: flex; justify-content: center; }
+@media (max-width: 900px) { .lang-select .lang-name { display: none; } }

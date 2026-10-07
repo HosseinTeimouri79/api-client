@@ -3,17 +3,19 @@ import { cx, fuzzy } from "../../lib/utils.js";
 import { Popover } from "./Popover.jsx";
 import { OptionList } from "./OptionList.jsx";
 import { Icon } from "./Icon.jsx";
+import { useT } from "../../i18n/index.js";
 
 /** Custom dropdown (replaces <select>). Becomes searchable when there are many options. */
-export function Select({ value, onChange, options, placeholder = "Select…", disabled, searchable, className, renderValue, renderOption, size, "aria-label": aria, title }) {
+export function Select({ value, onChange, options, placeholder, disabled, searchable, className, renderValue, renderOption, size, "aria-label": aria, title }) {
   const id = useId();
+  const t = useT();
   const btn = useRef(null);
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
   const [active, setActive] = useState(0);
   const canSearch = searchable ?? options.length > 8;
   const list = useMemo(
-    () => (q ? options.map((o) => [o, fuzzy(o.label ?? String(o.value), q)]).filter(([, s]) => s > 0).sort((a, b) => b[1] - a[1]).map(([o]) => o) : options),
+    () => (q ? options.map((o) => [o, Math.max(fuzzy(o.label ?? String(o.value), q), fuzzy(o.search ?? "", q))]).filter(([, s]) => s > 0).sort((a, b) => b[1] - a[1]).map(([o]) => o) : options),
     [options, q],
   );
   const cur = options.find((o) => o.value === value);
@@ -32,12 +34,12 @@ export function Select({ value, onChange, options, placeholder = "Select…", di
     <>
       <button ref={btn} type="button" className={cx("select", size && `select-${size}`, open && "open", className)} disabled={disabled} title={title} aria-label={aria} role="combobox" aria-haspopup="listbox" aria-expanded={open} aria-controls={`${id}-list`}
         onClick={() => (open ? setOpen(false) : show())} onKeyDown={key}>
-        <span className={cx("select-value", !cur && "placeholder")}>{cur ? (renderValue ? renderValue(cur) : <>{cur.icon && <Icon name={cur.icon} />}{cur.label}</>) : placeholder}</span>
+        <span className={cx("select-value", !cur && "placeholder")}>{cur ? (renderValue ? renderValue(cur) : <>{cur.icon && <Icon name={cur.icon} />}{cur.label}</>) : (placeholder ?? t("ui.select"))}</span>
         <Icon name="chevron-down" className="select-caret" />
       </button>
       <Popover anchor={btn.current} open={open} onClose={() => setOpen(false)} matchWidth={false} className="select-pop" ignore={btn.current}>
         {canSearch && (
-          <input className="select-search" autoFocus placeholder="Search…" value={q} onChange={(e) => { setQ(e.target.value); setActive(0); }} onKeyDown={key} aria-label="Search options" />
+          <input className="select-search" autoFocus placeholder={t("ui.search")} value={q} onChange={(e) => { setQ(e.target.value); setActive(0); }} onKeyDown={key} aria-label={t("ui.searchOptions")} />
         )}
         <OptionList id={`${id}-list`} options={list} active={active} onHover={setActive} onPick={pick} query={q} selected={(o) => o.value === value} renderOption={renderOption} />
       </Popover>

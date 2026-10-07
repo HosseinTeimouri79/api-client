@@ -51,7 +51,7 @@ export const useStore = create((set, get) => {
     // ---------- session ----------
     async boot() {
       try { set({ user: (await api("GET", "/auth/me")).user }); } catch { set({ user: null }); }
-      if (get().user?.locale) applyLocale(get().user.locale); // the saved account language wins over the device default
+      if (get().user?.locale) await applyLocale(get().user.locale); // the saved account language wins over the device default
       if (get().user?.settings) actions.adoptSettings(mergeSettings(get().user.settings), true);
       if (get().user) await actions.loadWorkspaces();
       set({ booting: false });
@@ -89,7 +89,7 @@ export const useStore = create((set, get) => {
     /** Updates the signed-in user from a profile response (name, avatar, language…). */
     setUser(user) { set({ user }); },
     async setLocale(id) {
-      applyLocale(id);
+      await applyLocale(id);
       if (get().user) await guard(async () => set({ user: (await api("PATCH", "/me", { locale: id })).user }))();
     },
     /** Replaces the settings with the account's (at sign-in). `boot` also applies "open console on start". */
@@ -136,7 +136,7 @@ export const useStore = create((set, get) => {
       });
     },
     async addCollection(parent) {
-      const name = await prompt({ title: parent ? "New sub-collection" : "New collection", label: "Name", okText: "Create" });
+      const name = await prompt({ title: parent ? t("sidebar.newSub") : t("sidebar.newCollection"), label: t("dlg.name"), okText: t("common.create") });
       if (!name) return;
       const c = await guard(() => api("POST", W("/collections"), { name, parent_id: parent }))();
       if (!c) return;
@@ -145,7 +145,7 @@ export const useStore = create((set, get) => {
       await actions.reloadTree();
     },
     async renameCollection(c) {
-      const name = await prompt({ title: "Rename collection", label: "Name", initial: c.name, okText: "Rename" });
+      const name = await prompt({ title: t("dlg.renameCollection"), label: t("dlg.name"), initial: c.name, okText: t("sidebar.rename") });
       if (name) await guard(async () => { await api("PATCH", W(`/collections/${c.id}`), { name }); await actions.reloadTree(); })();
     },
     duplicateCollection: guard(async (c) => { await api("POST", W(`/collections/${c.id}/duplicate`)); await get().reloadTree(); }),
@@ -160,7 +160,7 @@ export const useStore = create((set, get) => {
       await get().reloadTree();
     }),
     async deleteCollection(c) {
-      if (!(await confirm({ title: "Delete collection", message: `Delete “${c.name}” and everything inside it?` }))) return;
+      if (!(await confirm({ title: t("dlg.deleteCollection"), message: t("dlg.deleteCollectionMsg", { name: c.name }) }))) return;
       await guard(async () => {
         await api("DELETE", W(`/collections/${c.id}`));
         await actions.reloadTree();
@@ -201,7 +201,7 @@ export const useStore = create((set, get) => {
     activate(key) { set({ active: key }); actions.loadInherited(key); },
     async closeTab(key) {
       const t = get().tabs.find((x) => x.key === key);
-      if (t?.dirty && !(await confirm({ title: "Unsaved changes", message: `Discard changes to “${t.req?.name ?? t.name}”?`, okText: "Discard" }))) return;
+      if (t?.dirty && !(await confirm({ title: tr("dlg.unsavedTitle"), message: tr("dlg.discardMsg", { name: t.req?.name ?? t.name }), okText: tr("dlg.discard") }))) return;
       set((s) => {
         const i = s.tabs.findIndex((x) => x.key === key);
         const tabs = s.tabs.filter((x) => x.key !== key);
@@ -254,7 +254,7 @@ export const useStore = create((set, get) => {
       }
     },
     async newRequestIn(cid) {
-      const name = await prompt({ title: "New request", label: "Request name", initial: "New Request", okText: "Create" });
+      const name = await prompt({ title: t("dlg.newRequest"), label: t("dlg.requestName"), initial: "New Request", okText: t("common.create") });
       if (!name) return;
       await guard(async () => {
         const r = await api("POST", W(`/collections/${cid}/requests`), { ...blankReq(), name });
@@ -264,7 +264,7 @@ export const useStore = create((set, get) => {
       })();
     },
     async renameRequest(r) {
-      const name = await prompt({ title: "Rename request", label: "Name", initial: r.name, okText: "Rename" });
+      const name = await prompt({ title: t("dlg.renameRequest"), label: t("dlg.name"), initial: r.name, okText: t("sidebar.rename") });
       if (!name) return;
       await guard(async () => {
         const full = await api("GET", W(`/requests/${r.id}`));
@@ -275,7 +275,7 @@ export const useStore = create((set, get) => {
     },
     duplicateRequest: guard(async (r) => { await api("POST", W(`/requests/${r.id}/duplicate`)); await get().reloadTree(); }),
     async deleteRequest(r) {
-      if (!(await confirm({ title: "Delete request", message: `Delete “${r.name}”?` }))) return;
+      if (!(await confirm({ title: t("dlg.deleteRequest"), message: t("dlg.deleteRequestMsg", { name: r.name }) }))) return;
       await guard(async () => {
         await api("DELETE", W(`/requests/${r.id}`));
         set((s) => {
@@ -298,7 +298,7 @@ export const useStore = create((set, get) => {
         return guard(async () => {
           await api("PATCH", W(`/collections/${t.cid}`), { description: d.description, variables: d.variables.filter((v) => v.key), auth: d.auth, pre_script: d.pre_script, post_script: d.post_script });
           clean();
-          if (!silent) toast("Collection saved", "ok");
+          if (!silent) toast(tr("col.saved"), "ok");
           await actions.reloadTree();
         })();
       }
@@ -306,7 +306,7 @@ export const useStore = create((set, get) => {
         let cid = t.collection_id;
         if (!t.id) {
           const { collections } = get().tree;
-          if (!collections.length) return toast("Create a collection first", "error");
+          if (!collections.length) return toast(tr("col.createFirst"), "error");
           cid = await pickCollection(collections);
           if (!cid) return;
           const r = await api("POST", W(`/collections/${cid}/requests`), cleanReq(t.req));
@@ -314,7 +314,7 @@ export const useStore = create((set, get) => {
           actions.toggle(cid, true);
         } else await api("PUT", W(`/requests/${t.id}`), cleanReq(t.req));
         clean();
-        if (!silent) toast("Saved", "ok");
+        if (!silent) toast(tr("common.saved"), "ok");
         await actions.reloadTree();
       })();
     },

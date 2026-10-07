@@ -4,12 +4,12 @@ import { api, errorText } from "../api.js";
 import { Button } from "../components/ui/Button.jsx";
 import { Field } from "../components/ui/Switch.jsx";
 import { Tabs } from "../components/ui/Tabs.jsx";
-import { LOCALES, applyLocale, useI18n, useT } from "../i18n/index.js";
+import { useT } from "../i18n/index.js";
+import { LanguageSelect } from "../components/ui/LanguageSelect.jsx";
 
 export function AuthScreen() {
   const authenticate = useStore((s) => s.authenticate);
   const t = useT();
-  const locale = useI18n((s) => s.locale);
   const [mode, setMode] = useState("login");
   const [f, setF] = useState({ username: "", name: "", password: "" });
   const [err, setErr] = useState("");
@@ -35,7 +35,7 @@ export function AuthScreen() {
         <Field label={t("auth.password")} hint={mode === "register" ? t("auth.min8") : undefined}><input name="password" type="password" required minLength={mode === "register" ? 8 : 1} autoComplete={mode === "login" ? "current-password" : "new-password"} value={f.password} onChange={set("password")} /></Field>
         {err && <div className="err" role="alert">{err}</div>}
         <Button type="submit" variant="primary" size="lg" loading={busy}>{mode === "login" ? t("auth.signIn") : t("auth.createAccount")}</Button>
-        <div className="auth-lang" role="group" aria-label={t("common.language")}>{LOCALES.map((l) => <button key={l.id} type="button" className={l.id === locale ? "on" : undefined} aria-pressed={l.id === locale} onClick={() => applyLocale(l.id)}>{l.label}</button>)}</div>
+        <div className="auth-lang"><LanguageSelect size="sm" /></div>
       </form>
     </div>
   );

@@ -14,8 +14,8 @@ export const APP_FONTS = [
   { value: '"Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif', label: "Segoe UI / Roboto" },
   { value: "Arial, Helvetica, sans-serif", label: "Arial / Helvetica" },
   { value: "Tahoma, Verdana, sans-serif", label: "Tahoma / Verdana" },
-  { value: 'Vazirmatn, Vazir, Tahoma, sans-serif', label: "Vazirmatn (if installed)" },
-  { value: 'Georgia, "Times New Roman", serif', label: "Georgia (serif)" },
+  { value: 'Vazirmatn, Vazir, Tahoma, sans-serif', label: "Vazirmatn" },
+  { value: 'Georgia, "Times New Roman", serif', label: "Georgia" },
 ];
 export const EDITOR_FONTS = [
   { value: "", label: "System monospace" },

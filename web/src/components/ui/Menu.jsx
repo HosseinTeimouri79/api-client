@@ -22,7 +22,7 @@ export function Menu({ anchor, open, onClose, items, placement }) {
       <div ref={ref} role="menu" tabIndex={-1} onKeyDown={key} className="menu-in">
         {items.map((it, i) => it === "-" ? <hr key={i} /> : (
           <div key={i} role="menuitem" aria-disabled={it.disabled} className={cx("menu-item", i === active && "active", it.danger && "danger", it.disabled && "disabled")} onMouseEnter={() => setActive(i)} onClick={() => run(it)}>
-            <Icon name={it.icon ?? "angle-right"} className={cx(!it.icon && "invisible")} />
+            {it.leading ?? <Icon name={it.icon ?? "angle-right"} className={cx(!it.icon && "invisible")} />}
             <span>{it.label}</span>
           </div>
         ))}

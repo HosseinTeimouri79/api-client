@@ -1,5 +1,6 @@
 import { createContext, useContext, useMemo } from "react";
 import { useStore } from "../store.js";
+import { t } from "../i18n/index.js";
 
 // name -> { value, scope, secret }. Later scopes override earlier ones (same precedence as the server).
 export const VarsContext = createContext({});
@@ -24,4 +25,4 @@ export function useKnownVars(tab) {
   }, [wsVars, envs, envId, tree, colVars, tab?.collection_id, tab?.req?.variables]);
 }
 export const varOptions = (vars) =>
-  Object.entries(vars).map(([k, v]) => ({ value: k, label: k, group: undefined, description: `${v.scope} · ${v.secret ? "••••••" : String(v.value).slice(0, 40)}`, icon: "brackets-curly" }));
+  Object.entries(vars).map(([k, v]) => ({ value: k, label: k, group: undefined, description: `${t("vars.scope." + v.scope)} · ${v.secret ? "••••••" : String(v.value).slice(0, 40)}`, icon: "brackets-curly" }));

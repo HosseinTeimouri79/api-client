@@ -52,12 +52,12 @@ test("E2E: settings — photo, profile, Persian UI (RTL, saved to account), pass
   assert.equal((await login("zed2", "password123")).status, 200);
 
   // language → Persian from the header, RTL, persisted on the account
-  await page.getByRole("button", { name: "Language" }).click();
-  await page.getByRole("menuitem", { name: "فارسی" }).click();
+  await page.getByRole("combobox", { name: "Language" }).click();
+  await page.getByRole("option", { name: /فارسی/ }).click();
   await page.getByRole("heading", { name: "تنظیمات" }).waitFor();
   assert.equal(await page.evaluate(() => document.documentElement.dir), "rtl");
-  assert.equal(await page.evaluate(() => document.documentElement.lang), "fa");
-  assert.equal((await (await login("zed2", "password123")).json()).user.locale, "fa");
+  assert.equal(await page.evaluate(() => document.documentElement.lang), "fa-IR");
+  assert.equal((await (await login("zed2", "password123")).json()).user.locale, "fa-IR");
   assert.equal(await page.getByRole("tab", { name: "Preferences" }).count() + await page.getByRole("tab", { name: "ترجیحات" }).count() + await page.getByRole("tab", { name: "امنیت" }).count(), 0, "no Preferences or Security tab any more");
 
   // the password form has its own tab under Profile (labels are Persian now)

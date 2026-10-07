@@ -94,4 +94,10 @@ export const migrations = [
     name: "user-settings",
     sql: "ALTER TABLE users ADD COLUMN settings TEXT",
   },
+  {
+    // Interface languages are now full locale codes (en -> en-US, fa -> fa-IR).
+    id: 8,
+    name: "locale-codes",
+    sql: "UPDATE users SET locale='en-US' WHERE locale='en'; UPDATE users SET locale='fa-IR' WHERE locale='fa'",
+  },
 ];

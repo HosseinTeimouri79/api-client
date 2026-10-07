@@ -78,7 +78,7 @@ test("E2E: general settings apply, sync to the account and survive a reload", { 
   await page.getByRole("tab", { name: "Light", exact: true }).click();
   assert.equal(await page.evaluate(() => document.documentElement.dataset.theme), "light");
   await page.getByRole("combobox", { name: "App font" }).click();
-  await page.getByRole("option", { name: "Georgia (serif)" }).click();
+  await page.getByRole("option", { name: "Georgia" }).click();
   assert.match(await cssVar(page, "--app-font"), /Georgia/);
   assert.match(await page.evaluate(() => getComputedStyle(document.body).fontFamily), /Georgia/);
   await page.getByRole("combobox", { name: "App font" }).click();
