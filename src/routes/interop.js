@@ -69,6 +69,7 @@ export function interopRouter(db) {
     const node = (c, d = 0) => ({
       id: c.id,
       name: c.name,
+      description: c.description ?? "",
       variables: parse(c.variables, []),
       auth: parse(c.auth, null),
       pre_script: c.pre_script,
@@ -167,7 +168,7 @@ export function interopRouter(db) {
         )
         .get(...a).p;
     const insCol = db.prepare(
-      "INSERT INTO collections(id,workspace_id,parent_id,name,position,variables,auth,pre_script,post_script) VALUES(?,?,?,?,?,?,?,?,?)",
+      "INSERT INTO collections(id,workspace_id,parent_id,name,description,position,variables,auth,pre_script,post_script) VALUES(?,?,?,?,?,?,?,?,?,?)",
     );
     const insReq = db.prepare(
       "INSERT INTO requests(id,workspace_id,collection_id,name,description,position,method,url,params,headers,body,auth,variables,pre_script,post_script) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
@@ -183,6 +184,7 @@ export function interopRouter(db) {
         req.wid,
         parent,
         n.name,
+        String(n.description ?? "").slice(0, 10000),
         position,
         j(v.success ? v.data : []),
         j(a?.success ? a.data : null),

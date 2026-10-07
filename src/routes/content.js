@@ -115,6 +115,7 @@ export function contentRouter(db) {
   // ---- collections ----
   const colBody = z.object({
     name: z.string().min(1).max(200),
+    description: z.string().max(10000).optional(),
     parent_id: z.string().nullable().optional(),
   });
   r.post("/collections", W("content:write"), (req, res) => {
@@ -122,12 +123,13 @@ export function contentRouter(db) {
     if (b.parent_id) col(req, b.parent_id);
     const id = uid();
     db.prepare(
-      "INSERT INTO collections(id,workspace_id,parent_id,name,position) VALUES(?,?,?,?,?)",
+      "INSERT INTO collections(id,workspace_id,parent_id,name,description,position) VALUES(?,?,?,?,?,?)",
     ).run(
       id,
       req.wid,
       b.parent_id ?? null,
       b.name,
+      b.description ?? "",
       nextPos(
         "collections",
         "workspace_id=? AND parent_id IS ?",
@@ -181,6 +183,7 @@ export function contentRouter(db) {
     const b = z
       .object({
         name: z.string().min(1).max(200),
+        description: z.string().max(10000),
         variables: kv,
         auth,
         pre_script: z.string().max(100000),
@@ -203,6 +206,7 @@ export function contentRouter(db) {
     }
     const m = {
       name: b.name ?? c.name,
+      description: b.description ?? c.description ?? "",
       variables: j(b.variables ?? parse(c.variables, [])),
       auth: j(b.auth !== undefined ? b.auth : parse(c.auth, null)),
       pre: b.pre_script ?? c.pre_script,
@@ -220,8 +224,8 @@ export function contentRouter(db) {
           : c.position),
     };
     db.prepare(
-      "UPDATE collections SET name=?,variables=?,auth=?,pre_script=?,post_script=?,parent_id=?,position=? WHERE id=?",
-    ).run(m.name, m.variables, m.auth, m.pre, m.post, m.parent, m.pos, c.id);
+      "UPDATE collections SET name=?,description=?,variables=?,auth=?,pre_script=?,post_script=?,parent_id=?,position=? WHERE id=?",
+    ).run(m.name, m.description, m.variables, m.auth, m.pre, m.post, m.parent, m.pos, c.id);
     audit(db, req, "collection.update", c.id);
     res.json({ ok: true });
   });
@@ -236,12 +240,13 @@ export function contentRouter(db) {
     const copy = (c, parent, name) => {
       const id = uid();
       db.prepare(
-        "INSERT INTO collections(id,workspace_id,parent_id,name,position,variables,auth,pre_script,post_script) VALUES(?,?,?,?,?,?,?,?,?)",
+        "INSERT INTO collections(id,workspace_id,parent_id,name,description,position,variables,auth,pre_script,post_script) VALUES(?,?,?,?,?,?,?,?,?,?)",
       ).run(
         id,
         req.wid,
         parent,
         name,
+        c.description ?? "",
         nextPos(
           "collections",
           "workspace_id=? AND parent_id IS ?",

@@ -82,4 +82,10 @@ export const migrations = [
     name: "settings",
     sql: "CREATE TABLE settings(key TEXT PRIMARY KEY, value TEXT NOT NULL)",
   },
+  {
+    // Collections (and folders) can carry a description, like requests do.
+    id: 6,
+    name: "collection-description",
+    sql: "ALTER TABLE collections ADD COLUMN description TEXT NOT NULL DEFAULT ''",
+  },
 ];

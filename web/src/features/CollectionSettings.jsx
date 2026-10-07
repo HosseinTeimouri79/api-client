@@ -18,6 +18,7 @@ export function CollectionSettings({ tab }) {
     { id: "auth", label: "Authorization", badge: d.auth?.type && d.auth.type !== "none" ? "●" : false },
     { id: "pre", label: "Pre-request", badge: d.pre_script?.trim() ? "●" : false },
     { id: "post", label: "Post-request", badge: d.post_script?.trim() ? "●" : false },
+    { id: "docs", label: "Description", badge: d.description?.trim() ? "●" : false },
   ];
   return (
     <div className="editor col-settings">
@@ -29,6 +30,7 @@ export function CollectionSettings({ tab }) {
       <p className="muted col-hint">Variables, auth and scripts here apply to every request in this collection and its sub-collections.</p>
       <Tabs items={items} value={tab.sub} onChange={(s) => setSub(tab.key, s)} />
       <div className="editor-body">
+        {tab.sub === "docs" && <textarea className="docs" rows={10} disabled={ro} aria-label="Collection description" placeholder="Describe what this collection is for…" value={d.description ?? ""} onChange={(e) => set({ description: e.target.value })} />}
         {tab.sub === "vars" && <KeyValueEditor rows={d.variables} readOnly={ro} onChange={(variables) => set({ variables })} keyPlaceholder="Variable" />}
         {tab.sub === "auth" && <AuthEditor auth={d.auth ?? { type: "none" }} allowInherit={false} readOnly={ro} onChange={(auth) => set({ auth })} />}
         {tab.sub === "pre" && <ScriptEditor kind="pre" value={d.pre_script} readOnly={ro} onChange={(pre_script) => set({ pre_script })} />}

@@ -194,8 +194,11 @@ function pmItem(it, warn) {
   };
 }
 function pmFolder(c, warn, name = c.name) {
+  // a collection keeps its description in info.description, a folder directly on the item; either may be a string or { content }
+  const desc = c.info?.description ?? c.description;
   const out = {
     name: str(name || "Collection").slice(0, 200),
+    description: lines(desc?.content ?? desc).slice(0, 10000),
     variables: kvIn(c.variable).map((v) => ({ ...v, enabled: true })),
     auth: pmAuth(c.auth, warn, `folder "${name}"`),
     pre_script: pmScript(c.event, "prerequest"),
@@ -479,6 +482,7 @@ function pmItemsOut(n) {
     ...n.folders.map((f) =>
       clean({
         name: f.name,
+        description: f.description || undefined,
         item: pmItemsOut(f),
         auth: pmAuthOut(f.auth),
         event: pmEvents(f),
@@ -502,7 +506,12 @@ function pmItemsOut(n) {
   ];
 }
 export const toPostmanCollection = (n, id) => ({
-  info: { _postman_id: id, name: n.name, schema: SCHEMA },
+  info: {
+    _postman_id: id,
+    name: n.name,
+    ...(n.description ? { description: n.description } : {}),
+    schema: SCHEMA,
+  },
   item: pmItemsOut(n),
   ...(pmAuthOut(n.auth) ? { auth: pmAuthOut(n.auth) } : {}),
   ...(pmEvents(n).length ? { event: pmEvents(n) } : {}),
@@ -600,6 +609,8 @@ export function toHoppCollection(n, inherited = null, warn = () => {}) {
     );
   if (n.pre_script?.trim() || n.post_script?.trim())
     warn(`"${n.name}": collection-level scripts were not exported`);
+  if (n.description?.trim() || n.requests.some((r) => r.description?.trim()))
+    warn(`"${n.name}": descriptions have no Hoppscotch equivalent and were not exported`);
   return {
     v: 1,
     name: n.name,

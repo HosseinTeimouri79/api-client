@@ -182,7 +182,7 @@ export const useStore = create((set, get) => {
       const ex = get().tabs.find((t) => t.kind === "collection" && t.cid === id);
       if (ex) { if (sub) patchTab(ex.key, { sub }); return actions.activate(ex.key); }
       const c = await api("GET", W(`/collections/${id}`));
-      const draft = clone({ variables: c.variables ?? [], auth: c.auth ?? { type: "none" }, pre_script: c.pre_script ?? "", post_script: c.post_script ?? "" });
+      const draft = clone({ description: c.description ?? "", variables: c.variables ?? [], auth: c.auth ?? { type: "none" }, pre_script: c.pre_script ?? "", post_script: c.post_script ?? "" });
       const t = { key: "t" + ++keySeq, kind: "collection", cid: id, name: c.name, draft, dirty: false, running: false, sub: sub ?? "vars" };
       set((s) => ({ tabs: [...s.tabs, t], active: t.key }));
     }),
@@ -251,7 +251,7 @@ export const useStore = create((set, get) => {
       if (t.kind === "collection") {
         const d = t.draft;
         return guard(async () => {
-          await api("PATCH", W(`/collections/${t.cid}`), { variables: d.variables.filter((v) => v.key), auth: d.auth, pre_script: d.pre_script, post_script: d.post_script });
+          await api("PATCH", W(`/collections/${t.cid}`), { description: d.description, variables: d.variables.filter((v) => v.key), auth: d.auth, pre_script: d.pre_script, post_script: d.post_script });
           patchTab(t.key, { dirty: false });
           toast("Collection saved", "ok");
           await actions.reloadTree();
