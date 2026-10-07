@@ -1,7 +1,7 @@
 import { useRef, useState } from "react";
 import { api, errorText } from "../api.js";
 import { useStore } from "../store.js";
-import { LOCALES, useI18n, useT } from "../i18n/index.js";
+import { useT } from "../i18n/index.js";
 import { squareAvatar } from "../lib/image.js";
 import { Button } from "../components/ui/Button.jsx";
 import { Field } from "../components/ui/Switch.jsx";
@@ -73,26 +73,6 @@ function Profile() {
   );
 }
 
-function Preferences() {
-  const t = useT();
-  const locale = useI18n((s) => s.locale);
-  const theme = useStore((s) => s.theme);
-  const { setLocale, setTheme } = useStore.getState();
-  return (
-    <>
-      <section className="settings-sec stack">
-        <h3>{t("settings.language")}</h3>
-        <Tabs variant="pill" value={locale} onChange={setLocale} items={LOCALES.map((l) => ({ id: l.id, label: l.label }))} />
-        <span className="muted">{t("settings.languageHint")}</span>
-      </section>
-      <section className="settings-sec stack">
-        <h3>{t("settings.theme")}</h3>
-        <Tabs variant="pill" value={theme} onChange={setTheme} items={[{ id: "dark", label: t("settings.dark") }, { id: "light", label: t("settings.light") }]} />
-      </section>
-    </>
-  );
-}
-
 function Security() {
   const t = useT();
   const [f, setF] = useState({ cur: "", next: "", again: "" });
@@ -128,8 +108,8 @@ export function SettingsPage() {
     <div className="admin body">
       <div className="admin-in settings-in">
         <div className="row admin-head"><Button icon="arrow-left" onClick={() => useStore.setState({ view: "app" })}>{t("settings.back")}</Button><h2 className="grow">{t("settings.title")}</h2></div>
-        <Tabs value={tab} onChange={setTab} items={[{ id: "profile", label: t("settings.tab.profile") }, { id: "preferences", label: t("settings.tab.preferences") }, { id: "security", label: t("settings.tab.security") }]} />
-        <div className="admin-card">{tab === "profile" ? <Profile /> : tab === "preferences" ? <Preferences /> : <Security />}</div>
+        <Tabs value={tab} onChange={setTab} items={[{ id: "profile", label: t("settings.tab.profile") }, { id: "security", label: t("settings.tab.security") }]} />
+        <div className="admin-card">{tab === "profile" ? <Profile /> : <Security />}</div>
       </div>
     </div>
   );

@@ -9,14 +9,14 @@ import { Icon } from "../components/ui/Icon.jsx";
 import { EnvModal } from "./EnvModal.jsx";
 import { MembersModal } from "./MembersModal.jsx";
 import { InteropModal } from "./InteropModal.jsx";
-import { useI18n, useT } from "../i18n/index.js";
+import { LOCALES, useI18n, useT } from "../i18n/index.js";
 
 export function TopBar() {
   const { user, ws, workspaces, envs, envId, theme, sidebarOpen } = useStore();
-  const { set, setTheme, openWorkspace, createWorkspace, logout, guard } = useStore.getState();
+  const { set, setTheme, setLocale, openWorkspace, createWorkspace, logout, guard } = useStore.getState();
   const t = useT(), locale = useI18n((s) => s.locale);
-  const more = useMenu(), userMenu = useMenu();
-  const moreBtn = useRef(null), userBtn = useRef(null);
+  const more = useMenu(), userMenu = useMenu(), langMenu = useMenu();
+  const moreBtn = useRef(null), userBtn = useRef(null), langBtn = useRef(null);
   const wsOptions = useMemo(() => [...workspaces.map((w) => ({ value: w.id, label: w.name, description: t(`role.${w.role}`), icon: "briefcase" })), { value: "+", label: t("top.newWorkspaceDots"), icon: "plus" }], [workspaces, locale]);
   const envOptions = useMemo(() => [{ value: "", label: t("top.noEnvironment"), icon: "ban" }, ...envs.map((e) => ({ value: e.id, label: e.name, icon: "layer-group" }))], [envs, locale]);
   const c = can(ws);
@@ -39,6 +39,8 @@ export function TopBar() {
           ]} />
         </>
       )}
+      <IconButton ref={langBtn} icon="language" label={t("common.language")} onClick={() => langMenu.show(langBtn.current)} />
+      <Menu {...langMenu} onClose={langMenu.hide} placement="bottom-end" items={LOCALES.map((l) => ({ label: l.label, icon: l.id === locale ? "check" : undefined, onClick: () => setLocale(l.id) }))} />
       <IconButton icon={theme === "dark" ? "sun" : "moon"} label={t("top.toggleTheme")} onClick={() => setTheme(theme === "dark" ? "light" : "dark")} />
       <button ref={userBtn} className="user-btn" aria-label={t("top.account")} onClick={() => userMenu.show(userBtn.current)}><Avatar name={user.name} src={user.avatar} size={30} /></button>
       <Menu {...userMenu} onClose={userMenu.hide} placement="bottom-end" items={[
