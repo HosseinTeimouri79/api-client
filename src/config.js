@@ -1,4 +1,7 @@
 import crypto from "node:crypto";
+import fs from "node:fs";
+// The app version lives in package.json (also shown in Settings → About and returned by /healthz).
+export const version = JSON.parse(fs.readFileSync(new URL("../package.json", import.meta.url), "utf8")).version;
 const isProd = process.env.NODE_ENV === "production";
 const secret =
   process.env.JWT_SECRET ||

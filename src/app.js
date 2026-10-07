@@ -5,6 +5,7 @@ import { ZodError } from "zod";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { authenticate, csrfGuard, HttpError } from "./middleware/auth.js";
+import { version } from "./config.js";
 import { authRouter } from "./routes/auth.js";
 import { workspaceRouter } from "./routes/workspaces.js";
 import { contentRouter } from "./routes/content.js";
@@ -38,7 +39,7 @@ export function createApp(db) {
   );
   app.use(cookieParser());
   app.use(express.json({ limit: "8mb" }));
-  app.get("/healthz", (_req, res) => res.json({ ok: true }));
+  app.get("/healthz", (_req, res) => res.json({ ok: true, version }));
   const api = express.Router();
   api.use("/auth", authRouter(db));
   api.use(authenticate(db), csrfGuard);
