@@ -12,6 +12,7 @@ import { contentRouter } from "./routes/content.js";
 import { meRouter, usersRouter } from "./routes/me.js";
 import { adminRouter } from "./routes/admin.js";
 import { interopRouter } from "./routes/interop.js";
+import { sessionsRouter } from "./routes/sessions.js";
 
 export function createApp(db) {
   const app = express();
@@ -49,6 +50,9 @@ export function createApp(db) {
   api.use("/workspaces", workspaceRouter(db));
   api.use("/workspaces/:wid", contentRouter(db));
   api.use("/workspaces/:wid", interopRouter(db));
+  const live = sessionsRouter(db);
+  api.use("/workspaces/:wid", live);
+  app.locals.sessions = live.sessions; // closed with the server (tests, shutdown)
   api.use((_req, _res, next) => next(new HttpError(404, "Not found")));
   app.use("/api", api);
   // The React UI is built to /dist (`npm run build`); unknown non-API paths fall back to the SPA shell.

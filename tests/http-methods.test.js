@@ -107,7 +107,7 @@ test("saved requests carry a protocol and protocol data; TRACE and CONNECT are v
   assert.ok(copied.length >= 2 && copied.every((r) => r.protocol === "http"));
   assert.equal((await call("GET", `/workspaces/${ws}/requests/${copied[0].id}`)).body.protocol_data !== undefined, true);
   // protocols that are not implemented yet are refused
-  assert.equal((await call("POST", `/workspaces/${ws}/collections/${col}/requests`, { name: "W", protocol: "websocket" })).status, 400);
+  assert.equal((await call("POST", `/workspaces/${ws}/collections/${col}/requests`, { name: "W", protocol: "grpc" })).status, 400);
   assert.equal((await call("POST", `/workspaces/${ws}/collections/${col}/requests`, { name: "bad", method: "BREW" })).status, 400);
 });
 

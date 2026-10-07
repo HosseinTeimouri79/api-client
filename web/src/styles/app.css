@@ -247,3 +247,15 @@ input.mono { font-family: var(--mono); font-size: 12px; }
 .editor-preview { margin: 0; background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--r); padding: 10px 12px; font: var(--editor-size, 13px)/1.55 var(--editor-font, var(--mono)); tab-size: var(--indent-size, 2); white-space: pre; overflow: auto; }
 .about { margin: 0; }
 .settings-sec[role="tabpanel"] { border: 0; padding-bottom: 0; }
+
+/* ---- protocols and live sessions ---- */
+.protocol-select { min-width: 112px; } .proto-t { font-weight: 700; font-size: 12px; } .proto-opt { display: flex; align-items: center; gap: 8px; font-weight: 600; } .proto-opt em { font-style: normal; font-weight: 400; font-size: 11px; color: var(--muted); margin-inline-start: auto; }
+.m-proto { color: var(--accent); }
+.ws-compose { width: 100%; resize: vertical; min-height: 120px; } .ws-controls { display: flex; flex-wrap: wrap; gap: 12px; } .ws-controls .row input { min-width: 0; flex: 1; } .ws-code { flex: 0 0 64px !important; width: 64px; }
+.rt-state { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; } .rt-state i { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+.rt-state.s-open i { background: var(--ok); } .rt-state.s-connecting i { background: var(--warn); } .rt-state.s-failed i { background: var(--err); } .rt-state.s-open { color: var(--ok); } .rt-state.s-failed { color: var(--err); }
+.ev-list { flex: 1; min-height: 0; overflow: auto; } .ev { border-bottom: 1px solid var(--border); } .ev-row { display: flex; align-items: baseline; gap: 8px; padding: 5px 12px; cursor: default; min-width: 0; } .ev-row[role="button"] { cursor: pointer; } .ev-row[role="button"]:hover { background: var(--panel2); }
+.ev-dir { flex: none; width: 14px; color: var(--muted); } .ev-out .ev-dir { color: var(--accent); } .ev-in .ev-dir { color: var(--ok); } .ev-error .ev-dir, .ev-error .ev-text { color: var(--err); }
+.ev-badge { flex: none; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .03em; color: var(--muted); border: 1px solid var(--border); border-radius: 4px; padding: 0 5px; } .ev-badge.bin { color: var(--warn); }
+.ev-text { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: var(--mono); font-size: 12px; } .ev-size, .ev-time { flex: none; color: var(--muted); font-size: 11px; }
+.ev-detail { padding: 4px 12px 10px 34px; display: flex; flex-direction: column; align-items: flex-start; gap: 6px; } .ev-detail .raw { align-self: stretch; margin: 0; max-height: 260px; overflow: auto; }

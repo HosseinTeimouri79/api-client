@@ -319,3 +319,24 @@ export async function runRequest(
   }
   return out;
 }
+
+/**
+ * Variables and inherited auth for requests that are not run through `runRequest` (live sessions).
+ * Same scopes as an HTTP run, without scripts: runtime > request > collection > environment > workspace.
+ */
+export function sessionContext(db, { wid, request, collectionId, environmentId }) {
+  const ws = db.prepare("SELECT variables FROM workspaces WHERE id=?").get(wid);
+  const env = environmentId
+    ? db.prepare("SELECT variables FROM environments WHERE id=? AND workspace_id=?").get(environmentId, wid)
+    : null;
+  const chain = collectionChain(db, collectionId).filter((c) => c.workspace_id === wid);
+  const vars = mergeScopes({
+    workspace: parse(ws?.variables, []),
+    environment: parse(env?.variables, []),
+    collections: chain.map((c) => c.variables),
+    request: request.variables ?? [],
+  });
+  const inherited =
+    [...chain].reverse().map((c) => c.auth).find((a) => a && a.type && a.type !== "inherit") ?? null;
+  return { vars, inherited: resolveDeep(inherited, vars), request: resolveDeep(request, vars) };
+}

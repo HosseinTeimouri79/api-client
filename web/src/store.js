@@ -2,6 +2,8 @@ import { create } from "zustand";
 import { api, ApiError, errorText } from "./api.js";
 import { blankReq, cleanReq } from "./lib/http.js";
 import { clone } from "./lib/utils.js";
+import { isLive, firstTab } from "./lib/protocols.js";
+import { followSession } from "./lib/session.js";
 import { toast } from "./components/ui/Toasts.jsx";
 import { prompt, confirm } from "./components/ui/dialogs.jsx";
 import { pickCollection } from "./features/pickers.jsx";
@@ -29,6 +31,8 @@ function loadSettings() {
 }
 const layoutDir = (s) => (s.ui.layout === "side" ? "col" : "row"); // "col": editor and response side by side
 const autosaveTimers = new Map();
+const streams = new Map(); // tab key -> { ctl: AbortController, buf: [], timer }
+const MAX_EVENTS = 2000; // shown per live tab
 let syncTimer;
 let keySeq = 0;
 export const useStore = create((set, get) => {
@@ -61,6 +65,7 @@ export const useStore = create((set, get) => {
       await actions.boot();
     },
     async logout() {
+      actions.dropAllSessions();
       await api("POST", "/auth/logout").catch(() => {});
       set({ user: null, view: "app", ws: null, workspaces: [], tabs: [], active: null, logs: [] });
     },
@@ -73,6 +78,7 @@ export const useStore = create((set, get) => {
     },
     openWorkspace: guard(async (id) => {
       const ws = await api("GET", `/workspaces/${id}`);
+      actions.dropAllSessions();
       LS.set("ws", id);
       set({ ws, wsVars: ws.variables, tabs: [], active: null, expanded: {}, logs: [], history: [], colVars: {}, filter: "" });
       const [tree, envs] = await Promise.all([api("GET", W("/tree")), api("GET", W("/environments"))]);
@@ -193,7 +199,7 @@ export const useStore = create((set, get) => {
 
     // ---------- tabs ----------
     addTab(req, { id = null, collection_id = null } = {}) {
-      const t = { key: "t" + ++keySeq, id, collection_id, req, dirty: false, response: null, running: false, sub: "params", respView: null };
+      const t = { key: "t" + ++keySeq, id, collection_id, req, dirty: false, response: null, running: false, sub: firstTab(req), respView: null };
       set((s) => ({ tabs: [...s.tabs, t], active: t.key }));
       actions.loadInherited(t.key);
       return t;
@@ -202,6 +208,7 @@ export const useStore = create((set, get) => {
     async closeTab(key) {
       const t = get().tabs.find((x) => x.key === key);
       if (t?.dirty && !(await confirm({ title: tr("dlg.unsavedTitle"), message: tr("dlg.discardMsg", { name: t.req?.name ?? t.name }), okText: tr("dlg.discard") }))) return;
+      actions.dropSession(key);
       set((s) => {
         const i = s.tabs.findIndex((x) => x.key === key);
         const tabs = s.tabs.filter((x) => x.key !== key);
@@ -321,6 +328,7 @@ export const useStore = create((set, get) => {
     async send(key = get().active) {
       const t = get().tabs.find((x) => x.key === key);
       if (!t || t.kind === "collection" || t.running) return;
+      if (isLive(t.req)) return actions.toggleSession(key);
       patchTab(key, { running: true });
       let response;
       try {
@@ -337,6 +345,77 @@ export const useStore = create((set, get) => {
       if (get().side === "history") actions.loadHistory();
     },
     clearLogs() { set({ logs: [] }); },
+
+    // ---------- live sessions (WebSocket, ...) ----------
+    toggleSession(key) {
+      const t = get().tabs.find((x) => x.key === key);
+      return ["connecting", "open"].includes(t?.rt?.status) ? actions.disconnect(key) : actions.connect(key);
+    },
+    async connect(key) {
+      const t = get().tabs.find((x) => x.key === key);
+      if (!t || ["connecting", "open"].includes(t.rt?.status)) return;
+      actions.dropSession(key);
+      const log = (level, message) => set((s) => ({ logs: [...s.logs, { ts: new Date().toISOString(), level, message }].slice(-1000) }));
+      patchTab(key, { rt: { status: "connecting", events: [], id: null, error: null, startedAt: Date.now() } });
+      log("INFO", `${t.req.protocol} connecting: ${t.req.url}`);
+      try {
+        const { timeoutMs, maxResponseMb } = get().settings.request;
+        const r = await api("POST", W("/sessions"), { request: cleanReq(t.req), collection_id: t.collection_id, environment_id: get().envId, limits: { timeoutMs, maxResponseBytes: Math.round(maxResponseMb * 1024 * 1024) } });
+        if (!r.ok) {
+          patchTab(key, (x) => ({ rt: { ...x.rt, status: "failed", error: r.error } }));
+          return log("ERROR", `${t.req.protocol} connection failed: ${r.error.message}`);
+        }
+        patchTab(key, (x) => ({ rt: { ...x.rt, id: r.id } }));
+        const ctl = new AbortController();
+        const st = { ctl, buf: [], timer: null };
+        streams.set(key, st);
+        const flush = () => {
+          st.timer = null;
+          const batch = st.buf.splice(0);
+          if (!batch.length) return;
+          patchTab(key, (x) => {
+            const events = [...(x.rt?.events ?? []), ...batch].slice(-MAX_EVENTS);
+            let status = x.rt?.status;
+            for (const e of batch) status = e.type === "open" ? "open" : e.type === "closed" ? "closed" : status;
+            return x.rt?.id === r.id ? { rt: { ...x.rt, events, status } } : {};
+          });
+        };
+        followSession(get().ws.id, r.id, {
+          signal: ctl.signal,
+          onEvent: (e) => {
+            if (e.type === "open") log("INFO", `${t.req.protocol} connected: ${e.url}`);
+            if (e.type === "closed") log("INFO", `${t.req.protocol} closed${e.code ? ` (${e.code})` : ""}${e.reason ? `: ${e.reason}` : ""}`);
+            if (e.type === "error") log("ERROR", `${t.req.protocol}: ${e.message}`);
+            st.buf.push(e);
+            st.timer ??= setTimeout(flush, 40); // many events per second are rendered in batches
+          },
+          onEnd: () => { flush(); patchTab(key, (x) => (x.rt?.id === r.id && x.rt.status !== "closed" ? { rt: { ...x.rt, status: "closed" } } : {})); },
+        });
+      } catch (e) {
+        patchTab(key, (x) => ({ rt: { ...x.rt, status: "failed", error: { message: e.message } } }));
+        if (e.status === 401) set({ user: null });
+      }
+    },
+    /** Sends something on an open connection (a message, ping, close ...). */
+    rtAct: guard(async (key, action, payload) => {
+      const t = get().tabs.find((x) => x.key === key);
+      if (t?.rt?.status !== "open") return;
+      return api("POST", W(`/sessions/${t.rt.id}/act`), { action, payload });
+    }),
+    clearEvents(key) { patchTab(key, (x) => (x.rt ? { rt: { ...x.rt, events: [] } } : {})); },
+    async disconnect(key) {
+      const t = get().tabs.find((x) => x.key === key);
+      if (!t?.rt?.id) return;
+      try { await api("DELETE", W(`/sessions/${t.rt.id}`)); } catch { /* already gone */ }
+    },
+    /** Ends the connection and stops following it (tab closed, workspace changed, signed out). */
+    dropSession(key) {
+      const t = get().tabs.find((x) => x.key === key);
+      const st = streams.get(key);
+      if (st) { st.ctl.abort(); clearTimeout(st.timer); streams.delete(key); }
+      if (t?.rt?.id && ["connecting", "open"].includes(t.rt.status) && get().ws) api("DELETE", W(`/sessions/${t.rt.id}`)).catch(() => {});
+    },
+    dropAllSessions() { for (const t of get().tabs) actions.dropSession(t.key); },
 
     // ---------- history ----------
     loadHistory: guard(async () => set({ history: await api("GET", W("/history")) })),

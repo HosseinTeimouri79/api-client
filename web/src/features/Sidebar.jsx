@@ -8,6 +8,7 @@ import { Icon } from "../components/ui/Icon.jsx";
 import { exportRemote, InteropModal } from "./InteropModal.jsx";
 import { modals } from "../components/ui/modals.js";
 import { useT } from "../i18n/index.js";
+import { protocolOf } from "../lib/protocols.js";
 
 const byPos = (a, b) => a.position - b.position || a.name.localeCompare(b.name);
 let dragging = null; // module-level: HTML5 drag payload ({type, id})
@@ -40,7 +41,7 @@ const RequestRow = memo(function RequestRow({ r, guides, last, depth, write, act
       onDragOver={(e) => { if (dragging?.type === "request") { e.preventDefault(); setOver(true); } }} onDragLeave={() => setOver(false)}
       onDrop={(e) => { e.preventDefault(); setOver(false); const d = dragging; dragging = null; dropOn(d, { type: "before", id: r.id, collection_id: r.collection_id }); }}>
       {depth > 0 && <Guides guides={guides} last={last} />}
-      <span className={`m m-${r.method}`}>{r.method}</span>
+      <span className={`m m-${r.protocol && r.protocol !== "http" ? "proto" : r.method}`}>{r.protocol && r.protocol !== "http" ? protocolOf(r.protocol).tag : r.method}</span>
       <span className="nm">{r.name}</span>
       <span className="acts">
         <IconButton icon="play" label={t("sidebar.run")} size="sm" onClick={async (e) => { e.stopPropagation(); await openRequest(r.id); send(); }} />

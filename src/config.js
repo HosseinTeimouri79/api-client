@@ -28,4 +28,9 @@ export const config = {
   // Ceilings for those per-user limits ("0 = no limit" in Settings means "up to this"); 0 here lifts the ceiling.
   maxRequestTimeoutMs: Number(process.env.MAX_REQUEST_TIMEOUT_MS || 600000),
   maxResponseBytesLimit: Number(process.env.MAX_RESPONSE_BYTES_LIMIT || 100 * 1024 * 1024),
+  // Live sessions (WebSocket and the other realtime protocols)
+  maxSessionsPerUser: Number(process.env.MAX_SESSIONS_PER_USER || 10),
+  maxSessionsTotal: Number(process.env.MAX_SESSIONS_TOTAL || 200),
+  sessionIdleMs: Number(process.env.SESSION_IDLE_MS || 15 * 60 * 1000), // closed when nobody is watching or sending
+  sessionEventLimit: Number(process.env.SESSION_EVENT_LIMIT || 5000), // events kept for replay per session
 };
