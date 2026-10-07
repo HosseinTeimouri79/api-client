@@ -26,7 +26,8 @@ export function Popover({ anchor, open, onClose, matchWidth, placement = "bottom
     const below = vh - r.bottom,
       above = r.top;
     const up = placement.startsWith("top") || (below < ph + 8 && above > below);
-    const left = placement.endsWith("end") ? r.right - pw : r.left;
+    const rtl = document.documentElement.dir === "rtl"; // "start"/"end" follow the writing direction
+    const left = placement.endsWith("end") !== rtl ? r.right - pw : r.left;
     const next = {
       left: Math.round(Math.max(8, Math.min(left, vw - pw - 8))),
       top: Math.round(up ? Math.max(8, r.top - ph - 4) : r.bottom + 4),
