@@ -39,6 +39,9 @@ function Entry({ e }) {
         </span>
         {!isMessage(e) && <span className="ev-badge">{label}</span>}
         {e.peer && <span className="ev-badge peer">{e.peer}</span>}
+        {e.topic && <span className="ev-badge peer">{e.topic}</span>}
+        {e.qos != null && e.topic && <span className="ev-badge">{"QoS " + e.qos}</span>}
+        {e.retain && <span className="ev-badge">{t("mqtt.retained")}</span>}
         {isMessage(e) && e.event && e.event !== "message" && <span className="ev-badge">{e.event}</span>}
         {e.binary && <span className="ev-badge bin">{t("rt.binary")}</span>}
         <span className="ev-text">{text || <i className="muted">{t("rt.emptyMessage")}</i>}</span>
@@ -67,7 +70,7 @@ export function EventLog({ tab }) {
   const box = useRef(null);
   const stick = useRef(true);
   const status = rt?.status ?? "idle";
-  const events = rt?.events ?? [];
+  const events = (rt?.events ?? []).filter((e) => e.type !== "subscriptions"); // bookkeeping for the Subscribe tab, not log lines
   const shown = useMemo(() => events.filter(KINDS[kind]), [events, kind]);
   const opened = events.find((e) => e.type === "open");
   const withHeaders = events.filter((e) => Array.isArray(e.headers));

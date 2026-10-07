@@ -2,7 +2,7 @@ import { create } from "zustand";
 import { api, ApiError, errorText } from "./api.js";
 import { blankReq, cleanReq } from "./lib/http.js";
 import { clone } from "./lib/utils.js";
-import { liveTab, firstTab } from "./lib/protocols.js";
+import { liveTab, firstTab, protocolOf } from "./lib/protocols.js";
 import { followSession } from "./lib/session.js";
 import { toast } from "./components/ui/Toasts.jsx";
 import { prompt, confirm } from "./components/ui/dialogs.jsx";
@@ -356,7 +356,7 @@ export const useStore = create((set, get) => {
       if (!t || ["connecting", "open"].includes(t.rt?.status)) return;
       actions.dropSession(key);
       const log = (level, message) => set((s) => ({ logs: [...s.logs, { ts: new Date().toISOString(), level, message }].slice(-1000) }));
-      patchTab(key, { rt: { status: "connecting", events: [], id: null, error: null, startedAt: Date.now() } });
+      patchTab(key, { rt: { status: "connecting", events: [], subs: [], id: null, error: null, startedAt: Date.now() } });
       log("INFO", `${t.req.protocol} connecting: ${t.req.url}`);
       try {
         const { timeoutMs, maxResponseMb } = get().settings.request;
@@ -375,9 +375,9 @@ export const useStore = create((set, get) => {
           if (!batch.length) return;
           patchTab(key, (x) => {
             const events = [...(x.rt?.events ?? []), ...batch].slice(-MAX_EVENTS);
-            let status = x.rt?.status;
-            for (const e of batch) status = e.type === "open" ? "open" : e.type === "closed" ? "closed" : status;
-            return x.rt?.id === r.id ? { rt: { ...x.rt, events, status } } : {};
+            let status = x.rt?.status, subs = x.rt?.subs;
+            for (const e of batch) { status = e.type === "open" ? "open" : e.type === "closed" ? "closed" : status; if (e.type === "subscriptions") subs = e.list; }
+            return x.rt?.id === r.id ? { rt: { ...x.rt, events, status, subs } } : {};
           });
         };
         followSession(get().ws.id, r.id, {
@@ -434,10 +434,18 @@ export const useStore = create((set, get) => {
       } catch (e) { patchTab(key, { schema: { error: e.message } }); }
     },
     clearEvents(key) { patchTab(key, (x) => (x.rt ? { rt: { ...x.rt, events: [] } } : {})); },
+    /** Ends the connection the polite way for its protocol (close frame, DISCONNECT, cancel ...); drops it if that does not work. */
     async disconnect(key) {
       const t = get().tabs.find((x) => x.key === key);
       if (!t?.rt?.id) return;
-      try { await api("DELETE", W(`/sessions/${t.rt.id}`)); } catch { /* already gone */ }
+      const id = t.rt.id, graceful = protocolOf(t.req.protocol).gracefulClose;
+      const drop = async () => { try { await api("DELETE", W(`/sessions/${id}`)); } catch { /* already gone */ } };
+      if (graceful && t.rt.status === "open") {
+        try { await api("POST", W(`/sessions/${id}/act`), { action: graceful }); } catch { return drop(); }
+        setTimeout(() => { const cur = get().tabs.find((x) => x.key === key); if (cur?.rt?.id === id && cur.rt.status === "open") drop(); }, 3000);
+        return;
+      }
+      return drop();
     },
     /** Ends the connection and stops following it (tab closed, workspace changed, signed out). */
     dropSession(key) {
