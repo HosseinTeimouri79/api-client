@@ -7,9 +7,9 @@ export function Splitter({ dir = "col", onDrag, onEnd, className }) {
   const down = (e) => {
     e.preventDefault();
     last.current = dir === "col" ? e.clientX : e.clientY;
-    document.body.classList.add("resizing", dir);
+    document.body.classList.add("resizing", `resizing-${dir}`); // not a bare `row`/`col`: .row is the flex utility class
     const move = (ev) => { const p = dir === "col" ? ev.clientX : ev.clientY; onDrag(p - last.current); last.current = p; };
-    const up = () => { removeEventListener("pointermove", move); removeEventListener("pointerup", up); document.body.classList.remove("resizing", dir); onEnd?.(); };
+    const up = () => { removeEventListener("pointermove", move); removeEventListener("pointerup", up); document.body.classList.remove("resizing", `resizing-${dir}`); onEnd?.(); };
     addEventListener("pointermove", move);
     addEventListener("pointerup", up);
   };

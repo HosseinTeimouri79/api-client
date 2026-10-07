@@ -99,7 +99,7 @@ mark { background: color-mix(in srgb, var(--warn) 40%, transparent); color: inhe
 .searchbox { position: relative; flex: 1; } .searchbox i { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--muted); font-size: 12px; } .searchbox input { width: 100%; padding-inline-start: 2rem !important; }
 .scrim { display: none; }
 .splitter { flex: none; background: transparent; position: relative; z-index: 5; } .splitter.col { width: 5px; margin: 0 -2px; cursor: col-resize; } .splitter.row { height: 5px; margin: -2px 0; cursor: row-resize; }
-.splitter:hover, .splitter:focus-visible, body.resizing .splitter { background: var(--accent-soft); outline: none; } body.resizing { user-select: none; } body.resizing.col { cursor: col-resize; } body.resizing.row { cursor: row-resize; }
+.splitter:hover, .splitter:focus-visible, body.resizing .splitter { background: var(--accent-soft); outline: none; } body.resizing { user-select: none; } body.resizing-col { cursor: col-resize; } body.resizing-row { cursor: row-resize; }
 .splitter::after { content: ""; position: absolute; background: var(--border); } .splitter.col::after { left: 2px; top: 0; bottom: 0; width: 1px; } .splitter.row::after { top: 2px; left: 0; right: 0; height: 1px; }
 .main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 .tabs { flex: none; display: flex; align-items: center; gap: 2px; padding: 6px 8px 0; background: var(--panel); border-bottom: 1px solid var(--border); overflow-x: auto; }
