@@ -228,3 +228,8 @@ input.mono { font-family: var(--mono); font-size: 12px; }
 [dir="rtl"] .admin-search > i { left: auto; right: 10px; } [dir="rtl"] .admin-search input:not([type=checkbox]):not([type=file]) { padding-left: 10px; padding-right: 32px; }
 [dir="rtl"] .atable th, [dir="rtl"] .atable .num { text-align: right; } [dir="rtl"] .fa-chevron-left, [dir="rtl"] .fa-chevron-right, [dir="rtl"] .fa-arrow-left { transform: scaleX(-1); }
 .auth-closed { font-size: 12px; border: 1px dashed var(--line); border-radius: var(--r); padding: 8px 10px; }
+
+/* ===== code snippet ===== */
+.snippet-bar .ac { min-width: 0; }
+.snippet { margin: 0; background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--r); padding: 12px; max-height: 50vh; min-height: 140px; overflow: auto; white-space: pre; text-align: left; font: 12.5px/1.55 var(--mono); tab-size: 2; }
+.snippet-opt { cursor: pointer; } .snippet-note { font-size: 12px; }

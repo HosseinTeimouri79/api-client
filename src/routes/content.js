@@ -164,6 +164,19 @@ export function contentRouter(db) {
         .filter((c) => c.pre_script.trim() || c.post_script.trim()),
     );
   });
+  // The auth a request inherits: the nearest collection up the chain that sets one (used by the code snippet view).
+  r.get("/collections/:id/auth", W("workspace:read"), (req, res) => {
+    col(req, req.params.id);
+    const chain = collectionChain(db, req.params.id).filter(
+      (c) => c.workspace_id === req.wid,
+    );
+    const auth =
+      [...chain]
+        .reverse()
+        .map((c) => c.auth)
+        .find((a) => a && a.type && a.type !== "inherit") ?? null;
+    res.json({ auth });
+  });
   r.patch("/collections/:id", W("content:write"), (req, res) => {
     const b = z
       .object({

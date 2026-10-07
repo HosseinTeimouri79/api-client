@@ -52,6 +52,8 @@ export const en = {
   "admin.enabled": "Account enabled", "admin.disabledToast": "Account disabled",
   "admin.deleteUserTitle": "Delete user", "admin.deleteUserMsg": "Permanently delete @{u} and their history? This can't be undone.", "admin.userDeleted": "User deleted",
   "admin.deleteWsTitle": "Delete workspace", "admin.deleteWsMsg": "Delete “{name}” with all its collections, requests and environments? This can't be undone.", "admin.wsDeleted": "Workspace deleted",
+  "snippet.title": "Code snippet", "snippet.open": "Code", "snippet.language": "Language", "snippet.search": "Search language or library…", "snippet.none": "No matching language", "snippet.code": "Generated code",
+  "snippet.substitute": "Substitute variables", "snippet.left": "Left as placeholders (secret or not defined): {vars}", "snippet.scripts": "Reflects the request as edited now. Pre-request scripts are not applied.",
   "admin.settings": "Settings", "admin.registration": "Allow self-registration", "admin.registrationHint": "When off, the “Create account” option is hidden and only admins can add users (Users → New user). Share the password with the person; they sign in with it.", "admin.registrationOn": "Anyone can create an account", "admin.registrationOff": "Only admins can create accounts", "auth.closed": "New accounts are created by an administrator. Ask yours for a username and password.",
   "admin.act.settings": "changed setting", "admin.act.create": "created user", "admin.act.update": "updated user", "admin.act.reset": "reset password of", "admin.act.delete": "deleted user", "admin.act.wsDelete": "deleted workspace",
 };

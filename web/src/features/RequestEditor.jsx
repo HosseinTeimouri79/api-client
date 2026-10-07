@@ -11,11 +11,15 @@ import { KeyValueEditor } from "../components/editor/KeyValueEditor.jsx";
 import { BodyEditor } from "../components/editor/BodyEditor.jsx";
 import { AuthEditor } from "../components/editor/AuthEditor.jsx";
 import { ScriptEditor } from "../components/editor/ScriptEditor.jsx";
+import { CodeSnippetModal } from "./CodeSnippet.jsx";
+import { modals } from "../components/ui/modals.js";
+import { useT } from "../i18n/index.js";
 
 const METHOD_OPTS = METHODS.map((m) => ({ value: m, label: m }));
 const HEADER_SUGG = Object.entries(HEADER_NAMES).map(([value, description]) => ({ value, label: value, description }));
 
 export function RequestEditor({ tab }) {
+  const t = useT();
   const { ws } = useStore();
   const { setReq, setSub, send, save } = useStore.getState();
   const vars = useKnownVars(tab);
@@ -50,6 +54,7 @@ export function RequestEditor({ tab }) {
       <div className="editor">
         <div className="req-head">
           <input className="req-name" value={r.name} disabled={ro} aria-label="Request name" onChange={(e) => set({ name: e.target.value })} />
+          <Button icon="code" title={t("snippet.title")} onClick={() => modals.open((close) => <CodeSnippetModal close={close} tab={tab} />)}>{t("snippet.open")}</Button>
           <Button icon="floppy-disk" disabled={ro} title="Ctrl+S" onClick={save}>Save</Button>
         </div>
         <div className="urlbar">

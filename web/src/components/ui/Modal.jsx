@@ -18,7 +18,7 @@ export function Modal({ title, onClose, size = "md", children, footer, icon }) {
   useEffect(() => {
     const prev = document.activeElement;
     const el = ref.current;
-    (el.querySelector("[data-autofocus],input:not([type=checkbox]),textarea,select,button.btn-primary") ?? el).focus?.();
+    (el.querySelector("[data-autofocus]") ?? el.querySelector("input:not([type=checkbox]),textarea,select,button.btn-primary") ?? el).focus?.(); // an explicit marker wins over document order
     const key = (e) => {
       if (e.key === "Escape" && !e.defaultPrevented && !document.querySelector(".popover") && [...document.querySelectorAll(".modal")].at(-1) === el) onClose();
       if (e.key === "Tab") {
