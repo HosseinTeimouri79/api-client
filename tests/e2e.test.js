@@ -74,6 +74,16 @@ test("E2E: username login → workspace → request with pre/post scripts → sa
   await page.getByRole("tab", { name: /^Params/ }).click();
   assert.equal(await page.locator('.kv input[aria-label="Key"]').first().inputValue(), "x", "query string moved into Params table");
 
+  // the Description tab is marked once it has text, like the other tabs
+  const docsTab = page.getByRole("tab", { name: /^Description/ });
+  assert.equal(await docsTab.locator(".count").count(), 0);
+  await docsTab.click();
+  await page.locator("textarea.docs").fill("Returns the greeting.");
+  assert.equal(await docsTab.locator(".count").textContent(), "●");
+  await page.locator("textarea.docs").fill("   ");
+  assert.equal(await docsTab.locator(".count").count(), 0, "whitespace only does not count");
+  await page.locator("textarea.docs").fill("Returns the greeting.");
+
   // --- pre-request script rewrites the body; post-request script rewrites the response ---
   await page.getByRole("tab", { name: "Body" }).click();
   await page.getByRole("tab", { name: "JSON" }).click();

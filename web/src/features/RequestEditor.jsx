@@ -47,7 +47,7 @@ export function RequestEditor({ tab }) {
     { id: "auth", label: "Auth", badge: r.auth?.type && !["inherit", "none"].includes(r.auth.type) ? "●" : false },
     { id: "pre", label: "Pre-request", badge: r.pre_script?.trim() || inhCount("pre") ? (inhCount("pre") ? `${inhCount("pre")}↑${r.pre_script?.trim() ? "+1" : ""}` : "●") : false, title: inhCount("pre") ? `${inhCount("pre")} inherited collection script(s) run first` : undefined },
     { id: "post", label: "Post-request", badge: r.post_script?.trim() || inhCount("post") ? (inhCount("post") ? `${inhCount("post")}↑${r.post_script?.trim() ? "+1" : ""}` : "●") : false, title: inhCount("post") ? `${inhCount("post")} inherited collection script(s) run after` : undefined },
-    { id: "docs", label: "Description" },
+    { id: "docs", label: "Description", badge: r.description?.trim() ? "●" : false },
   ];
   const editInherited = c.write ? (id) => useStore.getState().openCollection(id, tab.sub) : undefined;
 
