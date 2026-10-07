@@ -11,6 +11,17 @@ The version is shown in **Settings → General → About** and returned by `GET 
 
 ## [Unreleased]
 
+## [1.8.0] - 2026-10-08
+
+### Added
+- **MQTT** (TCP, TLS and WebSocket): Connect, Publish (QoS 0/1/2, retain, text/base64/hex), Subscribe (wildcards, QoS) and
+  Unsubscribe, Disconnect; client ID, credentials, version (3.1, 3.1.1, 5.0), keep-alive, clean session and last will. Incoming
+  messages show topic, QoS and retain flag.
+
+### Changed
+- **Disconnect** now ends a connection the polite way for each protocol (WebSocket close frame, MQTT DISCONNECT, TCP/UDP close,
+  gRPC cancel, GraphQL stop, SSE close) and only drops it if the peer does not react within three seconds.
+
 ## [1.7.0] - 2026-10-08
 
 ### Added

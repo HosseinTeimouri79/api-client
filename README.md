@@ -410,6 +410,20 @@ answer is shown and the tunnel is closed again.
 - Hosts are resolved once and private addresses are refused unless `ALLOW_PRIVATE_TARGETS=true`; the response limit applies to
   what a socket receives.
 
+**MQTT.** Connect, Publish, Subscribe, Unsubscribe and Disconnect.
+
+- The address is `mqtt://host:1883`, `mqtts://host:8883` (TLS), `ws://` or `wss://` (MQTT over WebSocket, subprotocol `mqtt`);
+  `tcp://`, `tls://`, `ssl://`, `http://` and `https://` are accepted as aliases, a bare `host` means `mqtt://`.
+- **Settings:** client ID (random when empty), user name and password, MQTT version (3.1.1 by default, 3.1 or 5.0), keep-alive,
+  clean session, skip TLS verification, and a **last will** (topic, payload, QoS, retain). All fields accept `{{variables}}`, so
+  credentials can live in an environment.
+- **Publish** tab: topic, payload (text, base64 or hex), QoS 0 / 1 / 2 and retain; **Ctrl+Enter** publishes. Topics with wildcards
+  are refused before sending.
+- **Subscribe** tab: add topic filters (`+` one level, `#` the rest) with a QoS; the active subscriptions are listed with an
+  Unsubscribe button. Every incoming message shows its topic, QoS and whether it was retained; non-text payloads show as base64.
+- **Disconnect** sends DISCONNECT (so the broker does not publish the last will); closing the tab or the server's idle timeout
+  drops the connection instead, which does publish it. MQTT 5 is sent as the protocol version only (no user properties yet).
+
 ### History and console
 
 History is stored per user and workspace (latest 200 runs). The console shows structured logs of every run, including
@@ -671,7 +685,7 @@ src/
   middleware/    auth.js (authenticate, csrfGuard, requireWorkspace, requireAdmin, audit)
   routes/        auth.js me.js admin.js workspaces.js content.js interop.js sessions.js protocolTools.js
   services/      permissions.js variables.js executor.js runner.js scriptEngine.js ssrf.js sessions.js
-  protocols/     index.js (protocol list) common.js websocket.js grpc.js graphql.js sse.js tcp.js udp.js (one module per protocol)
+  protocols/     index.js (protocol list) common.js websocket.js grpc.js graphql.js sse.js tcp.js udp.js mqtt.js (one module per protocol)
                  interop.js (Postman/Hoppscotch) settings.js userSettings.js locales.js
 web/             index.html vite.config.js
   src/           main.jsx App.jsx store.js api.js
@@ -788,7 +802,7 @@ Current version: **1.0.0**.
 ## Roadmap
 
 Not yet available: file upload in multipart bodies, inviting people who have no account yet, share-by-link, XML pretty-printing,
-a collection runner, mock servers, OpenAPI import, and per-secret encryption. MQTT and AMQP are
+a collection runner, mock servers, OpenAPI import, and per-secret encryption. AMQP is
 being added one protocol at a time (see the changelog). The code is structured so these can be added without rewriting the
 core: a `protocol` column, one module per live protocol in `src/protocols/` behind the session manager, a runner route on top of
 `runner.js` (which already returns test results), and new routes and services reading the same tables.
