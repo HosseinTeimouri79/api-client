@@ -5,6 +5,7 @@ import rateLimit from "express-rate-limit";
 import { config } from "../config.js";
 import { HttpError, publicUser, setCookie } from "../middleware/auth.js";
 import { usernameSchema } from "./auth.js";
+import { SettingsSchema } from "../services/userSettings.js";
 
 export const LOCALES = ["en", "fa"];
 const MAX_AVATAR = 400 * 1024; // the UI re-encodes to 256px, so real files are ~10-40 KB
@@ -30,6 +31,7 @@ export function meRouter(db) {
         name: z.string().trim().min(1).max(100).optional(),
         username: usernameSchema.optional(),
         locale: z.enum(LOCALES).optional(),
+        settings: SettingsSchema.optional(),
       })
       .parse(req.body);
     const u = me(req.user.id);
@@ -38,10 +40,11 @@ export function meRouter(db) {
       db.prepare("SELECT 1 FROM users WHERE username=? AND id<>?").get(b.username, u.id)
     )
       throw new HttpError(409, "Username already taken");
-    db.prepare("UPDATE users SET name=?,username=?,locale=? WHERE id=?").run(
+    db.prepare("UPDATE users SET name=?,username=?,locale=?,settings=? WHERE id=?").run(
       b.name ?? u.name,
       b.username ?? u.username,
       b.locale ?? u.locale,
+      b.settings ? JSON.stringify(b.settings) : u.settings,
       u.id,
     );
     res.json({ user: publicUser(me(u.id)) });

@@ -24,6 +24,7 @@ export const publicUser = (u) => ({
   is_admin: !!u.is_admin,
   avatar: avatarUrl(u.id, u.avatar_v),
   locale: u.locale ?? null,
+  settings: (() => { try { return u.settings ? JSON.parse(u.settings) : null; } catch { return null; } })(),
 });
 export const setCookie = (res, user) =>
   res.cookie("token", signToken(user), {
@@ -43,7 +44,7 @@ export function authenticate(db) {
       const { sub, v } = jwt.verify(token, config.jwtSecret);
       const user = db
         .prepare(
-          "SELECT id,username,name,is_admin,disabled,token_version,avatar_v,locale FROM users WHERE id=?",
+          "SELECT id,username,name,is_admin,disabled,token_version,avatar_v,locale,settings FROM users WHERE id=?",
         )
         .get(sub);
       if (!user || user.disabled || (v ?? 0) !== user.token_version)

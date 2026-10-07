@@ -5,6 +5,7 @@ import { clone } from "./lib/utils.js";
 import { toast } from "./components/ui/Toasts.jsx";
 import { prompt, confirm } from "./components/ui/dialogs.jsx";
 import { pickCollection } from "./features/pickers.jsx";
+import { DEFAULT_SETTINGS, mergeSettings, applySettingsToPage } from "./lib/settings.js";
 import { applyLocale, t, t as tr } from "./i18n/index.js"; // `tr`: same function, usable where a local `t` (tab) shadows it
 
 const LS = {
@@ -14,8 +15,25 @@ const LS = {
 const WRITE = ["owner", "admin", "editor"], ADMIN = ["owner", "admin"];
 export const can = (ws) => ({ write: WRITE.includes(ws?.role), admin: ADMIN.includes(ws?.role) });
 
+// App settings live on the account and are cached in the browser so the page looks right before sign-in completes.
+// Older versions stored the theme and layout under their own keys; honour them until settings exist.
+function loadSettings() {
+  let saved = null;
+  try { saved = JSON.parse(LS.get("settings", "null")); } catch { /* ignore */ }
+  const s = mergeSettings(saved);
+  if (!saved) {
+    if (["dark", "light"].includes(LS.get("theme", ""))) s.app.theme = LS.get("theme");
+    if (LS.get("splitDir", "") === "col") s.ui.layout = "side";
+  }
+  return s;
+}
+const layoutDir = (s) => (s.ui.layout === "side" ? "col" : "row"); // "col": editor and response side by side
+const autosaveTimers = new Map();
+let syncTimer;
 let keySeq = 0;
 export const useStore = create((set, get) => {
+  const initialSettings = loadSettings();
+  applySettingsToPage(initialSettings);
   const W = (p = "") => `/workspaces/${get().ws.id}${p}`;
   const patchTab = (key, fn) =>
     set((s) => ({ tabs: s.tabs.map((t) => (t.key === key ? { ...t, ...(typeof fn === "function" ? fn(t) : fn) } : t)) }));
@@ -34,6 +52,7 @@ export const useStore = create((set, get) => {
     async boot() {
       try { set({ user: (await api("GET", "/auth/me")).user }); } catch { set({ user: null }); }
       if (get().user?.locale) applyLocale(get().user.locale); // the saved account language wins over the device default
+      if (get().user?.settings) actions.adoptSettings(mergeSettings(get().user.settings), true);
       if (get().user) await actions.loadWorkspaces();
       set({ booting: false });
     },
@@ -73,7 +92,22 @@ export const useStore = create((set, get) => {
       applyLocale(id);
       if (get().user) await guard(async () => set({ user: (await api("PATCH", "/me", { locale: id })).user }))();
     },
-    setTheme(theme) { LS.set("theme", theme); document.documentElement.dataset.theme = theme; set({ theme }); },
+    /** Replaces the settings with the account's (at sign-in). `boot` also applies "open console on start". */
+    adoptSettings(settings, boot = false) {
+      LS.set("settings", JSON.stringify(settings));
+      applySettingsToPage(settings);
+      set({ settings, theme: settings.app.theme, splitDir: layoutDir(settings), ...(boot ? { consoleOpen: settings.ui.openConsole } : {}) });
+    },
+    /** Changes some settings, e.g. updateSettings({ editor: { fontSize: 14 } }); applies at once and syncs to the account. */
+    updateSettings(patch) {
+      const cur = get().settings;
+      const next = mergeSettings(Object.fromEntries(Object.keys(DEFAULT_SETTINGS).map((k) => [k, { ...cur[k], ...(patch[k] ?? {}) }])));
+      actions.adoptSettings(next);
+      if (!get().user) return;
+      clearTimeout(syncTimer);
+      syncTimer = setTimeout(() => guard(async () => set({ user: { ...get().user, settings: (await api("PATCH", "/me", { settings: get().settings })).user.settings } }))(), 500);
+    },
+    setTheme(theme) { actions.updateSettings({ app: { theme } }); },
     refreshEnvs: guard(async () => {
       const [envs, ws] = await Promise.all([api("GET", W("/environments")), api("GET", W())]);
       set((s) => ({ envs, wsVars: ws.variables, envId: envs.some((e) => e.id === s.envId) ? s.envId : (envs[0]?.id ?? null) }));
@@ -174,7 +208,15 @@ export const useStore = create((set, get) => {
         return { tabs, active: s.active === key ? (tabs[Math.min(i, tabs.length - 1)]?.key ?? null) : s.active };
       });
     },
-    setReq(key, patch) { patchTab(key, (t) => ({ req: { ...t.req, ...patch }, dirty: true })); },
+    setReq(key, patch) { patchTab(key, (t) => ({ req: { ...t.req, ...patch }, dirty: true })); actions.autosave(key); },
+    /** Autosave (Settings → Application): saves an edited, already saved request or collection shortly after the last change. */
+    autosave(key) {
+      const { settings, ws, tabs } = get();
+      const t = tabs.find((x) => x.key === key);
+      if (!settings.app.autosave || !can(ws).write || !t || (t.kind !== "collection" && !t.id)) return;
+      clearTimeout(autosaveTimers.get(key));
+      autosaveTimers.set(key, setTimeout(() => { autosaveTimers.delete(key); actions.save(key, { silent: true }); }, 1200));
+    },
     setSub(key, sub) { patchTab(key, { sub }); },
     setRespView(key, respView) { patchTab(key, { respView }); },
     // collection settings live in their own full-size tab (one per collection)
@@ -186,7 +228,7 @@ export const useStore = create((set, get) => {
       const t = { key: "t" + ++keySeq, kind: "collection", cid: id, name: c.name, draft, dirty: false, running: false, sub: sub ?? "vars" };
       set((s) => ({ tabs: [...s.tabs, t], active: t.key }));
     }),
-    setDraft(key, patch) { patchTab(key, (t) => ({ draft: { ...t.draft, ...patch }, dirty: true })); },
+    setDraft(key, patch) { patchTab(key, (t) => ({ draft: { ...t.draft, ...patch }, dirty: true })); actions.autosave(key); },
     openRequest: guard(async (id) => {
       const ex = get().tabs.find((t) => t.id === id);
       if (ex) return actions.activate(ex.key);
@@ -243,17 +285,20 @@ export const useStore = create((set, get) => {
         await actions.reloadTree();
       })();
     },
-    async save() {
+    async save(key, { silent = false } = {}) {
       const { ws } = get();
-      const t = get().tabs.find((x) => x.key === get().active);
+      if (typeof key !== "string") key = get().active; // used directly as a click handler, which passes the event
+      const t = get().tabs.find((x) => x.key === key);
       if (!t) return;
-      if (!can(ws).write) return toast(tr("viewer.noSave"), "info");
+      if (!can(ws).write) return silent ? undefined : toast(tr("viewer.noSave"), "info");
+      // clear the dirty mark only if nothing was typed while the save was in flight
+      const clean = (done) => patchTab(t.key, (cur) => ({ ...(cur.kind === "collection" ? cur.draft === t.draft : cur.req === t.req) ? { dirty: false } : {}, ...done }));
       if (t.kind === "collection") {
         const d = t.draft;
         return guard(async () => {
           await api("PATCH", W(`/collections/${t.cid}`), { description: d.description, variables: d.variables.filter((v) => v.key), auth: d.auth, pre_script: d.pre_script, post_script: d.post_script });
-          patchTab(t.key, { dirty: false });
-          toast("Collection saved", "ok");
+          clean();
+          if (!silent) toast("Collection saved", "ok");
           await actions.reloadTree();
         })();
       }
@@ -268,8 +313,8 @@ export const useStore = create((set, get) => {
           patchTab(t.key, { id: r.id, collection_id: cid });
           actions.toggle(cid, true);
         } else await api("PUT", W(`/requests/${t.id}`), cleanReq(t.req));
-        patchTab(t.key, { dirty: false });
-        toast("Saved", "ok");
+        clean();
+        if (!silent) toast("Saved", "ok");
         await actions.reloadTree();
       })();
     },
@@ -279,7 +324,8 @@ export const useStore = create((set, get) => {
       patchTab(key, { running: true });
       let response;
       try {
-        response = await api("POST", W("/run"), { request: cleanReq(t.req), collection_id: t.collection_id, environment_id: get().envId });
+        const { timeoutMs, maxResponseMb } = get().settings.request;
+        response = await api("POST", W("/run"), { request: cleanReq(t.req), collection_id: t.collection_id, environment_id: get().envId, limits: { timeoutMs, maxResponseBytes: Math.round(maxResponseMb * 1024 * 1024) } });
         set((s) => ({ logs: [...s.logs, ...response.logs].slice(-1000) }));
       } catch (e) {
         response = { error: { phase: "internal", message: e.message }, tests: [], logs: [] };
@@ -304,7 +350,7 @@ export const useStore = create((set, get) => {
   return {
     user: null, view: "app", booting: true, workspaces: [], ws: null, wsVars: [], tree: { collections: [], requests: [] }, expanded: {},
     tabs: [], active: null, envs: [], envId: null, logs: [], history: [], side: "collections", filter: "", colVars: {},
-    consoleOpen: false, theme: LS.get("theme", "dark"), sidebarOpen: false, sidebarW: Number(LS.get("sidebarW", 300)), editorFrac: Number(LS.get("editorFrac", 0.5)), splitDir: LS.get("splitDir", "row"), consoleH: Number(LS.get("consoleH", 180)),
+    settings: initialSettings, consoleOpen: initialSettings.ui.openConsole, theme: initialSettings.app.theme, sidebarOpen: false, sidebarW: Number(LS.get("sidebarW", 300)), editorFrac: Number(LS.get("editorFrac", 0.5)), splitDir: layoutDir(initialSettings), consoleH: Number(LS.get("consoleH", 180)),
     ...actions,
     set: (p) => set(p),
     setFilter: (filter) => set({ filter }),

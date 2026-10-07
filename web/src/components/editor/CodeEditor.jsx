@@ -3,6 +3,8 @@ import { cx, fuzzy } from "../../lib/utils.js";
 import { highlightJs, highlightJson } from "../../lib/highlight.jsx";
 import { PM_COMPLETIONS } from "../../lib/snippets.js";
 import { useVars, varOptions } from "../../lib/vars.jsx";
+import { useStore } from "../../store.js";
+import { indentUnit } from "../../lib/settings.js";
 import { Popover } from "../ui/Popover.jsx";
 import { OptionList } from "../ui/OptionList.jsx";
 import { Button } from "../ui/Button.jsx";
@@ -33,10 +35,16 @@ function insert(ta, text, from = ta.selectionStart, to = ta.selectionEnd) {
   }
 }
 
+const PAIRS = { "(": ")", "[": "]", "{": "}" };
+const CLOSERS = new Set(Object.values(PAIRS));
+const word = (c) => /\w/.test(c ?? "");
+
 /** Code box: syntax highlighting, JSON validation, {{variable}} and pm.* completions. lang: json | js | text */
 export function CodeEditor({ value, onChange, lang = "text", readOnly, placeholder, className, "aria-label": aria }) {
   const ta = useRef(null), pre = useRef(null);
   const vars = useVars();
+  const ed = useStore((s) => s.settings.editor); // Settings → Editor
+  const unit = indentUnit(ed);
   const [ac, setAc] = useState(null); // { kind, q, from, to, point }
   const [active, setActive] = useState(0);
 
@@ -81,11 +89,34 @@ export function CodeEditor({ value, onChange, lang = "text", readOnly, placehold
       if (e.key === "Enter" || e.key === "Tab") { e.preventDefault(); return pick(options[active]); }
       if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); return setAc(null); }
     }
-    if (e.key === "Tab" && !e.shiftKey && !readOnly) { e.preventDefault(); insert(e.target, "  "); }
-    else if (e.key === "Enter" && !e.ctrlKey && !e.metaKey && !readOnly && lang !== "text") {
+    if (readOnly) return;
+    const el = e.target, a = el.selectionStart, b = el.selectionEnd, v = el.value, plain = !e.ctrlKey && !e.metaKey && !e.altKey;
+    if (e.key === "Tab" && !e.shiftKey) { e.preventDefault(); insert(el, unit); return; }
+    if (e.key === "Enter" && plain && lang !== "text") {
       // keep indentation of the current line
-      const el = e.target, line = el.value.slice(0, el.selectionStart).split("\n").at(-1), ind = /^\s*/.exec(line)[0] + (/[{[(]$/.test(line.trimEnd()) ? "  " : "");
+      const line = v.slice(0, a).split("\n").at(-1), ind = /^\s*/.exec(line)[0] + (/[{[(]$/.test(line.trimEnd()) ? unit : "");
       if (ind) { e.preventDefault(); insert(el, "\n" + ind); }
+      return;
+    }
+    if (lang === "text" || !plain) return;
+    const quotes = lang === "json" ? ['"'] : ['"', "'", "`"];
+    const brackets = ed.autoCloseBrackets, quoting = ed.autoCloseQuotes;
+    // typing a closer that is already there just steps over it
+    if (a === b && v[a] === e.key && ((brackets && CLOSERS.has(e.key)) || (quoting && quotes.includes(e.key)))) { e.preventDefault(); el.setSelectionRange(a + 1, a + 1); return; }
+    const close = brackets && PAIRS[e.key] ? PAIRS[e.key] : quoting && quotes.includes(e.key) ? e.key : null;
+    if (close && (a !== b || (!word(v[a]) && !(quotes.includes(e.key) && word(v[a - 1]))))) {
+      e.preventDefault();
+      insert(el, e.key + v.slice(a, b) + close); // wraps a selection, otherwise inserts the pair
+      el.setSelectionRange(a + 1, b + 1);
+      return;
+    }
+    // Backspace between an empty pair removes both halves
+    if (e.key === "Backspace" && a === b && a > 0) {
+      if ((brackets && PAIRS[v[a - 1]] === v[a]) || (quoting && quotes.includes(v[a - 1]) && v[a - 1] === v[a])) {
+        e.preventDefault();
+        el.setSelectionRange(a - 1, a + 1);
+        if (!document.execCommand("delete")) { el.setRangeText("", a - 1, a + 1, "end"); el.dispatchEvent(new Event("input", { bubbles: true })); }
+      }
     }
   };
   const format = () => { try { onChange(JSON.stringify(JSON.parse(value), null, 2)); } catch { /* error shown below */ } };

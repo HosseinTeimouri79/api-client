@@ -88,4 +88,10 @@ export const migrations = [
     name: "collection-description",
     sql: "ALTER TABLE collections ADD COLUMN description TEXT NOT NULL DEFAULT ''",
   },
+  {
+    // App settings per user (request limits, editor, layout, theme...), validated JSON.
+    id: 7,
+    name: "user-settings",
+    sql: "ALTER TABLE users ADD COLUMN settings TEXT",
+  },
 ];

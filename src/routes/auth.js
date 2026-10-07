@@ -63,7 +63,7 @@ export function authRouter(db) {
       .parse(req.body);
     const u = db
       .prepare(
-        "SELECT id,username,name,is_admin,disabled,token_version,avatar_v,locale,password_hash FROM users WHERE username=?",
+        "SELECT id,username,name,is_admin,disabled,token_version,avatar_v,locale,settings,password_hash FROM users WHERE username=?",
       )
       .get(b.username);
     const ok = bcrypt.compareSync(

@@ -58,11 +58,17 @@ test("E2E: settings — photo, profile, Persian UI (RTL, saved to account), pass
   assert.equal(await page.evaluate(() => document.documentElement.dir), "rtl");
   assert.equal(await page.evaluate(() => document.documentElement.lang), "fa");
   assert.equal((await (await login("zed2", "password123")).json()).user.locale, "fa");
-  assert.equal(await page.getByRole("tab", { name: "Preferences" }).count() + await page.getByRole("tab", { name: "ترجیحات" }).count(), 0, "no Preferences tab any more");
+  assert.equal(await page.getByRole("tab", { name: "Preferences" }).count() + await page.getByRole("tab", { name: "ترجیحات" }).count() + await page.getByRole("tab", { name: "امنیت" }).count(), 0, "no Preferences or Security tab any more");
 
-  // security (labels are Persian now)
-  await page.getByRole("tab", { name: "امنیت" }).click();
+  // the password form has its own tab under Profile (labels are Persian now)
+  await page.getByRole("tab", { name: "تغییر رمز عبور" }).click();
+  const update = page.getByRole("button", { name: "به‌روزرسانی رمز عبور" });
+  assert.equal(await update.isDisabled(), true, "disabled while the fields are empty");
   await page.getByLabel("رمز عبور فعلی").fill("password123");
+  await page.getByLabel(/^رمز عبور جدید/).fill("password456");
+  assert.equal(await update.isDisabled(), true, "still disabled with only two of three filled");
+  await page.getByLabel(/^رمز عبور جدید/).fill("");
+
   await page.getByLabel(/^رمز عبور جدید/).fill("password456");
   await page.getByLabel("تکرار رمز عبور جدید").fill("different999");
   await page.getByRole("button", { name: "به‌روزرسانی رمز عبور" }).click();

@@ -37,7 +37,7 @@ function Workspace() {
           <div className="pane" style={{ flexBasis: `${editorFrac * 100}%` }}><RequestEditor key={tab.key} tab={tab} /></div>
           <Splitter dir={vertical ? "col" : "row"} onDrag={(d) => { const r = split.current.getBoundingClientRect(); set((s) => ({ editorFrac: Math.min(0.85, Math.max(0.15, s.editorFrac + d / (vertical ? r.width : r.height))) })); }} onEnd={() => LS("editorFrac", useStore.getState().editorFrac)} />
           <div className="pane grow">
-            <div className="pane-tools"><IconButton icon={vertical ? "table-columns" : "table-cells-large"} size="sm" label="Switch layout" onClick={() => { const d = vertical ? "row" : "col"; set({ splitDir: d }); LS("splitDir", d); }} /></div>
+            <div className="pane-tools"><IconButton icon={vertical ? "table-columns" : "table-cells-large"} size="sm" label="Switch layout" onClick={() => useStore.getState().updateSettings({ ui: { layout: vertical ? "stacked" : "side" } })} /></div>
             <ResponseViewer tab={tab} />
           </div>
         </div>
