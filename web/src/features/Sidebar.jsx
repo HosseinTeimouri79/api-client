@@ -5,7 +5,8 @@ import { Tabs } from "../components/ui/Tabs.jsx";
 import { Button, IconButton } from "../components/ui/Button.jsx";
 import { Menu } from "../components/ui/Menu.jsx";
 import { Icon } from "../components/ui/Icon.jsx";
-import { exportRemote } from "./InteropModal.jsx";
+import { exportRemote, InteropModal } from "./InteropModal.jsx";
+import { modals } from "../components/ui/modals.js";
 
 const byPos = (a, b) => a.position - b.position || a.name.localeCompare(b.name);
 let dragging = null; // module-level: HTML5 drag payload ({type, id})
@@ -119,7 +120,7 @@ function Tree() {
     <div className="tree" role="tree">
       {rows}
       {!tree.collections.length && (
-        <div className="empty-mini"><Icon name="folder-plus" className="big" /><p>{write ? "No collections yet" : "No collections yet."}</p>{write && <Button variant="primary" icon="plus" onClick={() => useStore.getState().addCollection(null)}>New collection</Button>}</div>
+        <div className="empty-mini"><Icon name="folder-plus" className="big" /><p>{write ? "No collections yet" : "No collections yet."}</p>{write && <div className="row wrap empty-actions"><Button variant="primary" icon="plus" onClick={() => useStore.getState().addCollection(null)}>New collection</Button><Button icon="file-import" onClick={() => modals.open((close) => <InteropModal close={close} />)}>Import</Button></div>}</div>
       )}
       {f && !rows.length && tree.collections.length > 0 && <div className="muted pad">Nothing matches “{filter}”</div>}
       <Menu anchor={ctx.m.anchor} open={ctx.m.open} onClose={ctx.hide} items={ctx.m.items} />

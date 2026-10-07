@@ -234,3 +234,4 @@ input.mono { font-family: var(--mono); font-size: 12px; }
 .snippet { margin: 0; background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--r); padding: 12px; max-height: 50vh; min-height: 140px; overflow: auto; white-space: pre; text-align: left; font: 12.5px/1.55 var(--mono); tab-size: 2; }
 .snippet-opt { cursor: pointer; } .snippet-note { font-size: 12px; }
 .viewer-note { margin: 8px 12px 0; display: flex; align-items: center; gap: 8px; font-size: 12px; }
+.empty-actions { justify-content: center; margin-top: 4px; }

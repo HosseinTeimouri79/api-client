@@ -55,6 +55,11 @@ test("E2E: username login → workspace → request with pre/post scripts → sa
   await page.getByRole("button", { name: "New workspace" }).click();
   await page.locator(".modal input").fill("Backend Team");
   await page.getByRole("button", { name: "Create" }).click();
+  // an empty workspace offers Import next to New collection
+  await page.getByRole("button", { name: "Import", exact: true }).click();
+  await page.locator(".modal").getByRole("tab", { name: "Import" }).waitFor();
+  await page.keyboard.press("Escape");
+  await page.locator(".modal").waitFor({ state: "detached" });
   await page.getByRole("button", { name: "New collection" }).first().click();
   await page.locator(".modal input").fill("Users API");
   await page.getByRole("button", { name: "Create" }).click();
