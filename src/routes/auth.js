@@ -3,23 +3,16 @@ import bcrypt from "bcryptjs";
 import { z } from "zod";
 import rateLimit from "express-rate-limit";
 import { uid } from "../db/index.js";
-import { HttpError, signToken, authenticate } from "../middleware/auth.js";
+import { HttpError, signToken, authenticate, publicUser, setCookie } from "../middleware/auth.js";
 import { config } from "../config.js";
 
-const username = z
+export const usernameSchema = z
   .string()
   .trim()
   .min(3)
   .max(32)
   .regex(/^[A-Za-z0-9._-]+$/, "Only letters, digits, . _ - are allowed")
   .transform((s) => s.toLowerCase());
-const setCookie = (res, user) =>
-  res.cookie("token", signToken(user), {
-    httpOnly: true,
-    sameSite: "strict",
-    secure: config.isProd && process.env.COOKIE_SECURE !== "false",
-    maxAge: 7 * 864e5,
-  });
 
 export function authRouter(db) {
   const r = Router();
@@ -32,19 +25,21 @@ export function authRouter(db) {
   r.post("/register", limiter, (req, res) => {
     const b = z
       .object({
-        username,
+        username: usernameSchema,
         password: z.string().min(8).max(200),
         name: z.string().trim().max(100).optional(),
       })
       .parse(req.body);
     if (db.prepare("SELECT 1 FROM users WHERE username=?").get(b.username))
       throw new HttpError(409, "Username already taken");
-    const user = { id: uid(), username: b.username, name: b.name || b.username };
+    // The very first account bootstraps the admin panel.
+    const first = !db.prepare("SELECT 1 FROM users LIMIT 1").get();
+    const user = { id: uid(), username: b.username, name: b.name || b.username, is_admin: first };
     db.prepare(
-      "INSERT INTO users(id,username,name,password_hash) VALUES(?,?,?,?)",
-    ).run(user.id, user.username, user.name, bcrypt.hashSync(b.password, 11));
+      "INSERT INTO users(id,username,name,password_hash,is_admin) VALUES(?,?,?,?,?)",
+    ).run(user.id, user.username, user.name, bcrypt.hashSync(b.password, 11), first ? 1 : 0);
     setCookie(res, user);
-    res.status(201).json({ user, token: signToken(user) });
+    res.status(201).json({ user: publicUser(user), token: signToken(user) });
   });
   r.post("/login", limiter, (req, res) => {
     const b = z
@@ -60,9 +55,10 @@ export function authRouter(db) {
         "$2a$11$invalidinvalidinvalidinvalidinvalidinvalidinvalidinvali",
     ); // constant-ish time
     if (!u || !ok) throw new HttpError(401, "Invalid username or password");
-    const user = { id: u.id, username: u.username, name: u.name };
+    if (u.disabled) throw new HttpError(403, "This account is disabled");
+    const user = { ...publicUser(u), token_version: u.token_version };
     setCookie(res, user);
-    res.json({ user, token: signToken(user) });
+    res.json({ user: publicUser(user), token: signToken(user) });
   });
   r.post("/logout", (_req, res) => {
     res.clearCookie("token");

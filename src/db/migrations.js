@@ -50,4 +50,19 @@ export const migrations = [
       db.exec("DROP TABLE users; ALTER TABLE users_new RENAME TO users");
     },
   },
+  {
+    // Admin panel: `is_admin` grants access to /api/admin, `disabled` blocks sign-in, and `token_version`
+    // lets an admin invalidate a user's existing sessions (password reset / disable). Existing installs
+    // get their oldest account as the first admin so the panel is reachable.
+    id: 3,
+    name: "admin-panel",
+    up(db) {
+      db.exec(
+        "ALTER TABLE users ADD COLUMN is_admin INTEGER NOT NULL DEFAULT 0; ALTER TABLE users ADD COLUMN disabled INTEGER NOT NULL DEFAULT 0; ALTER TABLE users ADD COLUMN token_version INTEGER NOT NULL DEFAULT 0",
+      );
+      db.exec(
+        "UPDATE users SET is_admin=1 WHERE id=(SELECT id FROM users ORDER BY created_at, rowid LIMIT 1)",
+      );
+    },
+  },
 ];

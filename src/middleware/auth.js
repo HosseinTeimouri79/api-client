@@ -8,8 +8,24 @@ export class HttpError extends Error {
     this.status = status;
   }
 }
+// `v` ties a token to users.token_version so admins can revoke sessions (password reset, disable).
 export const signToken = (user) =>
-  jwt.sign({ sub: user.id }, config.jwtSecret, { expiresIn: "7d" });
+  jwt.sign({ sub: user.id, v: user.token_version ?? 0 }, config.jwtSecret, {
+    expiresIn: "7d",
+  });
+export const publicUser = (u) => ({
+  id: u.id,
+  username: u.username,
+  name: u.name,
+  is_admin: !!u.is_admin,
+});
+export const setCookie = (res, user) =>
+  res.cookie("token", signToken(user), {
+    httpOnly: true,
+    sameSite: "strict",
+    secure: config.isProd && process.env.COOKIE_SECURE !== "false",
+    maxAge: 7 * 864e5,
+  });
 
 // Token via httpOnly cookie (browser) or Bearer header (API clients).
 export function authenticate(db) {
@@ -18,12 +34,15 @@ export function authenticate(db) {
     const token = h?.startsWith("Bearer ") ? h.slice(7) : req.cookies?.token;
     if (!token) return next(new HttpError(401, "Authentication required"));
     try {
-      const { sub } = jwt.verify(token, config.jwtSecret);
+      const { sub, v } = jwt.verify(token, config.jwtSecret);
       const user = db
-        .prepare("SELECT id,username,name FROM users WHERE id=?")
+        .prepare(
+          "SELECT id,username,name,is_admin,disabled,token_version FROM users WHERE id=?",
+        )
         .get(sub);
-      if (!user) throw new Error();
-      req.user = user;
+      if (!user || user.disabled || (v ?? 0) !== user.token_version)
+        throw new Error();
+      req.user = publicUser(user);
       req.usingCookie = !h;
       next();
     } catch {
@@ -31,6 +50,8 @@ export function authenticate(db) {
     }
   };
 }
+export const requireAdmin = (req, _res, next) =>
+  req.user?.is_admin ? next() : next(new HttpError(403, "Admin access required"));
 // CSRF: cookie-authenticated mutating requests need a custom header (cross-site forms/simple requests can't set it).
 export const csrfGuard = (req, _res, next) => {
   if (

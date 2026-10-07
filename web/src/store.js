@@ -41,7 +41,7 @@ export const useStore = create((set, get) => {
     },
     async logout() {
       await api("POST", "/auth/logout").catch(() => {});
-      set({ user: null, ws: null, workspaces: [], tabs: [], active: null, logs: [] });
+      set({ user: null, view: "app", ws: null, workspaces: [], tabs: [], active: null, logs: [] });
     },
     async loadWorkspaces() {
       const workspaces = await api("GET", "/workspaces");
@@ -293,7 +293,7 @@ export const useStore = create((set, get) => {
     setSide(side) { set({ side }); if (side === "history") actions.loadHistory(); },
   };
   return {
-    user: null, booting: true, workspaces: [], ws: null, wsVars: [], tree: { collections: [], requests: [] }, expanded: {},
+    user: null, view: "app", booting: true, workspaces: [], ws: null, wsVars: [], tree: { collections: [], requests: [] }, expanded: {},
     tabs: [], active: null, envs: [], envId: null, logs: [], history: [], side: "collections", filter: "", colVars: {},
     consoleOpen: true, theme: LS.get("theme", "dark"), sidebarOpen: false, sidebarW: Number(LS.get("sidebarW", 300)), editorFrac: Number(LS.get("editorFrac", 0.5)), splitDir: LS.get("splitDir", "col"), consoleH: Number(LS.get("consoleH", 180)),
     ...actions,

@@ -9,6 +9,11 @@ export const config = {
   port: Number(process.env.PORT || 3000),
   dbPath: process.env.DB_PATH || "./data/app.db",
   jwtSecret: secret,
+  // Comma-separated usernames promoted to admin on every start (recovery / bootstrap).
+  adminUsernames: (process.env.ADMIN_USERNAMES || "")
+    .split(",")
+    .map((s) => s.trim().toLowerCase())
+    .filter(Boolean),
   allowPrivateTargets: process.env.ALLOW_PRIVATE_TARGETS === "true", // SSRF guard off-switch (dev only)
   scriptTimeoutMs: Number(process.env.SCRIPT_TIMEOUT_MS || 1500),
   connectAttemptTimeoutMs: Number(

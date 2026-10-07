@@ -12,6 +12,8 @@ export function openDb(file = config.dbPath) {
   const db = new DatabaseSync(file);
   db.exec("PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON;");
   migrate(db);
+  for (const u of config.adminUsernames)
+    db.prepare("UPDATE users SET is_admin=1 WHERE username=?").run(u);
   return db;
 }
 export function migrate(db) {
