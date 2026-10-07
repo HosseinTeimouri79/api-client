@@ -52,7 +52,6 @@ export function InteropModal({ close }) {
   const whatOptions = [
     ...(fmt === "hoppscotch" ? [{ value: "c:", label: "All top-level collections", group: "Collections" }] : []),
     ...cols.map((x) => ({ value: `c:${x.id}`, label: indent(x), group: "Collections" })),
-    ...(fmt === "hoppscotch" && envs.length > 1 ? [{ value: "e:all", label: "All environments", group: "Environments" }] : []),
     ...envs.map((e) => ({ value: `e:${e.id}`, label: e.name, group: "Environments" })),
   ];
   const doExport = async () => {

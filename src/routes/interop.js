@@ -20,7 +20,7 @@ export function interopRouter(db) {
   const r = Router({ mergeParams: true });
   const W = (p) => requireWorkspace(db, p);
 
-  // ---- export: GET /export?format=postman|hoppscotch&collection=<id>  |  &environment=<id|all> ----
+  // ---- export: GET /export?format=postman|hoppscotch&collection=<id>  |  &environment=<id> ----
   r.get("/export", W("workspace:read"), (req, res) => {
     const { format, collection, environment } = z
       .object({
@@ -34,26 +34,17 @@ export function interopRouter(db) {
         .replace(/[^\w.-]+/g, "_")
         .slice(0, 60) || "export";
     if (environment) {
-      const rows = db
+      const row = db
         .prepare(
-          "SELECT id,name,variables FROM environments WHERE workspace_id=?" +
-            (environment === "all" ? "" : " AND id=?"),
+          "SELECT id,name,variables FROM environments WHERE workspace_id=? AND id=?",
         )
-        .all(...(environment === "all" ? [req.wid] : [req.wid, environment]))
-        .map((e) => ({ ...e, variables: parse(e.variables, []) }));
-      if (!rows.length) throw new HttpError(404, "Environment not found");
-      if (format === "postman" && rows.length > 1)
-        throw new HttpError(
-          400,
-          "Postman environments are exported one at a time",
-        );
+        .get(req.wid, environment);
+      if (!row) throw new HttpError(404, "Environment not found");
+      const env = { ...row, variables: parse(row.variables, []) };
       audit(db, req, "environment.export", environment);
       return res.json({
-        filename: `${safe(rows[0].name)}.${format}-environment.json`,
-        data:
-          format === "postman"
-            ? toPostmanEnv(rows[0], rows[0].id)
-            : rows.map((e) => toHoppEnv(e, e.id)),
+        filename: `${safe(env.name)}.${format}-environment.json`,
+        data: format === "postman" ? toPostmanEnv(env, env.id) : [toHoppEnv(env, env.id)],
       });
     }
     const cols = db

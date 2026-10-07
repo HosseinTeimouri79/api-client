@@ -59,8 +59,7 @@ export function EnvModal({ close }) {
   });
   const exp = guard(async () => {
     if (dirty && !ro && isEnv) { await saveSel(); toast("Saved", "ok"); }
-    const all = fmt === "hoppscotch:all";
-    await exportRemote({ format: all ? "hoppscotch" : fmt, environment: all ? "all" : sel.id });
+    await exportRemote({ format: fmt, environment: sel.id });
   });
 
   return (
@@ -74,8 +73,8 @@ export function EnvModal({ close }) {
         <div className="grow"><Select value={selId} onChange={(v) => setSelId(v)} options={options} aria-label="Environment" /></div>
         {c.write && <Button icon="plus" onClick={create}>New</Button>}
         {c.write && <label className="btn btn-default btn-md" title="Import Postman or Hoppscotch environment .json file(s)"><Icon name="file-import" /><span className="btn-label">Import</span><input type="file" accept=".json,application/json" multiple hidden onChange={importFiles} /></label>}
-        <Select value={fmt} onChange={setFmt} aria-label="Export format" options={[{ value: "postman", label: "Postman (v2.1)" }, { value: "hoppscotch", label: "Hoppscotch" }, { value: "hoppscotch:all", label: "Hoppscotch — all environments" }]} />
-        <Button icon="file-export" disabled={!isEnv && fmt !== "hoppscotch:all"} title={!isEnv && fmt !== "hoppscotch:all" ? "Pick an environment to export" : "Download as JSON"} onClick={exp}>Export</Button>
+        <Select value={fmt} onChange={setFmt} aria-label="Export format" options={[{ value: "postman", label: "Postman (v2.1)" }, { value: "hoppscotch", label: "Hoppscotch" }]} />
+        <Button icon="file-export" disabled={!isEnv} title={!isEnv ? "Pick an environment to export" : "Download as JSON"} onClick={exp}>Export</Button>
       </div>
       {isEnv && <Field label="Name"><input value={sel.name} disabled={ro} onChange={(e) => update({ name: e.target.value })} /></Field>}
       <KeyValueEditor rows={sel.variables} readOnly={ro} onChange={(variables) => update({ variables })} keyPlaceholder="Variable" />

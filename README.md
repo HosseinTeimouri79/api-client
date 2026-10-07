@@ -89,7 +89,7 @@ In the editor, type `pm.` for completions and use **Snippets** for ready-made ex
 
 ## Environments import / export
 
-**Environments & variables** has its own Import (Postman or Hoppscotch environment `.json`, several files at once) and Export (Postman v2.1, Hoppscotch, or all environments as one Hoppscotch file). Unsaved edits to the selected environment are saved before exporting. The generic **Import / Export** dialog still handles collections.
+**Environments & variables** has its own Import (Postman or Hoppscotch environment `.json`, several files at once) and Export (Postman v2.1 or Hoppscotch, one environment at a time). Unsaved edits to the selected environment are saved before exporting. The generic **Import / Export** dialog still handles collections.
 
 ## Permissions
 

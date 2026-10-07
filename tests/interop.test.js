@@ -252,5 +252,12 @@ test("api: import postman+hoppscotch, export both, errors", async () => {
     )
   ).body;
   assert.equal(ex.data.values[0].type, "secret");
+  // Hoppscotch exports one environment (as a one-item list); "all environments" is gone
+  const envId = (await call("GET", `${W}/environments`)).body[0].id;
+  const hx1 = await call("GET", `${W}/export?format=hoppscotch&environment=${envId}`);
+  assert.equal(hx1.status, 200);
+  assert.equal(hx1.body.data.length, 1);
+  assert.equal(hx1.body.data[0].name, ex.data.name);
+  assert.equal((await call("GET", `${W}/export?format=hoppscotch&environment=all`)).status, 404);
   console.log(JSON.stringify(px.data).length, "bytes postman export ok");
 });
