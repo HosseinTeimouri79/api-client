@@ -11,6 +11,8 @@ The version is shown in **Settings → General → About** and returned by `GET 
 
 ## [Unreleased]
 
+## [1.10.0] - 2026-10-08
+
 ### Changed
 - **Import / Export:** each imported file now reports three lines: **Type** (Collection or Environments, with Postman / Hoppscotch),
   **Count** (environments, or collections and requests) and **File**; a failed file shows the file and the error.
