@@ -2,7 +2,7 @@ import { create } from "zustand";
 import { api, ApiError, errorText } from "./api.js";
 import { blankReq, cleanReq } from "./lib/http.js";
 import { clone } from "./lib/utils.js";
-import { liveTab, firstTab, protocolOf } from "./lib/protocols.js";
+import { liveTab, firstTab, protocolOf, blankReqFor } from "./lib/protocols.js";
 import { followSession } from "./lib/session.js";
 import { toast } from "./components/ui/Toasts.jsx";
 import { prompt, confirm } from "./components/ui/dialogs.jsx";
@@ -260,16 +260,17 @@ export const useStore = create((set, get) => {
         set((s) => ({ colVars: { ...s.colVars, ...Object.fromEntries(got) } }));
       }
     },
-    async newRequestIn(cid) {
-      const name = await prompt({ title: t("dlg.newRequest"), label: t("dlg.requestName"), initial: "New Request", okText: t("common.create") });
-      if (!name) return;
+    /** A new request of the chosen protocol inside a collection (named "New Request": rename it in the editor). */
+    async newRequestIn(cid, protocol = "http") {
       await guard(async () => {
-        const r = await api("POST", W(`/collections/${cid}/requests`), { ...blankReq(), name });
+        const r = await api("POST", W(`/collections/${cid}/requests`), blankReqFor(protocol));
         actions.toggle(cid, true);
         await actions.reloadTree();
         actions.addTab(r, { id: r.id, collection_id: cid });
       })();
     },
+    /** A new unsaved request of the chosen protocol; saving it asks which collection it belongs to. */
+    newRequestTab(protocol = "http") { actions.addTab(blankReqFor(protocol)); },
     async renameRequest(r) {
       const name = await prompt({ title: t("dlg.renameRequest"), label: t("dlg.name"), initial: r.name, okText: t("sidebar.rename") });
       if (!name) return;

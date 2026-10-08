@@ -1,3 +1,4 @@
+import { blankReq } from "./http.js";
 // Protocols a request can use. `live` ones keep a connection open (sessions) instead of one request/response.
 // Keep `implemented` in line with src/protocols/index.js (tests/protocols.test.js checks it).
 export const PROTOCOLS = [
@@ -28,3 +29,11 @@ export const PROTOCOL_DEFAULTS = {
   sse: { reconnect: false, maxReconnects: 10 },
   grpc: { proto: "", service: "", method: "", message: "{}", tlsInsecure: false, deadlineMs: 0 },
 };
+
+/** A fresh, unsaved request of the given protocol with that protocol's default settings. */
+export const blankReqFor = (protocol = "http") => ({
+  ...blankReq(),
+  protocol,
+  protocol_data: { ...PROTOCOL_DEFAULTS[protocol] },
+  method: protocol === "graphql" ? "POST" : "GET",
+});

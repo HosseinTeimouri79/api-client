@@ -293,6 +293,10 @@ applied one.
   move to root, sort, export and delete. Drag and drop to reorder or move. Click a collection to open its settings:
   variables, authorization, pre/post-request scripts and a description that every request inside inherits (variables, auth
   and scripts).
+- **New request and sub-collection:** the **+** on a collection opens one small popover: *New sub-collection*, then the protocols
+  (HTTP, WebSocket, gRPC, GraphQL, SSE, TCP, UDP, MQTT, AMQP); picking a protocol creates the request in that collection right
+  away (named "New Request", rename it in the editor). The **+** above the tree is the same menu with *New collection*, and a
+  request made there is not saved yet (Save asks for a collection). `Ctrl/⌘+T` and the tab bar's **+** still open an HTTP request.
 - A **request** has Params, Headers, Body, Auth, Pre-request, Post-request and Description tabs. A tab shows a **●** badge
   when it has content. Type `{{` in any field to pick a variable.
 - Press **Send** (or `Ctrl/⌘+Enter`). The response panel shows the body (JSON tree, raw or HTML preview), headers, test

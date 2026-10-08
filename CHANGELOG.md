@@ -11,6 +11,10 @@ The version is shown in **Settings → General → About** and returned by `GET 
 
 ## [Unreleased]
 
+### Changed
+- **New request** no longer asks for a name: a popover lists the protocols and the request is created at once. The sidebar **+**
+  button opens the same popover with **New collection** added, so a request of any protocol can be started from there too. On a collection, the separate *new sub-collection* and *new request* buttons are merged into one **+** with the same popover.
+
 ## [1.9.0] - 2026-10-08
 
 ### Added

@@ -45,9 +45,8 @@ test("E2E: code snippet — cURL by default, switch language with the autocomple
   const cols = await (await page.request.get(`${base}/api/workspaces/${wsId}/tree`)).json();
   await page.request.patch(`${base}/api/workspaces/${wsId}/collections/${cols.collections[0].id}`, { data: { auth: { type: "bearer", token: "inherited-token" } }, headers: { "x-requested-with": "api-client" } });
   await page.locator(".node", { hasText: "C" }).first().hover();
-  await page.locator(".node", { hasText: "C" }).first().getByLabel("New request").click();
-  await page.locator(".modal input").fill("Get users");
-  await page.getByRole("button", { name: "Create" }).click();
+  await page.locator(".node", { hasText: "C" }).first().getByLabel("New", { exact: true }).click();
+  await page.getByRole("menuitem", { name: "HTTP" }).click();
   await page.getByLabel("URL", { exact: true }).fill("https://api.example.com/users");
   await page.keyboard.press("Tab");
 

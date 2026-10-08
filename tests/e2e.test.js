@@ -64,9 +64,8 @@ test("E2E: username login → workspace → request with pre/post scripts → sa
   await page.locator(".modal input").fill("Users API");
   await page.getByRole("button", { name: "Create" }).click();
   await page.locator(".node", { hasText: "Users API" }).hover();
-  await page.locator(".node", { hasText: "Users API" }).getByLabel("New request").click();
-  await page.locator(".modal input").fill("Get hello");
-  await page.getByRole("button", { name: "Create" }).click();
+  await page.locator(".node", { hasText: "Users API" }).getByLabel("New", { exact: true }).click();
+  await page.getByRole("menuitem", { name: "HTTP" }).click(); // the popover lists the protocols; no name is asked
   await page.getByLabel("Method").click();
   await page.getByRole("option", { name: "POST" }).click();
   await page.getByLabel("URL", { exact: true }).fill(`${tbase}/hello?x=1`);

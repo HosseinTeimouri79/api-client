@@ -3,12 +3,20 @@ import { useStore, can } from "../store.js";
 import { cx, debounce } from "../lib/utils.js";
 import { Tabs } from "../components/ui/Tabs.jsx";
 import { Button, IconButton } from "../components/ui/Button.jsx";
-import { Menu } from "../components/ui/Menu.jsx";
+import { Menu, useMenu } from "../components/ui/Menu.jsx";
 import { Icon } from "../components/ui/Icon.jsx";
 import { exportRemote, InteropModal } from "./InteropModal.jsx";
 import { modals } from "../components/ui/modals.js";
 import { useT } from "../i18n/index.js";
-import { protocolOf } from "../lib/protocols.js";
+import { protocolOf, PROTOCOLS } from "../lib/protocols.js";
+
+/** The "+" menu, at the top of the tree and on a collection: a new (sub-)collection, then a request of any protocol. */
+const newItems = (t, collection, pick) => [
+  collection,
+  "-",
+  { label: t("sidebar.newRequest"), disabled: true },
+  ...PROTOCOLS.map((p) => ({ label: p.label, icon: p.icon, onClick: () => pick(p.id) })),
+];
 
 const byPos = (a, b) => a.position - b.position || a.name.localeCompare(b.name);
 let dragging = null; // module-level: HTML5 drag payload ({type, id})
@@ -81,8 +89,7 @@ function CollectionRow({ c, open, guides, last, depth, write, active, ctx }) {
       {(c.has_pre || c.has_post) && <span className="sc" title={t("sidebar.colScript", { kinds: [c.has_pre && t("req.pre"), c.has_post && t("req.post")].filter(Boolean).join(" + ") })}><Icon name="code" /></span>}
       {write && (
         <span className="acts">
-          <IconButton icon="file-circle-plus" label={t("sidebar.newRequest")} size="sm" onClick={(e) => { e.stopPropagation(); newRequestIn(c.id); }} />
-          <IconButton icon="folder-plus" label={t("sidebar.newSub")} size="sm" onClick={(e) => { e.stopPropagation(); addCollection(c.id); }} />
+          <IconButton icon="plus" label={t("sidebar.new")} size="sm" onClick={(e) => { e.stopPropagation(); ctx.show(e.currentTarget, newItems(t, { label: t("sidebar.newSub"), icon: "folder-plus", onClick: () => addCollection(c.id) }, (protocol) => newRequestIn(c.id, protocol))); }} />
           <IconButton icon="ellipsis" label={t("sidebar.actions")} size="sm" onClick={(e) => { e.stopPropagation(); ctx.show(e.currentTarget, items); }} />
         </span>
       )}
@@ -153,7 +160,8 @@ function History() {
 export function Sidebar() {
   const t = useT();
   const { side, ws, filter, sidebarOpen, sidebarW } = useStore();
-  const { setSide, setFilter, addCollection, clearHistory, set } = useStore.getState();
+  const { setSide, setFilter, addCollection, newRequestTab, clearHistory, set } = useStore.getState();
+  const newMenu = useMenu();
   const write = can(ws).write;
   const [text, setText] = useState(filter);
   const deb = useRef(debounce((v) => setFilter(v), 150)).current;
@@ -165,11 +173,13 @@ export function Sidebar() {
         {side === "collections" ? (
           <div className="side-tools">
             <div className="searchbox"><Icon name="magnifying-glass" /><input type="search" placeholder={t("sidebar.search")} value={text} aria-label={t("ui.search")} onChange={(e) => { setText(e.target.value); deb(e.target.value); }} /></div>
-            {write && <IconButton icon="plus" label={t("sidebar.newCollection")} onClick={() => addCollection(null)} />}
+            {write && <IconButton icon="plus" label={t("sidebar.new")} onClick={(e) => newMenu.show(e.currentTarget)} />}
           </div>
         ) : (
           <div className="side-tools"><Button size="sm" icon="trash-can" onClick={clearHistory}>{t("sidebar.clearHistory")}</Button></div>
         )}
+        <Menu anchor={newMenu.anchor} open={newMenu.open} onClose={newMenu.hide}
+          items={newItems(t, { label: t("sidebar.newCollection"), icon: "folder-plus", onClick: () => addCollection(null) }, newRequestTab)} />
         <div className="side-body">{side === "collections" ? <Tree /> : <History />}</div>
       </aside>
     </>
