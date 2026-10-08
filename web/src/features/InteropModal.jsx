@@ -11,8 +11,7 @@ import { Icon, Spinner } from "../components/ui/Icon.jsx";
 import { toast } from "../components/ui/Toasts.jsx";
 import { t as tr, useT } from "../i18n/index.js";
 
-// format names are product names; only the noun is translated
-const LABELS = { "postman-collection": () => tr("interop.postmanCollection"), "postman-environment": () => tr("interop.postmanEnvironment"), "hoppscotch-collection": () => tr("interop.hoppscotchCollection"), "hoppscotch-environment": () => tr("interop.hoppscotchEnvironment") };
+const PRODUCT = { postman: "Postman", hoppscotch: "Hoppscotch" }; // product names are not translated
 export async function exportRemote(query) {
   const { W } = useStore.getState();
   const r = await api("GET", W("/export?" + new URLSearchParams(query)));
@@ -33,6 +32,7 @@ export function InteropModal({ close }) {
   const [files, setFiles] = useState([]);
   const [dest, setDest] = useState("");
   const [results, setResults] = useState([]);
+  const [inputKey, setInputKey] = useState(0); // a new <input type=file> forgets the chosen files, so the same file can be picked again
   const [busy, setBusy] = useState(false);
   const [fmt, setFmt] = useState("postman");
   const [what, setWhat] = useState(cols.length ? `c:${cols[0].id}` : envs.length ? `e:${envs[0].id}` : "");
@@ -40,15 +40,24 @@ export function InteropModal({ close }) {
 
   const run = async () => {
     setBusy(true); setResults([]);
+    const failed = [];
     for (const f of files) {
       let line;
       try {
         const r = await api("POST", W("/import"), { data: JSON.parse(await f.text()), parent_id: dest || null });
         imported.current = true;
-        line = { ok: true, text: `${f.name} — ${LABELS[r.format]?.() ?? r.format}: ${r.environments ? t("interop.resultEnvs", { n: r.environments }) : t("interop.resultCols", { c: r.collections, r: r.requests })}`, warnings: r.warnings };
-      } catch (e) { line = { ok: false, text: `${f.name} — ${e instanceof SyntaxError ? t("interop.notJson") : e.message}` }; }
+        const envs = !!r.environments;
+        line = { ok: true, warnings: r.warnings, rows: [
+          [t("interop.type"), `${envs ? t("interop.typeEnvironments") : t("interop.typeCollection")} (${PRODUCT[r.format.split("-")[0]] ?? r.format})`],
+          [t("interop.count"), envs ? t("interop.resultEnvs", { n: r.environments }) : t("interop.resultCols", { c: r.collections, r: r.requests })],
+          [t("interop.file"), f.name],
+        ] };
+      } catch (e) { line = { ok: false, rows: [[t("interop.file"), f.name], [t("interop.error"), e instanceof SyntaxError ? t("interop.notJson") : e.message]] }; }
+      if (!line.ok) failed.push(f);
       setResults((l) => [...l, line]);
     }
+    setFiles(failed); // what was imported is cleared (the Import button goes inactive again); failed files stay for another try
+    setInputKey((k) => k + 1);
     setBusy(false);
   };
   const finish = async () => { if (imported.current) { await reloadTree(); await refreshEnvs(); } close(); };
@@ -69,11 +78,12 @@ export function InteropModal({ close }) {
       {tab === "import" ? (
         <div className="stack">
           <label className="dropzone"><Icon name="cloud-arrow-up" /><span>{files.length ? files.map((f) => f.name).join(", ") : t("interop.choose")}</span>
-            <input type="file" accept=".json,application/json" multiple hidden onChange={(e) => { setFiles([...e.target.files]); setResults([]); }} /></label>
+            <input key={inputKey} type="file" accept=".json,application/json" multiple hidden onChange={(e) => { setFiles([...e.target.files]); setResults([]); }} /></label>
           <Field label={t("interop.dest")}><Select value={dest} onChange={setDest} options={[{ value: "", label: t("interop.root"), icon: "house" }, ...cols.map((x) => ({ value: x.id, label: indent(x), icon: "folder" }))]} /></Field>
           <div className="row end"><Button variant="primary" icon="file-import" disabled={!files.length} loading={busy} onClick={run}>{t("common.import")}</Button></div>
           {results.map((r, i) => (
-            <div key={i} className={`interop-result ${r.ok ? "ok" : "err"}`}><Icon name={r.ok ? "circle-check" : "circle-xmark"} /><span>{r.text}</span>
+            <div key={i} className={`interop-result ${r.ok ? "ok" : "err"}`}>
+              <dl className="interop-rows">{r.rows.map(([k, v]) => <div key={k}><dt>{k}</dt><dd>{v}</dd></div>)}</dl>
               {r.warnings?.length > 0 && <ul className="muted">{r.warnings.map((w, j) => <li key={j}>{w}</li>)}</ul>}</div>
           ))}
           <p className="muted">{t("interop.importHint")}</p>

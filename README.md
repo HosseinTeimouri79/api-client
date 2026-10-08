@@ -488,8 +488,8 @@ file is **detected automatically** on import.
 ### How to import
 
 - **Import / Export** dialog (**⋯ → Import / Export**): choose one or several `.json` files, optionally a destination collection
-  (collections only), then **Import**. The empty sidebar also has an **Import** button next to **New collection**.
-- **Environments & variables → Import**: Postman or Hoppscotch environment files, several at once.
+  (collections only), then **Import**. Collection and environment files can be mixed in one go: the format is detected per file.
+  The empty sidebar also has an **Import** button next to **New collection**.
 
 Anything that cannot be converted is listed as a **note** after the import instead of failing silently. You need the editor
 role (or higher) to import.
@@ -499,7 +499,7 @@ role (or higher) to import.
 - Collection context menu (**⋯ → Export as Postman / Export as Hoppscotch**).
 - **Import / Export → Export**: pick the format and *what to export* (a collection, all top-level collections — Hoppscotch only —
   or one environment).
-- **Environments & variables → Export**: the selected environment as Postman or Hoppscotch.
+
 
 ### What is converted
 
