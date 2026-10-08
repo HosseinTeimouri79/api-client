@@ -34,8 +34,7 @@ export default {
   "top.newWorkspaceDots": "مساحة عمل جديدة…",
   "top.environment": "البيئة",
   "top.noEnvironment": "بدون بيئة",
-  "top.environments": "البيئات",
-  "top.manageEnv": "إدارة البيئات والمتغيرات",
+  "top.newEnvironmentDots": "بيئة جديدة…",
   "top.more": "المزيد",
   "top.members": "الأعضاء",
   "top.importExport": "استيراد / تصدير",
@@ -231,7 +230,6 @@ export default {
   // common
   "common.import": "استيراد",
   "common.export": "تصدير",
-  "common.new": "جديد",
   // app
   "app.newRequest": "طلب جديد",
   "app.noRequest": "لا يوجد طلب مفتوح",
@@ -412,18 +410,12 @@ export default {
   "dlg.deleteRequest": "حذف الطلب",
   "dlg.deleteRequestMsg": "هل تريد حذف «{name}»؟",
   // env
-  "env.title": "البيئات والمتغيرات",
   "env.globals": "متغيرات مساحة العمل (العامة)",
-  "env.closeUnsaved": "هل تريد الإغلاق دون حفظ؟",
   "env.newTitle": "بيئة جديدة",
+  "env.editTitle": "تعديل البيئة",
   "env.nameLabel": "اسم البيئة",
-  "env.name": "الاسم",
   "env.deleteTitle": "حذف البيئة",
   "env.deleteMsg": "هل تريد حذف «{name}»؟",
-  "env.imported": "البيئات المستوردة: {n}",
-  "env.importTitle": "استيراد ملفات .json لبيئات Postman أو Hoppscotch",
-  "env.pickToExport": "اختر بيئة لتصديرها",
-  "env.downloadJson": "تنزيل بصيغة JSON",
   "env.help": "استخدمه بالشكل {example}. الأولوية: وقت التشغيل > الطلب > المجموعة > البيئة > مساحة العمل (العامة).",
   // interop
   "interop.postmanCollection": "مجموعة Postman",

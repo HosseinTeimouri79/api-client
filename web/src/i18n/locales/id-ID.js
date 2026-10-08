@@ -34,8 +34,7 @@ export default {
   "top.newWorkspaceDots": "Ruang kerja baru…",
   "top.environment": "Lingkungan",
   "top.noEnvironment": "Tanpa lingkungan",
-  "top.environments": "Lingkungan",
-  "top.manageEnv": "Kelola lingkungan dan variabel",
+  "top.newEnvironmentDots": "Lingkungan baru…",
   "top.more": "Lainnya",
   "top.members": "Anggota",
   "top.importExport": "Impor / Ekspor",
@@ -231,7 +230,6 @@ export default {
   // common
   "common.import": "Impor",
   "common.export": "Ekspor",
-  "common.new": "Baru",
   // app
   "app.newRequest": "Permintaan baru",
   "app.noRequest": "Tidak ada permintaan yang terbuka",
@@ -412,18 +410,12 @@ export default {
   "dlg.deleteRequest": "Hapus permintaan",
   "dlg.deleteRequestMsg": "Hapus “{name}”?",
   // env
-  "env.title": "Lingkungan & variabel",
   "env.globals": "Variabel ruang kerja (global)",
-  "env.closeUnsaved": "Tutup tanpa menyimpan?",
   "env.newTitle": "Lingkungan baru",
+  "env.editTitle": "Edit lingkungan",
   "env.nameLabel": "Nama lingkungan",
-  "env.name": "Nama",
   "env.deleteTitle": "Hapus lingkungan",
   "env.deleteMsg": "Hapus “{name}”?",
-  "env.imported": "Lingkungan yang diimpor: {n}",
-  "env.importTitle": "Impor file .json lingkungan Postman atau Hoppscotch",
-  "env.pickToExport": "Pilih lingkungan untuk diekspor",
-  "env.downloadJson": "Unduh sebagai JSON",
   "env.help": "Gunakan sebagai {example}. Prioritas: runtime > permintaan > koleksi > lingkungan > ruang kerja (global).",
   // interop
   "interop.postmanCollection": "koleksi Postman",

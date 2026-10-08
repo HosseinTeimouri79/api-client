@@ -34,8 +34,7 @@ export default {
   "top.newWorkspaceDots": "New workspace…",
   "top.environment": "Environment",
   "top.noEnvironment": "No environment",
-  "top.environments": "Environments",
-  "top.manageEnv": "Manage environments & variables",
+  "top.newEnvironmentDots": "New environment…",
   "top.more": "More",
   "top.members": "Members",
   "top.importExport": "Import / Export",
@@ -231,7 +230,6 @@ export default {
   // common
   "common.import": "Import",
   "common.export": "Export",
-  "common.new": "New",
   // app
   "app.newRequest": "New request",
   "app.noRequest": "No request open",
@@ -412,18 +410,12 @@ export default {
   "dlg.deleteRequest": "Delete request",
   "dlg.deleteRequestMsg": "Delete “{name}”?",
   // env
-  "env.title": "Environments & variables",
   "env.globals": "Workspace (global) variables",
-  "env.closeUnsaved": "Close without saving?",
   "env.newTitle": "New environment",
+  "env.editTitle": "Edit environment",
   "env.nameLabel": "Environment name",
-  "env.name": "Name",
   "env.deleteTitle": "Delete environment",
   "env.deleteMsg": "Delete “{name}”?",
-  "env.imported": "Environments imported: {n}",
-  "env.importTitle": "Import Postman or Hoppscotch environment .json file(s)",
-  "env.pickToExport": "Pick an environment to export",
-  "env.downloadJson": "Download as JSON",
   "env.help": "Use as {example}. Precedence: runtime > request > collection > environment > workspace (globals).",
   // interop
   "interop.postmanCollection": "Postman collection",

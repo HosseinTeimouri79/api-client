@@ -41,7 +41,7 @@ export function Select({ value, onChange, options, placeholder, disabled, search
         {canSearch && (
           <input className="select-search" autoFocus placeholder={t("ui.search")} value={q} onChange={(e) => { setQ(e.target.value); setActive(0); }} onKeyDown={key} aria-label={t("ui.searchOptions")} />
         )}
-        <OptionList id={`${id}-list`} options={list} active={active} onHover={setActive} onPick={pick} query={q} selected={(o) => o.value === value} renderOption={renderOption} />
+        <OptionList id={`${id}-list`} options={list} active={active} onHover={setActive} onPick={pick} query={q} selected={(o) => o.value === value} renderOption={renderOption && ((o, ctx) => renderOption(o, { ...ctx, close: () => setOpen(false) }))} />
       </Popover>
     </>
   );

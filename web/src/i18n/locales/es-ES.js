@@ -34,8 +34,7 @@ export default {
   "top.newWorkspaceDots": "Nuevo espacio de trabajo…",
   "top.environment": "Entorno",
   "top.noEnvironment": "Sin entorno",
-  "top.environments": "Entornos",
-  "top.manageEnv": "Gestionar entornos y variables",
+  "top.newEnvironmentDots": "Nuevo entorno…",
   "top.more": "Más",
   "top.members": "Miembros",
   "top.importExport": "Importar / Exportar",
@@ -231,7 +230,6 @@ export default {
   // common
   "common.import": "Importar",
   "common.export": "Exportar",
-  "common.new": "Nuevo",
   // app
   "app.newRequest": "Nueva solicitud",
   "app.noRequest": "Ninguna solicitud abierta",
@@ -412,18 +410,12 @@ export default {
   "dlg.deleteRequest": "Eliminar solicitud",
   "dlg.deleteRequestMsg": "¿Eliminar «{name}»?",
   // env
-  "env.title": "Entornos y variables",
   "env.globals": "Variables del espacio de trabajo (globales)",
-  "env.closeUnsaved": "¿Cerrar sin guardar?",
   "env.newTitle": "Nuevo entorno",
+  "env.editTitle": "Editar entorno",
   "env.nameLabel": "Nombre del entorno",
-  "env.name": "Nombre",
   "env.deleteTitle": "Eliminar entorno",
   "env.deleteMsg": "¿Eliminar «{name}»?",
-  "env.imported": "Entornos importados: {n}",
-  "env.importTitle": "Importar archivos .json de entornos de Postman o Hoppscotch",
-  "env.pickToExport": "Elige un entorno para exportar",
-  "env.downloadJson": "Descargar como JSON",
   "env.help": "Úsalo como {example}. Precedencia: ejecución > solicitud > colección > entorno > espacio de trabajo (globales).",
   // interop
   "interop.postmanCollection": "colección de Postman",

@@ -313,7 +313,10 @@ Variables use `{{name}}`. Precedence from highest to lowest:
 4. the selected environment,
 5. workspace (global) variables.
 
-Open **Environments & variables** from the top bar to edit them, import and export environments, and add new ones. Secret
+Environments are managed from the **environment selector** in the top bar: hover an environment for a pen (edit its name and
+variables) and a trash icon (delete, with confirmation), and the last entry, **New environment…**, opens one dialog for the name
+and the variables and makes the new environment the active one. The workspace (global) variables are under **⋯ → Workspace
+(global) variables**. Importing and exporting environments (Postman or Hoppscotch) is part of **⋯ → Import / Export**. Secret
 variables are never substituted into generated code snippets.
 
 ### Code snippets

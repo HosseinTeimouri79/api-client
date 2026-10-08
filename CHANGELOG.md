@@ -12,6 +12,11 @@ The version is shown in **Settings → General → About** and returned by `GET 
 ## [Unreleased]
 
 ### Changed
+- The **Environments & variables** page is gone. The environment selector in the header now has an edit (pen) and a delete (trash,
+  with confirmation) icon on each environment and ends with **New environment…**, which opens one dialog for the name and the
+  variables and activates the new environment; view-only members see none of these. The workspace (global) variables moved to
+  **⋯ → Workspace (global) variables**. Importing and exporting environments is done in **⋯ → Import / Export**, which already
+  handles collections and environments together.
 - **New request** no longer asks for a name: a popover lists the protocols and the request is created at once. The sidebar **+**
   button opens the same popover with **New collection** added, so a request of any protocol can be started from there too. On a collection, the separate *new sub-collection* and *new request* buttons are merged into one **+** with the same popover.
 

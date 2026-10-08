@@ -34,8 +34,7 @@ export default {
   "top.newWorkspaceDots": "Yeni çalışma alanı…",
   "top.environment": "Ortam",
   "top.noEnvironment": "Ortam yok",
-  "top.environments": "Ortamlar",
-  "top.manageEnv": "Ortamları ve değişkenleri yönet",
+  "top.newEnvironmentDots": "Yeni ortam…",
   "top.more": "Daha fazla",
   "top.members": "Üyeler",
   "top.importExport": "İçe / Dışa aktar",
@@ -231,7 +230,6 @@ export default {
   // common
   "common.import": "İçe aktar",
   "common.export": "Dışa aktar",
-  "common.new": "Yeni",
   // app
   "app.newRequest": "Yeni istek",
   "app.noRequest": "Açık istek yok",
@@ -412,18 +410,12 @@ export default {
   "dlg.deleteRequest": "İsteği sil",
   "dlg.deleteRequestMsg": "“{name}” silinsin mi?",
   // env
-  "env.title": "Ortamlar ve değişkenler",
   "env.globals": "Çalışma alanı (genel) değişkenleri",
-  "env.closeUnsaved": "Kaydetmeden kapatılsın mı?",
   "env.newTitle": "Yeni ortam",
+  "env.editTitle": "Ortamı düzenle",
   "env.nameLabel": "Ortam adı",
-  "env.name": "Ad",
   "env.deleteTitle": "Ortamı sil",
   "env.deleteMsg": "“{name}” silinsin mi?",
-  "env.imported": "İçe aktarılan ortamlar: {n}",
-  "env.importTitle": "Postman veya Hoppscotch ortam .json dosyalarını içe aktar",
-  "env.pickToExport": "Dışa aktarmak için bir ortam seçin",
-  "env.downloadJson": "JSON olarak indir",
   "env.help": "{example} biçiminde kullanın. Öncelik: çalışma zamanı > istek > koleksiyon > ortam > çalışma alanı (genel).",
   // interop
   "interop.postmanCollection": "Postman koleksiyonu",

@@ -265,3 +265,4 @@ input.mono { font-family: var(--mono); font-size: 12px; }
 .m-GQL { color: var(--accent); }
 .ev-badge.peer { text-transform: none; font-family: var(--mono); font-weight: 500; }
 .ev-acts { flex: none; display: inline-flex; gap: 4px; align-self: center; }
+.opt-acts { display: inline-flex; gap: 2px; flex: none; } @media (hover: hover) { .opt .opt-acts { opacity: 0; } .opt.active .opt-acts, .opt:hover .opt-acts { opacity: 1; } }

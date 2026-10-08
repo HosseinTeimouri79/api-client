@@ -34,8 +34,7 @@ export default {
   "top.newWorkspaceDots": "Новое рабочее пространство…",
   "top.environment": "Окружение",
   "top.noEnvironment": "Без окружения",
-  "top.environments": "Окружения",
-  "top.manageEnv": "Управление окружениями и переменными",
+  "top.newEnvironmentDots": "Новое окружение…",
   "top.more": "Ещё",
   "top.members": "Участники",
   "top.importExport": "Импорт / экспорт",
@@ -231,7 +230,6 @@ export default {
   // common
   "common.import": "Импорт",
   "common.export": "Экспорт",
-  "common.new": "Создать",
   // app
   "app.newRequest": "Новый запрос",
   "app.noRequest": "Нет открытых запросов",
@@ -412,18 +410,12 @@ export default {
   "dlg.deleteRequest": "Удалить запрос",
   "dlg.deleteRequestMsg": "Удалить «{name}»?",
   // env
-  "env.title": "Окружения и переменные",
   "env.globals": "Переменные рабочего пространства (глобальные)",
-  "env.closeUnsaved": "Закрыть без сохранения?",
   "env.newTitle": "Новое окружение",
+  "env.editTitle": "Изменить окружение",
   "env.nameLabel": "Название окружения",
-  "env.name": "Название",
   "env.deleteTitle": "Удалить окружение",
   "env.deleteMsg": "Удалить «{name}»?",
-  "env.imported": "Импортировано окружений: {n}",
-  "env.importTitle": "Импорт файлов .json окружений Postman или Hoppscotch",
-  "env.pickToExport": "Выберите окружение для экспорта",
-  "env.downloadJson": "Скачать как JSON",
   "env.help": "Используйте в виде {example}. Приоритет: выполнение > запрос > коллекция > окружение > рабочее пространство (глобальные).",
   // interop
   "interop.postmanCollection": "коллекция Postman",

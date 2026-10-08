@@ -84,6 +84,32 @@ export const useStore = create((set, get) => {
       const [tree, envs] = await Promise.all([api("GET", W("/tree")), api("GET", W("/environments"))]);
       set({ tree, envs, envId: envs[0]?.id ?? null });
     }),
+    /** Creates an environment (name and variables) and makes it the active one. Returns false when it failed. */
+    async createEnvironment({ name, variables }) {
+      const e = await guard(() => api("POST", W("/environments"), { name, variables: variables.filter((v) => v.key) }))();
+      if (!e) return false;
+      await actions.refreshEnvs();
+      set({ envId: e.id });
+      return true;
+    },
+    /** Saves an environment's name and variables. Returns false when it failed. */
+    async updateEnvironment({ id, name, variables }) {
+      const ok = await guard(() => api("PUT", W(`/environments/${id}`), { name, variables: variables.filter((v) => v.key) }))();
+      if (!ok) return false;
+      await actions.refreshEnvs();
+      return true;
+    },
+    async deleteEnvironment(env) {
+      if (!(await confirm({ title: t("env.deleteTitle"), message: t("env.deleteMsg", { name: env.name }) }))) return;
+      await guard(async () => { await api("DELETE", W(`/environments/${env.id}`)); await actions.refreshEnvs(); })();
+    },
+    /** Saves the workspace (global) variables. Returns false when it failed. */
+    async saveGlobals(variables) {
+      const ok = await guard(() => api("PATCH", W(), { variables: variables.filter((v) => v.key) }))();
+      if (!ok) return false;
+      await actions.refreshEnvs();
+      return true;
+    },
     async createWorkspace() {
       const name = await prompt({ title: t("ws.newTitle"), label: t("ws.name"), okText: t("common.create") });
       if (!name) return;

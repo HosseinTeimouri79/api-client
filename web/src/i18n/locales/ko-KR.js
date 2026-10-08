@@ -34,8 +34,7 @@ export default {
   "top.newWorkspaceDots": "새 워크스페이스…",
   "top.environment": "환경",
   "top.noEnvironment": "환경 없음",
-  "top.environments": "환경",
-  "top.manageEnv": "환경 및 변수 관리",
+  "top.newEnvironmentDots": "새 환경…",
   "top.more": "더보기",
   "top.members": "멤버",
   "top.importExport": "가져오기 / 내보내기",
@@ -231,7 +230,6 @@ export default {
   // common
   "common.import": "가져오기",
   "common.export": "내보내기",
-  "common.new": "새로 만들기",
   // app
   "app.newRequest": "새 요청",
   "app.noRequest": "열려 있는 요청이 없습니다",
@@ -412,18 +410,12 @@ export default {
   "dlg.deleteRequest": "요청 삭제",
   "dlg.deleteRequestMsg": "“{name}”을(를) 삭제할까요?",
   // env
-  "env.title": "환경 및 변수",
   "env.globals": "워크스페이스(전역) 변수",
-  "env.closeUnsaved": "저장하지 않고 닫을까요?",
   "env.newTitle": "새 환경",
+  "env.editTitle": "환경 편집",
   "env.nameLabel": "환경 이름",
-  "env.name": "이름",
   "env.deleteTitle": "환경 삭제",
   "env.deleteMsg": "“{name}”을(를) 삭제할까요?",
-  "env.imported": "가져온 환경 수: {n}",
-  "env.importTitle": "Postman 또는 Hoppscotch 환경 .json 파일 가져오기",
-  "env.pickToExport": "내보낼 환경을 선택하세요",
-  "env.downloadJson": "JSON으로 다운로드",
   "env.help": "{example} 형태로 사용합니다. 우선순위: 런타임 > 요청 > 컬렉션 > 환경 > 워크스페이스(전역).",
   // interop
   "interop.postmanCollection": "Postman 컬렉션",

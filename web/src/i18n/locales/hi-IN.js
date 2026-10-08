@@ -34,8 +34,7 @@ export default {
   "top.newWorkspaceDots": "नया वर्कस्पेस…",
   "top.environment": "एनवायरनमेंट",
   "top.noEnvironment": "कोई एनवायरनमेंट नहीं",
-  "top.environments": "एनवायरनमेंट",
-  "top.manageEnv": "एनवायरनमेंट और वैरिएबल प्रबंधित करें",
+  "top.newEnvironmentDots": "नया एनवायरनमेंट…",
   "top.more": "और",
   "top.members": "सदस्य",
   "top.importExport": "इम्पोर्ट / एक्सपोर्ट",
@@ -231,7 +230,6 @@ export default {
   // common
   "common.import": "इम्पोर्ट करें",
   "common.export": "एक्सपोर्ट करें",
-  "common.new": "नया",
   // app
   "app.newRequest": "नई रिक्वेस्ट",
   "app.noRequest": "कोई रिक्वेस्ट खुली नहीं है",
@@ -412,18 +410,12 @@ export default {
   "dlg.deleteRequest": "रिक्वेस्ट हटाएँ",
   "dlg.deleteRequestMsg": "क्या “{name}” हटाएँ?",
   // env
-  "env.title": "एनवायरनमेंट और वैरिएबल",
   "env.globals": "वर्कस्पेस (ग्लोबल) वैरिएबल",
-  "env.closeUnsaved": "क्या बिना सहेजे बंद करें?",
   "env.newTitle": "नया एनवायरनमेंट",
+  "env.editTitle": "एनवायरनमेंट संपादित करें",
   "env.nameLabel": "एनवायरनमेंट का नाम",
-  "env.name": "नाम",
   "env.deleteTitle": "एनवायरनमेंट हटाएँ",
   "env.deleteMsg": "क्या “{name}” हटाएँ?",
-  "env.imported": "इम्पोर्ट किए गए एनवायरनमेंट: {n}",
-  "env.importTitle": "Postman या Hoppscotch एनवायरनमेंट .json फ़ाइलें इम्पोर्ट करें",
-  "env.pickToExport": "एक्सपोर्ट करने के लिए एक एनवायरनमेंट चुनें",
-  "env.downloadJson": "JSON के रूप में डाउनलोड करें",
   "env.help": "इसे {example} के रूप में इस्तेमाल करें। प्राथमिकता: रनटाइम > रिक्वेस्ट > कलेक्शन > एनवायरनमेंट > वर्कस्पेस (ग्लोबल)।",
   // interop
   "interop.postmanCollection": "Postman कलेक्शन",

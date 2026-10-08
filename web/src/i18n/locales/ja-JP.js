@@ -34,8 +34,7 @@ export default {
   "top.newWorkspaceDots": "新しいワークスペース…",
   "top.environment": "環境",
   "top.noEnvironment": "環境なし",
-  "top.environments": "環境",
-  "top.manageEnv": "環境と変数を管理",
+  "top.newEnvironmentDots": "新しい環境…",
   "top.more": "その他",
   "top.members": "メンバー",
   "top.importExport": "インポート / エクスポート",
@@ -231,7 +230,6 @@ export default {
   // common
   "common.import": "インポート",
   "common.export": "エクスポート",
-  "common.new": "新規",
   // app
   "app.newRequest": "新しいリクエスト",
   "app.noRequest": "開いているリクエストはありません",
@@ -412,18 +410,12 @@ export default {
   "dlg.deleteRequest": "リクエストを削除",
   "dlg.deleteRequestMsg": "「{name}」を削除しますか？",
   // env
-  "env.title": "環境と変数",
   "env.globals": "ワークスペース（グローバル）変数",
-  "env.closeUnsaved": "保存せずに閉じますか？",
   "env.newTitle": "新しい環境",
+  "env.editTitle": "環境を編集",
   "env.nameLabel": "環境名",
-  "env.name": "名前",
   "env.deleteTitle": "環境を削除",
   "env.deleteMsg": "「{name}」を削除しますか？",
-  "env.imported": "インポートした環境数：{n}",
-  "env.importTitle": "Postman または Hoppscotch の環境 .json ファイルをインポート",
-  "env.pickToExport": "エクスポートする環境を選択してください",
-  "env.downloadJson": "JSON としてダウンロード",
   "env.help": "{example} の形式で使用します。優先順位：実行時 > リクエスト > コレクション > 環境 > ワークスペース（グローバル）。",
   // interop
   "interop.postmanCollection": "Postman コレクション",

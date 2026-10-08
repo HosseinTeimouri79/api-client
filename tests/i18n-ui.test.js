@@ -87,9 +87,10 @@ for (const l of LOCALES)
     await page.locator(".modal").waitFor();
     assert.equal((await page.locator(".modal-h h2").textContent()).trim(), d["members.title"]);
     await noRawKeys(page, "members"); await page.keyboard.press("Escape");
-    await page.locator(".top button:has(i.fa-sliders)").click();
+    await page.locator(".top button:has(i.fa-ellipsis)").click();
+    await page.locator("[role=menuitem]").nth(2).click(); // Workspace (global) variables
     await page.locator(".modal").waitFor();
-    assert.equal((await page.locator(".modal-h h2").textContent()).trim(), d["env.title"]);
+    assert.equal((await page.locator(".modal-h h2").textContent()).trim(), d["env.globals"]);
     await noRawKeys(page, "environments"); await page.keyboard.press("Escape");
     await page.locator(".top button:has(i.fa-ellipsis)").click();
     await page.locator("[role=menuitem]").nth(1).click(); // Import / Export

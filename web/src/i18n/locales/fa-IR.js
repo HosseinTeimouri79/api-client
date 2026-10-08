@@ -34,8 +34,7 @@ export default {
   "top.newWorkspaceDots": "فضای کاری جدید…",
   "top.environment": "محیط",
   "top.noEnvironment": "بدون محیط",
-  "top.environments": "محیط‌ها",
-  "top.manageEnv": "مدیریت محیط‌ها و متغیرها",
+  "top.newEnvironmentDots": "محیط جدید…",
   "top.more": "بیشتر",
   "top.members": "اعضا",
   "top.importExport": "ورود / خروج داده",
@@ -231,7 +230,6 @@ export default {
   // common
   "common.import": "ورود داده",
   "common.export": "خروج داده",
-  "common.new": "جدید",
   // app
   "app.newRequest": "درخواست جدید",
   "app.noRequest": "هیچ درخواستی باز نیست",
@@ -412,18 +410,12 @@ export default {
   "dlg.deleteRequest": "حذف درخواست",
   "dlg.deleteRequestMsg": "«{name}» حذف شود؟",
   // env
-  "env.title": "محیط‌ها و متغیرها",
   "env.globals": "متغیرهای فضای کاری (سراسری)",
-  "env.closeUnsaved": "بدون ذخیره بسته شود؟",
   "env.newTitle": "محیط جدید",
+  "env.editTitle": "ویرایش محیط",
   "env.nameLabel": "نام محیط",
-  "env.name": "نام",
   "env.deleteTitle": "حذف محیط",
   "env.deleteMsg": "«{name}» حذف شود؟",
-  "env.imported": "محیط‌های واردشده: {n}",
-  "env.importTitle": "ورود فایل‌های .json محیط Postman یا Hoppscotch",
-  "env.pickToExport": "برای خروجی گرفتن یک محیط انتخاب کنید",
-  "env.downloadJson": "دانلود به‌صورت JSON",
   "env.help": "به‌صورت {example} استفاده کنید. اولویت: زمان اجرا > درخواست > مجموعه > محیط > فضای کاری (سراسری).",
   // interop
   "interop.postmanCollection": "مجموعه‌ی Postman",

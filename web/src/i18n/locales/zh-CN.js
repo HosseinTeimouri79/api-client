@@ -34,8 +34,7 @@ export default {
   "top.newWorkspaceDots": "新建工作区…",
   "top.environment": "环境",
   "top.noEnvironment": "无环境",
-  "top.environments": "环境",
-  "top.manageEnv": "管理环境和变量",
+  "top.newEnvironmentDots": "新建环境…",
   "top.more": "更多",
   "top.members": "成员",
   "top.importExport": "导入 / 导出",
@@ -231,7 +230,6 @@ export default {
   // common
   "common.import": "导入",
   "common.export": "导出",
-  "common.new": "新建",
   // app
   "app.newRequest": "新建请求",
   "app.noRequest": "没有打开的请求",
@@ -412,18 +410,12 @@ export default {
   "dlg.deleteRequest": "删除请求",
   "dlg.deleteRequestMsg": "删除“{name}”？",
   // env
-  "env.title": "环境和变量",
   "env.globals": "工作区（全局）变量",
-  "env.closeUnsaved": "不保存就关闭？",
   "env.newTitle": "新建环境",
+  "env.editTitle": "编辑环境",
   "env.nameLabel": "环境名称",
-  "env.name": "名称",
   "env.deleteTitle": "删除环境",
   "env.deleteMsg": "删除“{name}”？",
-  "env.imported": "已导入环境：{n}",
-  "env.importTitle": "导入 Postman 或 Hoppscotch 环境 .json 文件",
-  "env.pickToExport": "请选择要导出的环境",
-  "env.downloadJson": "下载为 JSON",
   "env.help": "用法：{example}。优先级：运行时 > 请求 > 集合 > 环境 > 工作区（全局）。",
   // interop
   "interop.postmanCollection": "Postman 集合",
