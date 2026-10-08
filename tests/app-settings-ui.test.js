@@ -72,6 +72,15 @@ test("E2E: general settings apply, sync to the account and survive a reload", { 
     for (const [other, m] of Object.entries(groups)) if (other !== tab) assert.equal(await page.getByText(m).count(), 0, `${m} must not show on the ${tab} tab`);
   }
   assert.match(await page.locator(".about").first().textContent(), /API Client\s*v\d+\.\d+\.\d+/);
+  // the About tab: protocols, highlights, details with links, and the attribution the NOTICE asks for
+  await page.getByRole("tab", { name: "About", exact: true }).click();
+  assert.deepEqual(await page.locator(".about-chip").allTextContents(), ["HTTP", "WebSocket", "gRPC", "GraphQL", "SSE", "TCP", "UDP", "MQTT", "AMQP"]);
+  assert.equal(await page.locator(".about-list li").count(), 8);
+  assert.equal(await page.locator(".about-dl dd").first().textContent(), await page.locator(".about-name .muted").textContent().then((v) => v.replace(/^v/, "")));
+  const links = await page.locator(".about-dl a").evaluateAll((a) => a.map((x) => [x.textContent, x.getAttribute("href"), x.getAttribute("rel")]));
+  assert.deepEqual(links.map((l) => l[0]), ["Apache License 2.0", "Hossein Teimouri", "github.com/HosseinTeimouri79/api-client", "CHANGELOG.md"]);
+  assert.ok(links.every((l) => l[1].startsWith("https://") && /noopener/.test(l[2])));
+  await page.getByText("keep the LICENSE and NOTICE files and credit the original author").waitFor();
 
   // --- Application: theme, app font, autosave
   await page.getByRole("tab", { name: "Application", exact: true }).click();

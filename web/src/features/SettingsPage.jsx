@@ -11,6 +11,51 @@ import { APP_FONTS, EDITOR_FONTS, CUSTOM } from "../lib/settings.js";
 import { Tabs } from "../components/ui/Tabs.jsx";
 import { Avatar } from "../components/ui/Avatar.jsx";
 import { toast } from "../components/ui/Toasts.jsx";
+import { PROTOCOLS } from "../lib/protocols.js";
+import { Icon } from "../components/ui/Icon.jsx";
+
+const AUTHOR = { name: "Hossein Teimouri", url: "https://github.com/HosseinTeimouri79" };
+const SOURCE = "https://github.com/HosseinTeimouri79/api-client";
+const LICENSE = { name: "Apache License 2.0", url: "https://www.apache.org/licenses/LICENSE-2.0" };
+const CHANGELOG = "CHANGELOG.md";
+const STACK = "Node.js, Express, SQLite, React, QuickJS";
+const FEATURES = ["teams", "env", "scripts", "interop", "snippets", "languages", "safe", "self"];
+const ext = { target: "_blank", rel: "noopener noreferrer" };
+
+/** Settings → General → About: what the app is, its protocols and features, who made it and under which license. */
+function About() {
+  const t = useT();
+  return (
+    <div className="about-page stack">
+      <div className="about-hero">
+        <img className="about-logo" src="/logo.png" alt="" />
+        <div>
+          <h3 className="about about-name">API Client <span className="muted">v{__APP_VERSION__}</span></h3>
+          <p className="muted about">{t("settings.aboutTagline")}</p>
+        </div>
+      </div>
+      <p className="about">{t("about.whatText")}</p>
+      <p className="muted about">{t("settings.aboutText")}</p>
+
+      <h4>{t("about.protocolsTitle")}</h4>
+      <div className="about-chips">{PROTOCOLS.map((p) => <span key={p.id} className="about-chip"><Icon name={p.icon} />{p.label}</span>)}</div>
+
+      <h4>{t("about.featuresTitle")}</h4>
+      <ul className="about-list">{FEATURES.map((f) => <li key={f}><Icon name="check" />{t(`about.f.${f}`)}</li>)}</ul>
+
+      <h4>{t("about.detailsTitle")}</h4>
+      <dl className="about-dl">
+        <dt>{t("about.version")}</dt><dd>{__APP_VERSION__}</dd>
+        <dt>{t("about.license")}</dt><dd><a href={LICENSE.url} {...ext}>{LICENSE.name}</a></dd>
+        <dt>{t("about.author")}</dt><dd><a href={AUTHOR.url} {...ext}>{AUTHOR.name}</a></dd>
+        <dt>{t("about.source")}</dt><dd><a href={SOURCE} {...ext}>{SOURCE.replace("https://", "")}</a></dd>
+        <dt>{t("about.changelog")}</dt><dd><a href={`${SOURCE}/blob/main/CHANGELOG.md`} {...ext}>{CHANGELOG}</a></dd>
+        <dt>{t("about.stack")}</dt><dd>{STACK}</dd>
+      </dl>
+      <p className="muted about about-note">{t("about.attribution")}</p>
+    </div>
+  );
+}
 
 function Profile() {
   const t = useT();
@@ -182,10 +227,7 @@ function General({ sub }) {
         <FontField label={t("settings.appFont")} value={s.app.fontFamily} presets={APP_FONTS} defaultLabel={t("settings.fontDefault")} onChange={(v) => update({ app: { fontFamily: v } })} />
         <Toggle label={t("settings.autosave")} hint={t("settings.autosaveHint")} checked={s.app.autosave} onChange={(v) => update({ app: { autosave: v } })} />
       </>),
-    about: (<>
-        <p className="about"><b>API Client</b> <span className="muted">v{__APP_VERSION__}</span></p>
-        <p className="muted about">{t("settings.aboutText")}</p>
-      </>),
+    about: <About />,
   };
   return <section className="settings-sec stack" role="tabpanel">{panels[sub]}</section>;
 }

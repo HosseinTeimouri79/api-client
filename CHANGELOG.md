@@ -16,6 +16,8 @@ The version is shown in **Settings → General → About** and returned by `GET 
   **Count** (environments, or collections and requests) and **File**; a failed file shows the file and the error.
 - **Import / Export:** after a successful import the chosen file is cleared and the Import button is inactive again (a file that failed
   stays selected so it can be retried); the same file can be chosen again.
+- **Settings → General → About** is now a full page: what the app is, the nine protocols, highlights, and a details table (version,
+  license, author, source code, changelog, stack) with links, plus the attribution the NOTICE asks for. Translated into all languages.
 - The **Environments & variables** page is gone. The environment selector in the header now has an edit (pen) and a delete (trash,
   with confirmation) icon on each environment and ends with **New environment…**, which opens one dialog for the name and the
   variables and activates the new environment; view-only members see none of these. The workspace (global) variables moved to
