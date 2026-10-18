@@ -351,7 +351,7 @@ test("background service files for Linux (systemd), macOS (launchd) and Windows 
   const { serviceSpec } = await import("../agent/src/service.js");
   const { agentPaths } = await import("../agent/src/paths.js");
   const nix = { command: ["/opt/my node/bin/node", '/home/a "b"/agent.mjs'] };
-  const linux = serviceSpec({ platform: "linux", ...nix, paths: agentPaths({ platform: "linux", home: "/home/a", env: {} }), home: "/home/a" });
+  const linux = serviceSpec({ platform: "linux", osEnv: {}, ...nix, paths: agentPaths({ platform: "linux", home: "/home/a", env: {} }), home: "/home/a" });
   assert.equal(linux.kind, "systemd");
   assert.equal(linux.files[0].path, "/home/a/.config/systemd/user/api-client-agent.service");
   assert.match(linux.files[0].content, /^ExecStart="\/opt\/my node\/bin\/node" "\/home\/a \\"b\\"\/agent\.mjs" "run"$/m);
@@ -377,9 +377,9 @@ test("background service files for Linux (systemd), macOS (launchd) and Windows 
   assert.match(script, /-RunLevel Limited/, "never elevated");
   assert.throws(() => serviceSpec({ platform: "aix", command: ["x"], paths: {} }), /Unsupported system/);
   // the standalone program (installers) runs itself; a .deb install uses the unit the package ships
-  const exe = serviceSpec({ platform: "linux", command: ["/home/a/.local/share/api-client-agent/api-client-agent"], paths: agentPaths({ platform: "linux", home: "/home/a", env: {} }), home: "/home/a" });
+  const exe = serviceSpec({ platform: "linux", osEnv: {}, command: ["/home/a/.local/share/api-client-agent/api-client-agent"], paths: agentPaths({ platform: "linux", home: "/home/a", env: {} }), home: "/home/a" });
   assert.match(exe.files[0].content, /^ExecStart="\/home\/a\/\.local\/share\/api-client-agent\/api-client-agent" "run"$/m);
-  const deb = serviceSpec({ platform: "linux", command: ["/usr/lib/api-client-agent/api-client-agent"], paths: agentPaths({ platform: "linux", home: "/home/a", env: {} }), home: "/home/a", packaged: true });
+  const deb = serviceSpec({ platform: "linux", osEnv: {}, command: ["/usr/lib/api-client-agent/api-client-agent"], paths: agentPaths({ platform: "linux", home: "/home/a", env: {} }), home: "/home/a", packaged: true });
   assert.deepEqual(deb.files, [], "nothing written to the home folder");
   assert.deepEqual(deb.install.at(-1), ["systemctl", ["--user", "enable", "--now", "api-client-agent.service"]]);
   const winExe = serviceSpec({ platform: "win32", command: ["C:\\Users\\a\\AppData\\Local\\api-client-agent\\api-client-agent.exe"], paths: winPaths });

@@ -98,9 +98,11 @@ const encoded = (script) => Buffer.from(script, "utf16le").toString("base64");
 
 /** Where the service files go and which commands manage them. Pure: nothing is written or run. */
 // `packaged`: a system package (.deb) already ships the unit in /usr/lib/systemd/user, so none is written to the home folder.
-export function serviceSpec({ platform = process.platform, command, paths, home = os.homedir(), uid = process.getuid?.() ?? 0, env = {}, packaged = false }) {
+// `env`: variables the service runs with; `osEnv`: this machine's environment (where XDG folders are), passed in by tests.
+export function serviceSpec({ platform = process.platform, command, paths, home = os.homedir(), uid = process.getuid?.() ?? 0, env = {}, packaged = false, osEnv = process.env }) {
   if (platform === "linux") {
-    const unitDir = path.posix.join(process.env.XDG_CONFIG_HOME || path.posix.join(home, ".config"), "systemd", "user");
+    const xdgConfig = osEnv.XDG_CONFIG_HOME || path.posix.join(home, ".config");
+    const unitDir = path.posix.join(xdgConfig, "systemd", "user");
     return {
       kind: "systemd",
       files: packaged ? [] : [{ path: path.posix.join(unitDir, SERVICE.unit), content: systemdUnit({ command, env }) }],
@@ -110,7 +112,7 @@ export function serviceSpec({ platform = process.platform, command, paths, home 
       restart: [["systemctl", ["--user", "restart", SERVICE.unit]]],
       uninstall: [["systemctl", ["--user", "disable", "--now", SERVICE.unit]], ["systemctl", ["--user", "daemon-reload"]]],
       status: ["systemctl", ["--user", "is-active", SERVICE.unit]],
-      fallback: { path: path.posix.join(process.env.XDG_CONFIG_HOME || path.posix.join(home, ".config"), "autostart", "api-client-agent.desktop"), content: desktopEntry({ command }) },
+      fallback: { path: path.posix.join(xdgConfig, "autostart", "api-client-agent.desktop"), content: desktopEntry({ command }) },
     };
   }
   if (platform === "darwin") {
