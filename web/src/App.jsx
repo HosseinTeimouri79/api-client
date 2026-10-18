@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { useStore, activeTab } from "./store.js";
+import { useStore, activeTab, clampEditorFrac, clampSidebarW } from "./store.js";
 import { cx } from "./lib/utils.js";
 import { blankReq } from "./lib/http.js";
 import { liveTab } from "./lib/protocols.js";
@@ -38,7 +38,9 @@ function Workspace() {
       ) : tab ? (
         <div className={cx("split", vertical ? "cols" : "rows")} ref={split}>
           <div className="pane" style={{ flexBasis: `${editorFrac * 100}%` }}><RequestEditor key={tab.key} tab={tab} /></div>
-          <Splitter dir={vertical ? "col" : "row"} onDrag={(d) => { const r = split.current.getBoundingClientRect(); set((s) => ({ editorFrac: Math.min(0.85, Math.max(0.15, s.editorFrac + d / (vertical ? r.width : r.height))) })); }} onEnd={() => LS("editorFrac", useStore.getState().editorFrac)} />
+          {/* Bug fix: the editor / response split could be dragged anywhere from 15% to 85%, which made one pane far too small
+              or too large; it now stays between EDITOR_FRAC.min and EDITOR_FRAC.max (40%-60%) */}
+          <Splitter dir={vertical ? "col" : "row"} onDrag={(d) => { const r = split.current.getBoundingClientRect(); set((s) => ({ editorFrac: clampEditorFrac(s.editorFrac + d / (vertical ? r.width : r.height)) })); }} onEnd={() => LS("editorFrac", useStore.getState().editorFrac)} />
           <div className="pane grow">
             <div className="pane-tools"><IconButton icon={vertical ? "table-columns" : "table-cells-large"} size="sm" label={t("app.switchLayout")} onClick={() => useStore.getState().updateSettings({ ui: { layout: vertical ? "stacked" : "side" } })} /></div>
             {liveTab(tab) ? <EventLog tab={tab} /> : <ResponseViewer tab={tab} />}
@@ -65,7 +67,8 @@ function Shell() {
       ) : ws ? (
         <div className="body">
           <Sidebar />
-          <Splitter dir="col" className="side-split" onDrag={(d) => set((s) => ({ sidebarW: Math.min(560, Math.max(200, s.sidebarW + d)) }))} onEnd={() => LS("sidebarW", useStore.getState().sidebarW)} />
+          {/* Bug fix: the sidebar could be narrowed to 200px, too narrow for its tabs, tools and tree; the minimum is now SIDEBAR_W.min (310px) */}
+          <Splitter dir="col" className="side-split" onDrag={(d) => set((s) => ({ sidebarW: clampSidebarW(s.sidebarW + d) }))} onEnd={() => LS("sidebarW", useStore.getState().sidebarW)} />
           <Workspace />
         </div>
       ) : (

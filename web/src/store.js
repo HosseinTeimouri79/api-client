@@ -29,6 +29,13 @@ function loadSettings() {
   }
   return s;
 }
+// Splitter limits. Bug fix: the sidebar's minimum was 200px (now 310px) and the editor / response split ranged over
+// 15%-85% (now 40%-60%). Values saved by older versions are clamped into the new ranges when the app loads.
+export const SIDEBAR_W = { min: 310, max: 560 };
+export const EDITOR_FRAC = { min: 0.4, max: 0.6 };
+const clamp = (v, { min, max }, dflt) => (Number.isFinite(v) ? Math.min(max, Math.max(min, v)) : dflt);
+export const clampSidebarW = (v) => clamp(v, SIDEBAR_W, SIDEBAR_W.min);
+export const clampEditorFrac = (v) => clamp(v, EDITOR_FRAC, 0.5);
 const layoutDir = (s) => (s.ui.layout === "side" ? "col" : "row"); // "col": editor and response side by side
 const autosaveTimers = new Map();
 const streams = new Map(); // tab key -> { ctl: AbortController, buf: [], timer }
@@ -495,7 +502,7 @@ export const useStore = create((set, get) => {
   return {
     user: null, view: "app", booting: true, workspaces: [], ws: null, wsVars: [], tree: { collections: [], requests: [] }, expanded: {},
     tabs: [], active: null, envs: [], envId: null, logs: [], history: [], side: "collections", filter: "", colVars: {},
-    settings: initialSettings, consoleOpen: initialSettings.ui.openConsole, theme: initialSettings.app.theme, sidebarOpen: false, sidebarW: Number(LS.get("sidebarW", 300)), editorFrac: Number(LS.get("editorFrac", 0.5)), splitDir: layoutDir(initialSettings), consoleH: Number(LS.get("consoleH", 180)),
+    settings: initialSettings, consoleOpen: initialSettings.ui.openConsole, theme: initialSettings.app.theme, sidebarOpen: false, sidebarW: clampSidebarW(Number(LS.get("sidebarW", SIDEBAR_W.min))), editorFrac: clampEditorFrac(Number(LS.get("editorFrac", 0.5))), splitDir: layoutDir(initialSettings), consoleH: Number(LS.get("consoleH", 180)),
     ...actions,
     set: (p) => set(p),
     setFilter: (filter) => set({ filter }),

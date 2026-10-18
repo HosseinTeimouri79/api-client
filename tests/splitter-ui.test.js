@@ -56,4 +56,19 @@ test("E2E: resizing panes keeps the page full width (stacked and side-by-side la
   await page.getByLabel("Switch layout").click(); // response moves next to the request
   await page.locator(".split.cols").waitFor();
   await drag(".split > .splitter.col", 80, 0);
+
+  // limits: the sidebar is at least 310px wide, the editor takes 40%-60% of the split
+  const sideW = () => page.evaluate(() => Math.round(document.querySelector(".side").getBoundingClientRect().width));
+  const basis = () => page.evaluate(() => document.querySelector(".split > .pane").style.flexBasis);
+  await drag(".side-split", -600, 0);
+  assert.equal(await sideW(), 310, "sidebar stops at 310px");
+  await drag(".split > .splitter.col", 2000, 0);
+  assert.equal(await basis(), "60%", "editor stops at 60%");
+  await drag(".split > .splitter.col", -2000, 0);
+  assert.equal(await basis(), "40%", "editor stops at 40%");
+  // values saved by an older version (200px, 85%) are brought into range
+  await page.evaluate(() => { localStorage.setItem("sidebarW", "200"); localStorage.setItem("editorFrac", "0.85"); });
+  await page.reload();
+  await page.locator(".side").waitFor();
+  assert.equal(await sideW(), 310);
 });

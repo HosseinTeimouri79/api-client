@@ -11,6 +11,10 @@ The version is shown in **Settings → General → About** and returned by `GET 
 
 ## [Unreleased]
 
+### Fixed
+- The sidebar can no longer be narrowed below 310 px (it was 200 px, too narrow for its tabs, tools and tree).
+- The editor / response split stays between 40% and 60%; older saved sizes outside that range are corrected on load.
+
 ## [1.10.0] - 2026-10-08
 
 ### Changed
