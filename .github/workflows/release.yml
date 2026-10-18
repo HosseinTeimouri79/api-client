@@ -1,0 +1,62 @@
+# On every version tag (vX.Y.Z): test, build the Local Agent installers and publish them as a GitHub Release.
+# Uses only the workflow's own token: nobody has to log in or store a secret.
+name: Release
+
+on:
+  push:
+    tags: ["v*.*.*"]
+
+permissions:
+  contents: write # create the release and upload its files
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          # the installers embed this exact Node.js (see agent/packaging/build.mjs)
+          node-version: "24.21.0"
+          cache: npm
+
+      - name: The tag matches package.json
+        run: |
+          v="$(node -p "require('./package.json').version")"
+          [ "v$v" = "$GITHUB_REF_NAME" ] || { echo "tag $GITHUB_REF_NAME but package.json says $v"; exit 1; }
+
+      - run: npm ci
+
+      - name: Tests (unit, API and end-to-end in Chrome)
+        run: npm test
+        env:
+          CHROME_PATH: /usr/bin/google-chrome
+
+      - name: Installers (Windows, macOS, Linux)
+        run: npm run build:installers
+
+      - name: The Linux installer and the .deb really work
+        run: node --test --no-warnings tests/agent-installer.test.js
+
+      - name: Checksums and release notes
+        run: |
+          cd build/installers
+          sha256sum api-client-agent* > SHA256SUMS.txt
+          cd ../..
+          node agent/packaging/release-notes.mjs > release-notes.md
+
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view "$GITHUB_REF_NAME" > /dev/null 2>&1; then
+            gh release upload "$GITHUB_REF_NAME" build/installers/* --clobber
+          else
+            gh release create "$GITHUB_REF_NAME" build/installers/* --verify-tag --title "$GITHUB_REF_NAME" --notes-file release-notes.md
+          fi

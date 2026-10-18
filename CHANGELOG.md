@@ -6,7 +6,8 @@ All notable changes to API Client are documented here. The format follows
 **MINOR** for new backwards-compatible features, **PATCH** for bug fixes.
 
 How to release: add the entry below under a new version heading, bump `version` in `package.json`
-(`npm version <major|minor|patch> --no-git-tag-version`), commit, then tag (`git tag -a vX.Y.Z -m "vX.Y.Z"`).
+(`npm version <major|minor|patch> --no-git-tag-version`), commit, then tag (`git tag -a vX.Y.Z -m "vX.Y.Z"`) and push the tag
+(`git push origin vX.Y.Z`): GitHub Actions builds the Local Agent installers and publishes the release.
 The version is shown in **Settings → General → About** and returned by `GET /healthz`.
 
 ## [Unreleased]
@@ -29,6 +30,8 @@ The version is shown in **Settings → General → About** and returned by `GET 
   one-time pairing codes for site-bound tokens, no cookies, JSON-only bodies, target rules (link-local / metadata blocked by
   default, allow and deny lists).
 - Configuration: `LOCAL_AGENT`, `PUBLIC_URL`, `AGENT_INSTALLERS_DIR`, `AGENT_DEFAULT_URL`. Translated into all languages.
+- Releases: pushing a version tag tests the app, builds the installers and publishes them on GitHub Releases with
+  `SHA256SUMS.txt` (`.github/workflows/release.yml`).
 
 ### Fixed
 - The sidebar can no longer be narrowed below 310 px (it was 200 px, too narrow for its tabs, tools and tree).
