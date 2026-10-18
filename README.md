@@ -386,7 +386,8 @@ The agent is an HTTP service on the user's machine, so it assumes every web page
 
 **Ready-made installers** for each version are attached to the
 [GitHub Releases](https://github.com/HosseinTeimouri79/api-client/releases), with `index.json` and `SHA256SUMS.txt`: pushing a
-`vX.Y.Z` tag runs `.github/workflows/release.yml`, which tests, builds them and publishes the release (no personal token needed). To offer
+`vX.Y.Z` tag runs `.github/workflows/release.yml`, which tests, builds them and publishes the release (no personal token needed);
+pushes to `main` and pull requests run the tests only. To offer
 them from your server without building, download all files of the release that matches your server's version into
 `AGENT_INSTALLERS_DIR` (default `./build/installers`).
 

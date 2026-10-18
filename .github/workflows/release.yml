@@ -1,57 +1,70 @@
-# On every version tag (vX.Y.Z): test, build the Local Agent installers and publish them as a GitHub Release.
-# Uses only the workflow's own token: nobody has to log in or store a secret.
-name: Release
+# CI and releases. Every push to main and every pull request runs the tests. A version tag (vX.Y.Z) also builds the
+# Local Agent installers and publishes them as a GitHub Release, using only the workflow's own token: nobody has to log
+# in or store a secret. Failing tests are reported as annotations (tests/reporters/github.mjs) on the run's page.
+name: CI and release
 
 on:
   push:
+    branches: [main]
     tags: ["v*.*.*"]
+  pull_request:
 
 permissions:
-  contents: write # create the release and upload its files
+  contents: write # create the release and upload its files (tags only)
 
 concurrency:
-  group: release-${{ github.ref }}
-  cancel-in-progress: false
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
 
 jobs:
-  release:
+  build:
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    env:
+      RELEASE: ${{ startsWith(github.ref, 'refs/tags/v') }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           # the installers embed this exact Node.js (see agent/packaging/build.mjs)
           node-version: "24.21.0"
           cache: npm
 
       - name: The tag matches package.json
+        if: env.RELEASE == 'true'
         run: |
           v="$(node -p "require('./package.json').version")"
           [ "v$v" = "$GITHUB_REF_NAME" ] || { echo "tag $GITHUB_REF_NAME but package.json says $v"; exit 1; }
 
       - run: npm ci
+      - run: npm run build
 
       - name: Tests (unit, API and end-to-end in Chrome)
-        run: npm test
+        run: >
+          node --test --no-warnings --test-concurrency=1
+          --test-reporter=spec --test-reporter-destination=stdout
+          --test-reporter=./tests/reporters/github.mjs --test-reporter-destination=stdout
+          tests/*.test.js
         env:
           CHROME_PATH: /usr/bin/google-chrome
 
       - name: Installers (Windows, macOS, Linux)
+        if: env.RELEASE == 'true'
         run: npm run build:installers
 
       - name: The Linux installer and the .deb really work
-        run: node --test --no-warnings tests/agent-installer.test.js
+        if: env.RELEASE == 'true'
+        run: node --test --no-warnings --test-reporter=spec --test-reporter=./tests/reporters/github.mjs --test-reporter-destination=stdout --test-reporter-destination=stdout tests/agent-installer.test.js
 
       - name: Checksums and release notes
+        if: env.RELEASE == 'true'
         run: |
-          cd build/installers
-          sha256sum api-client-agent* > SHA256SUMS.txt
-          cd ../..
+          (cd build/installers && sha256sum api-client-agent* > SHA256SUMS.txt)
           node agent/packaging/release-notes.mjs > release-notes.md
 
       - name: Publish the release
+        if: env.RELEASE == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
