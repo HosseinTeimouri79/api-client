@@ -63,9 +63,9 @@ test("E2E: general settings apply, sync to the account and survive a reload", { 
 
   // General has one tab per group; switching shows only that group
   await page.getByRole("tab", { name: "General" }).click();
-  assert.deepEqual(await page.locator(".settings-subtabs [role=tab]").allTextContents(), ["Application", "User interface", "Request", "Editor", "About"], "tab order");
+  assert.deepEqual(await page.locator(".settings-subtabs [role=tab]").allTextContents(), ["Application", "User interface", "Request", "Editor", "Local Agent", "About"], "tab order");
   assert.equal(await page.locator(".settings-subtabs [aria-selected=true]").textContent(), "Application", "opens on Application");
-  const groups = { Request: "Request timeout (ms)", "User interface": "Layout type", Editor: "Font size (px)", Application: "Autosave", About: "free and open-source software" };
+  const groups = { Request: "Request timeout (ms)", "User interface": "Layout type", Editor: "Font size (px)", Application: "Autosave", "Local Agent": "Agent address", About: "free and open-source software" };
   for (const [tab, marker] of Object.entries(groups)) {
     await page.getByRole("tab", { name: tab, exact: true }).click();
     await page.getByText(marker).first().waitFor();

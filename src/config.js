@@ -38,4 +38,10 @@ export const config = {
   maxSessionsTotal: Number(process.env.MAX_SESSIONS_TOTAL || 200),
   sessionIdleMs: Number(process.env.SESSION_IDLE_MS || 15 * 60 * 1000), // closed when nobody is watching or sending
   sessionEventLimit: Number(process.env.SESSION_EVENT_LIMIT || 5000), // events kept for replay per session
+  // Local mode: requests sent by the Local Agent on the user's own computer (agent/). LOCAL_AGENT=false turns it off.
+  localAgent: process.env.LOCAL_AGENT !== "false",
+  agentDefaultUrl: process.env.AGENT_DEFAULT_URL || "http://127.0.0.1:47823",
+  agentInstallersDir: process.env.AGENT_INSTALLERS_DIR || "", // installers from `npm run build:installers` (default ./build/installers)
+  // The address users open the app at, for the install scripts (otherwise taken from the request). e.g. https://api.example.com
+  publicUrl: (process.env.PUBLIC_URL || "").replace(/\/+$/, ""),
 };

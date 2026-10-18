@@ -10,7 +10,11 @@ services:
       TRUST_PROXY: ${TRUST_PROXY:-false}
       # SSRF protection blocks private/loopback targets. Enable ONLY to call internal/dev APIs from this server.
       ALLOW_PRIVATE_TARGETS: ${ALLOW_PRIVATE_TARGETS:-false}
-    volumes: ["apiclient-data:/data"]
+      # Local mode: the address users open the app at (used in the agent install commands), and LOCAL_AGENT=false to turn it off
+      PUBLIC_URL: ${PUBLIC_URL:-}
+      LOCAL_AGENT: ${LOCAL_AGENT:-true}
+    # Local Agent installers built with `npm run build:installers` (optional; the folder may be empty)
+    volumes: ["apiclient-data:/data", "./build/installers:/installers:ro"]
     restart: unless-stopped
     read_only: true
     tmpfs: ["/tmp"]

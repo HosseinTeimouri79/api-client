@@ -1,10 +1,14 @@
-// Client side of live sessions: follows a session's Server-Sent Events with fetch (cookies and the CSRF header work,
-// unlike EventSource), and reconnects with ?since= when the stream drops while the session is still alive.
-export async function followSession(wid, id, { onEvent, onEnd, signal }) {
+// Client side of live sessions: follows a session's Server-Sent Events with fetch (cookies, the CSRF header and the
+// Local Agent's bearer token work, unlike EventSource), and reconnects with ?since= when the stream drops while the
+// session is still alive. `open(since, signal)` makes the request (server or Local Agent).
+export const followSession = (wid, id, handlers) =>
+  followStream((since, signal) => fetch(`/api/workspaces/${wid}/sessions/${id}/events?since=${since}`, { headers: { "X-Requested-With": "api-client" }, signal }), handlers);
+
+export async function followStream(open, { onEvent, onEnd, signal }) {
   let since = 0;
   for (let attempt = 0; !signal.aborted; ) {
     try {
-      const res = await fetch(`/api/workspaces/${wid}/sessions/${id}/events?since=${since}`, { headers: { "X-Requested-With": "api-client" }, signal });
+      const res = await open(since, signal);
       if (!res.ok) return onEnd?.({ status: res.status });
       attempt = 0;
       const reader = res.body.getReader();

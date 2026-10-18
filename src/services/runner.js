@@ -75,9 +75,52 @@ function applyResponsePatch(res, p) {
   ];
 }
 
-export async function runRequest(
+/** Why a connection failed, in words, from an error or its serialized form ({ code, message, errors }). */
+export function describeNetworkError(e) {
+  // AggregateError (dual-stack attempts) hides per-address causes; surface them.
+  const causes = [
+    ...new Set(
+      (e.errors ?? []).map(
+        (x) =>
+          `${x.code ?? x.message}${x.address ? " " + x.address + ":" + x.port : ""}`,
+      ),
+    ),
+  ];
+  return causes.length
+    ? `${e.code ?? "Connection failed"} — ${causes.join("; ")}`
+    : e.code === "SSRF_BLOCKED" || e.code === "AGENT_UNREACHABLE" || e.code === "AGENT_ERROR"
+      ? e.message
+      : e.code === "ETIMEDOUT"
+        ? "Connection timeout"
+        : e.code === "ENOTFOUND"
+          ? "DNS lookup failed (host not found)"
+          : e.code === "ECONNREFUSED"
+            ? "Connection refused"
+            : e.message;
+}
+
+/** Runs a request where this process can reach its target (Server mode). */
+export async function runRequest(db, opts) {
+  const run = await startRun(db, opts);
+  if (!run.built) return run.out;
+  let result;
+  try {
+    result = { response: await execute(run.built, { limits: opts.limits }) };
+  } catch (e) {
+    result = { error: e };
+  }
+  return run.finish(result);
+}
+
+/**
+ * The request pipeline, split around the network call so that the call can happen elsewhere (Local mode: the
+ * Local Agent on the user's computer). Phase one runs pre-request scripts, resolves variables and builds the request;
+ * `finish({ response } | { error })` runs post-request scripts and persists what the scripts changed. `built` is null
+ * when phase one already failed (then `out` holds the error and there is nothing to send).
+ */
+export async function startRun(
   db,
-  { wid, req, collectionId, environmentId, canPersist, runtime = {}, limits },
+  { wid, req, collectionId, environmentId, canPersist, runtime = {}, via = "server" },
 ) {
   const logs = [];
   const log = (level, message, context) =>
@@ -260,74 +303,69 @@ export async function runRequest(
           JSON.stringify([cur.url, cur.method, cur.headers, cur.params, cur.body]) !==
           JSON.stringify([req.url, req.method, req.headers, req.params, req.body]),
       };
-    try {
-      res = await execute(built, { limits });
-    } catch (e) {
-      // AggregateError (dual-stack attempts) hides per-address causes; surface them.
-      const causes = [
-        ...new Set(
-          (e.errors ?? []).map(
-            (x) =>
-              `${x.code ?? x.message}${x.address ? " " + x.address + ":" + x.port : ""}`,
-          ),
-        ),
-      ];
-      const reason = causes.length
-        ? `${e.code ?? "Connection failed"} — ${causes.join("; ")}`
-        : e.code === "SSRF_BLOCKED"
-          ? e.message
-          : e.code === "ETIMEDOUT"
-            ? "Connection timeout"
-            : e.code === "ENOTFOUND"
-              ? "DNS lookup failed (host not found)"
-              : e.code === "ECONNREFUSED"
-                ? "Connection refused"
-                : e.message;
-      log("ERROR", `Network error: ${reason}`, {
-        url: built.url,
-        code: e.code,
-      });
-      throw Object.assign(
-        new Error(`Unable to connect to: ${built.url}\nReason: ${reason}`),
-        { phase: "network", userMessage: true },
-      );
+
+    async function finish(result) {
+      try {
+        if (result.error) {
+          const e = result.error;
+          const reason = describeNetworkError(e);
+          log("ERROR", `Network error: ${reason}`, {
+            url: built.url,
+            code: e.code,
+          });
+          throw Object.assign(
+            new Error(`Unable to connect to: ${built.url}\nReason: ${reason}`),
+            { phase: "network", userMessage: true },
+          );
+        }
+        res = result.response;
+        out.response = res;
+        log(
+          "INFO",
+          `Response received: ${res.status} ${res.statusText} in ${res.durationMs}ms`,
+          { size: res.size },
+        );
+        if (res.status === 401 || res.status === 403)
+          log("WARN", "Authentication error: server rejected credentials", {
+            status: res.status,
+          });
+        await runScripts("post_script");
+        if (canPersist) persistGlobals();
+        if (canPersist && env)
+          db.prepare("UPDATE environments SET variables=? WHERE id=?").run(
+            j(
+              fromObj(envVars).map((v) => ({
+                ...v,
+                ...(parse(env.variables, []).find((o) => o.key === v.key)?.secret
+                  ? { secret: true }
+                  : {}),
+              })),
+            ),
+            env.id,
+          );
+        out.runtime = {
+          variables: runVars,
+          environment: envVars,
+          collectionVariables: collVars,
+          globals,
+        };
+        out.resolvedUrl = built.url;
+      } catch (e) {
+        fail(e);
+      }
+      return out;
     }
-    out.response = res;
-    log(
-      "INFO",
-      `Response received: ${res.status} ${res.statusText} in ${res.durationMs}ms`,
-      { size: res.size },
-    );
-    if (res.status === 401 || res.status === 403)
-      log("WARN", "Authentication error: server rejected credentials", {
-        status: res.status,
-      });
-    await runScripts("post_script");
-    if (canPersist) persistGlobals();
-    if (canPersist && env)
-      db.prepare("UPDATE environments SET variables=? WHERE id=?").run(
-        j(
-          fromObj(envVars).map((v) => ({
-            ...v,
-            ...(parse(env.variables, []).find((o) => o.key === v.key)?.secret
-              ? { secret: true }
-              : {}),
-          })),
-        ),
-        env.id,
-      );
-    out.runtime = {
-      variables: runVars,
-      environment: envVars,
-      collectionVariables: collVars,
-      globals,
-    };
-    out.resolvedUrl = built.url;
+
+    if (via === "local") log("INFO", "Sent through the Local Agent");
+    return { out, built, finish };
   } catch (e) {
+    fail(e);
+    return { out, built: null, finish: async () => out };
+  }
+  function fail(e) {
     out.error = { phase: e.phase ?? "internal", message: e.message };
     if (!e.phase) log("ERROR", `Internal error: ${e.message}`);
   }
-  return out;
 }
 
 /**

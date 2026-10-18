@@ -13,6 +13,7 @@ import { Avatar } from "../components/ui/Avatar.jsx";
 import { toast } from "../components/ui/Toasts.jsx";
 import { PROTOCOLS } from "../lib/protocols.js";
 import { Icon } from "../components/ui/Icon.jsx";
+import { AgentSettings } from "./AgentMode.jsx";
 
 const AUTHOR = { name: "Hossein Teimouri", url: "https://github.com/HosseinTeimouri79" };
 const SOURCE = "https://github.com/HosseinTeimouri79/api-client";
@@ -227,18 +228,22 @@ function General({ sub }) {
         <FontField label={t("settings.appFont")} value={s.app.fontFamily} presets={APP_FONTS} defaultLabel={t("settings.fontDefault")} onChange={(v) => update({ app: { fontFamily: v } })} />
         <Toggle label={t("settings.autosave")} hint={t("settings.autosaveHint")} checked={s.app.autosave} onChange={(v) => update({ app: { autosave: v } })} />
       </>),
+    agent: <AgentSettings />,
     about: <About />,
   };
   return <section className="settings-sec stack" role="tabpanel">{panels[sub]}</section>;
 }
 
 const PROFILE_TABS = [{ id: "details", key: "settings.details" }, { id: "password", key: "settings.password" }];
-const GENERAL_TABS = [{ id: "application", key: "settings.application" }, { id: "ui", key: "settings.ui" }, { id: "request", key: "settings.request" }, { id: "editor", key: "settings.editor" }, { id: "about", key: "settings.about" }];
+const GENERAL_TABS = [{ id: "application", key: "settings.application" }, { id: "ui", key: "settings.ui" }, { id: "request", key: "settings.request" }, { id: "editor", key: "settings.editor" }, { id: "agent", key: "agent.title" }, { id: "about", key: "settings.about" }];
 
 export function SettingsPage() {
   const t = useT();
-  const [tab, setTab] = useState("profile");
-  const [sub, setSub] = useState({ profile: "details", general: "application" });
+  // the header's Server / Local panel opens Settings at the Local Agent tab
+  const at = useStore((s) => s.settingsAt);
+  const [tab, setTab] = useState(at?.tab ?? "profile");
+  const [sub, setSub] = useState({ profile: "details", general: "application", ...(at && { [at.tab]: at.sub }) });
+  useEffect(() => { if (at) { setTab(at.tab); setSub((x) => ({ ...x, [at.tab]: at.sub })); useStore.setState({ settingsAt: null }); } }, [at]);
   const subs = tab === "profile" ? PROFILE_TABS : GENERAL_TABS;
   return (
     <div className="admin body">

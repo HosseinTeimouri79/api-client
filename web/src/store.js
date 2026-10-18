@@ -3,7 +3,8 @@ import { api, ApiError, errorText } from "./api.js";
 import { blankReq, cleanReq } from "./lib/http.js";
 import { clone } from "./lib/utils.js";
 import { liveTab, firstTab, protocolOf, blankReqFor } from "./lib/protocols.js";
-import { followSession } from "./lib/session.js";
+import { transportFor, MODES } from "./lib/transport.js";
+import { agent, AgentError, agentUrl, setAgentUrl, validAgentUrl } from "./lib/agent.js";
 import { toast } from "./components/ui/Toasts.jsx";
 import { prompt, confirm } from "./components/ui/dialogs.jsx";
 import { pickCollection } from "./features/pickers.jsx";
@@ -15,6 +16,9 @@ const LS = {
   set: (k, v) => { try { localStorage.setItem(k, v); } catch { /* private mode */ } },
 };
 const WRITE = ["owner", "admin", "editor"], ADMIN = ["owner", "admin"];
+// The agent answers in English; the messages people meet while pairing are shown in their language.
+const AGENT_ERRORS = { "Wrong pairing code": "agent.err.wrongCode", "Too many wrong codes; run `api-client-agent pair` again": "agent.err.tooMany", "No pairing in progress for this site. Run `api-client-agent pair` on your computer first.": "agent.err.noPairing", "This site is not allowed to use the Local Agent": "agent.state.forbidden" };
+const localizeAgentError = (m) => (AGENT_ERRORS[m] ? t(AGENT_ERRORS[m]) : m);
 export const can = (ws) => ({ write: WRITE.includes(ws?.role), admin: ADMIN.includes(ws?.role) });
 
 // App settings live on the account and are cached in the browser so the page looks right before sign-in completes.
@@ -44,8 +48,16 @@ let syncTimer;
 let keySeq = 0;
 export const useStore = create((set, get) => {
   const initialSettings = loadSettings();
+  const initialMode = MODES.includes(LS.get("execMode", "")) ? LS.get("execMode") : "server"; // per device: the agent is installed here
   applySettingsToPage(initialSettings);
   const W = (p = "") => `/workspaces/${get().ws.id}${p}`;
+  /** The transport for a mode (default: the current one); see lib/transport.js. */
+  const net = (mode = get().execMode) => transportFor(mode, () => get().ws.id);
+  const limitsOf = () => {
+    const { timeoutMs, maxResponseMb } = get().settings.request;
+    return { timeoutMs, maxResponseBytes: Math.round(maxResponseMb * 1024 * 1024) };
+  };
+  const consoleLog = (level, message) => set((s) => ({ logs: [...s.logs, { ts: new Date().toISOString(), level, message }].slice(-1000) }));
   const patchTab = (key, fn) =>
     set((s) => ({ tabs: s.tabs.map((t) => (t.key === key ? { ...t, ...(typeof fn === "function" ? fn(t) : fn) } : t)) }));
   /** Runs an async action; shows errors as toasts and bounces to the login screen on 401. */
@@ -64,7 +76,7 @@ export const useStore = create((set, get) => {
       try { set({ user: (await api("GET", "/auth/me")).user }); } catch { set({ user: null }); }
       if (get().user?.locale) await applyLocale(get().user.locale); // the saved account language wins over the device default
       if (get().user?.settings) actions.adoptSettings(mergeSettings(get().user.settings), true);
-      if (get().user) await actions.loadWorkspaces();
+      if (get().user) await Promise.all([actions.loadWorkspaces(), actions.loadAgentInfo()]);
       set({ booting: false });
     },
     async authenticate(mode, form) {
@@ -365,16 +377,17 @@ export const useStore = create((set, get) => {
       if (liveTab(t)) return actions.toggleSession(key);
       patchTab(key, { running: true });
       let response;
+      const mode = get().execMode;
       try {
-        const { timeoutMs, maxResponseMb } = get().settings.request;
-        response = await api("POST", W("/run"), { request: cleanReq(t.req), collection_id: t.collection_id, environment_id: get().envId, limits: { timeoutMs, maxResponseBytes: Math.round(maxResponseMb * 1024 * 1024) } });
+        response = await net(mode).run({ request: cleanReq(t.req), collection_id: t.collection_id, environment_id: get().envId, limits: limitsOf() });
         set((s) => ({ logs: [...s.logs, ...response.logs].slice(-1000) }));
+        if (mode === "local" && /Local Agent/.test(response.error?.message ?? "")) actions.checkAgent(); // show why in the header
       } catch (e) {
         response = { error: { phase: "internal", message: e.message }, tests: [], logs: [] };
         set((s) => ({ logs: [...s.logs, { ts: new Date().toISOString(), level: "ERROR", message: e.message }] }));
         if (e.status === 401) set({ user: null });
       }
-      patchTab(key, { running: false, response });
+      patchTab(key, { running: false, response: { ...response, via: mode } });
       if (can(get().ws).write) actions.refreshEnvs(); // scripts may have set environment / global variables
       if (get().side === "history") actions.loadHistory();
     },
@@ -389,12 +402,13 @@ export const useStore = create((set, get) => {
       const t = get().tabs.find((x) => x.key === key);
       if (!t || ["connecting", "open"].includes(t.rt?.status)) return;
       actions.dropSession(key);
-      const log = (level, message) => set((s) => ({ logs: [...s.logs, { ts: new Date().toISOString(), level, message }].slice(-1000) }));
-      patchTab(key, { rt: { status: "connecting", events: [], subs: [], id: null, error: null, startedAt: Date.now() } });
-      log("INFO", `${t.req.protocol} connecting: ${t.req.url}`);
+      const log = consoleLog;
+      // a connection stays with the transport it was opened with, even if the mode changes while it is open
+      const via = get().execMode;
+      patchTab(key, { rt: { status: "connecting", events: [], subs: [], id: null, error: null, startedAt: Date.now(), via } });
+      log("INFO", `${t.req.protocol} connecting${via === "local" ? " (Local Agent)" : ""}: ${t.req.url}`);
       try {
-        const { timeoutMs, maxResponseMb } = get().settings.request;
-        const r = await api("POST", W("/sessions"), { request: cleanReq(t.req), collection_id: t.collection_id, environment_id: get().envId, limits: { timeoutMs, maxResponseBytes: Math.round(maxResponseMb * 1024 * 1024) } });
+        const r = await net(via).open({ request: cleanReq(t.req), collection_id: t.collection_id, environment_id: get().envId, limits: limitsOf() });
         if (!r.ok) {
           patchTab(key, (x) => ({ rt: { ...x.rt, status: "failed", error: r.error } }));
           return log("ERROR", `${t.req.protocol} connection failed: ${r.error.message}`);
@@ -414,7 +428,7 @@ export const useStore = create((set, get) => {
             return x.rt?.id === r.id ? { rt: { ...x.rt, events, status, subs } } : {};
           });
         };
-        followSession(get().ws.id, r.id, {
+        net(via).follow(r.id, {
           signal: ctl.signal,
           onEvent: (e) => {
             if (e.type === "open") log("INFO", `${t.req.protocol} connected: ${e.url}`);
@@ -423,18 +437,24 @@ export const useStore = create((set, get) => {
             st.buf.push(e);
             st.timer ??= setTimeout(flush, 40); // many events per second are rendered in batches
           },
-          onEnd: () => { flush(); patchTab(key, (x) => (x.rt?.id === r.id && x.rt.status !== "closed" ? { rt: { ...x.rt, status: "closed" } } : {})); },
+          onEnd: ({ status } = {}) => {
+            flush();
+            // the agent stopped answering (or forgot this site) while the connection was open
+            const lost = via === "local" && (status === 0 || status === 401);
+            if (lost) { log("ERROR", `${t.req.protocol}: the Local Agent stopped answering`); actions.checkAgent(); }
+            patchTab(key, (x) => (x.rt?.id === r.id && x.rt.status !== "closed" ? { rt: { ...x.rt, status: lost ? "failed" : "closed", ...(lost && { error: { message: tr("agent.lost") } }) } } : {}));
+          },
         });
       } catch (e) {
         patchTab(key, (x) => ({ rt: { ...x.rt, status: "failed", error: { message: e.message } } }));
-        if (e.status === 401) set({ user: null });
+        if (e instanceof ApiError && e.status === 401) set({ user: null });
       }
     },
     /** Sends something on an open connection (a message, ping, close ...). */
     rtAct: guard(async (key, action, payload) => {
       const t = get().tabs.find((x) => x.key === key);
       if (t?.rt?.status !== "open") return;
-      return api("POST", W(`/sessions/${t.rt.id}/act`), { action, payload });
+      return net(t.rt.via).act(t.rt.id, action, payload);
     }),
     /** gRPC: parses the tab's .proto on the server (services, methods, example messages). */
     async describeProto(key) {
@@ -462,8 +482,7 @@ export const useStore = create((set, get) => {
       if (!t) return;
       patchTab(key, { schema: { loading: true } });
       try {
-        const { timeoutMs, maxResponseMb } = get().settings.request;
-        const r = await api("POST", W("/graphql/introspect"), { request: cleanReq(t.req), collection_id: t.collection_id, environment_id: get().envId, limits: { timeoutMs, maxResponseBytes: Math.round(maxResponseMb * 1024 * 1024) } });
+        const r = await net().introspect({ request: cleanReq(t.req), collection_id: t.collection_id, environment_id: get().envId, limits: limitsOf() });
         patchTab(key, { schema: r.ok ? { sdl: r.sdl, roots: r.roots } : { error: r.error } });
       } catch (e) { patchTab(key, { schema: { error: e.message } }); }
     },
@@ -472,10 +491,10 @@ export const useStore = create((set, get) => {
     async disconnect(key) {
       const t = get().tabs.find((x) => x.key === key);
       if (!t?.rt?.id) return;
-      const id = t.rt.id, graceful = protocolOf(t.req.protocol).gracefulClose;
-      const drop = async () => { try { await api("DELETE", W(`/sessions/${id}`)); } catch { /* already gone */ } };
+      const id = t.rt.id, graceful = protocolOf(t.req.protocol).gracefulClose, tp = net(t.rt.via);
+      const drop = async () => { try { await tp.close(id); } catch { /* already gone */ } };
       if (graceful && t.rt.status === "open") {
-        try { await api("POST", W(`/sessions/${id}/act`), { action: graceful }); } catch { return drop(); }
+        try { await tp.act(id, graceful); } catch { return drop(); }
         setTimeout(() => { const cur = get().tabs.find((x) => x.key === key); if (cur?.rt?.id === id && cur.rt.status === "open") drop(); }, 3000);
         return;
       }
@@ -486,9 +505,69 @@ export const useStore = create((set, get) => {
       const t = get().tabs.find((x) => x.key === key);
       const st = streams.get(key);
       if (st) { st.ctl.abort(); clearTimeout(st.timer); streams.delete(key); }
-      if (t?.rt?.id && ["connecting", "open"].includes(t.rt.status) && get().ws) api("DELETE", W(`/sessions/${t.rt.id}`)).catch(() => {});
+      if (t?.rt?.id && ["connecting", "open"].includes(t.rt.status) && get().ws) net(t.rt.via).close(t.rt.id).catch(() => {});
     },
     dropAllSessions() { for (const t of get().tabs) actions.dropSession(t.key); },
+
+    // ---------- where requests run: Server or Local mode (lib/transport.js) ----------
+    /** What this server offers: is Local mode on, which agent version goes with it, its address for the install commands. */
+    async loadAgentInfo() {
+      let info;
+      try { info = await api("GET", "/agent"); } catch { info = { enabled: false }; }
+      set({ agentInfo: info, agentUrl: agentUrl(info.defaultUrl) });
+      if (!info.enabled && get().execMode === "local") actions.setExecMode("server", { quiet: true });
+      else if (get().execMode === "local") actions.checkAgent();
+    },
+    /** Switches where requests are sent from. Requests already running and open connections finish where they started. */
+    setExecMode(mode, { quiet = false } = {}) {
+      if (!MODES.includes(mode) || mode === get().execMode) return;
+      if (mode === "local" && !get().agentInfo?.enabled) return;
+      LS.set("execMode", mode);
+      set({ execMode: mode, agent: mode === "local" ? { ...get().agent, state: "checking" } : { state: "off" } });
+      consoleLog("INFO", mode === "local" ? `Requests are now sent by the Local Agent at ${get().agentUrl}` : "Requests are now sent by the server");
+      if (get().tabs.some((x) => x.rt?.via && x.rt.via !== mode && ["connecting", "open"].includes(x.rt.status)))
+        consoleLog("INFO", "Open connections stay where they were opened until they close");
+      if (!quiet) toast(tr(mode === "local" ? "mode.switchedLocal" : "mode.switchedServer"), "ok");
+      if (mode === "local") actions.checkAgent();
+    },
+    /** Asks the agent how it is: connected, not paired with this site, refusing this site, or not reachable. */
+    async checkAgent() {
+      if (get().execMode !== "local") return;
+      const url = get().agentUrl;
+      try {
+        const h = await agent.health(url);
+        const latest = get().agentInfo?.version;
+        set({ agent: { state: h.paired ? "connected" : "unpaired", version: h.version, outdated: !!(h.paired && latest && h.version !== latest), error: null, checkedAt: Date.now() } });
+      } catch (e) {
+        if (!(e instanceof AgentError)) throw e;
+        set({ agent: { state: e.kind === "forbidden" ? "forbidden" : e.kind === "unpaired" ? "unpaired" : "unreachable", error: e.message, checkedAt: Date.now() } });
+      }
+    },
+    /** Exchanges the code `api-client-agent pair` printed for a token. Returns an error message, or null. */
+    async pairAgent(code) {
+      try {
+        await agent.pair(code, get().agentUrl);
+        await actions.checkAgent();
+        toast(tr("agent.paired"), "ok");
+        return null;
+      } catch (e) {
+        if (!(e instanceof AgentError)) throw e;
+        await actions.checkAgent();
+        return e.kind === "unreachable" ? tr("agent.state.unreachable") : localizeAgentError(e.message);
+      }
+    },
+    async unpairAgent() {
+      try { await agent.unpair(get().agentUrl); } catch { /* the token is forgotten here anyway */ }
+      toast(tr("agent.unpaired"), "ok");
+      await actions.checkAgent();
+    },
+    setAgentAddress(url) {
+      if (!validAgentUrl(url)) return false;
+      setAgentUrl(url.replace(/\/+$/, ""));
+      set({ agentUrl: agentUrl(get().agentInfo?.defaultUrl) });
+      actions.checkAgent();
+      return true;
+    },
 
     // ---------- history ----------
     loadHistory: guard(async () => set({ history: await api("GET", W("/history")) })),
@@ -502,6 +581,7 @@ export const useStore = create((set, get) => {
   return {
     user: null, view: "app", booting: true, workspaces: [], ws: null, wsVars: [], tree: { collections: [], requests: [] }, expanded: {},
     tabs: [], active: null, envs: [], envId: null, logs: [], history: [], side: "collections", filter: "", colVars: {},
+    execMode: initialMode, agent: { state: initialMode === "local" ? "checking" : "off" }, agentInfo: null, agentUrl: agentUrl(), settingsAt: null,
     settings: initialSettings, consoleOpen: initialSettings.ui.openConsole, theme: initialSettings.app.theme, sidebarOpen: false, sidebarW: clampSidebarW(Number(LS.get("sidebarW", SIDEBAR_W.min))), editorFrac: clampEditorFrac(Number(LS.get("editorFrac", 0.5))), splitDir: layoutDir(initialSettings), consoleH: Number(LS.get("consoleH", 180)),
     ...actions,
     set: (p) => set(p),

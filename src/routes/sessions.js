@@ -3,19 +3,11 @@ import { z } from "zod";
 import { HttpError, requireWorkspace, audit } from "../middleware/auth.js";
 import { SessionManager, SessionError } from "../services/sessions.js";
 import { sessionContext } from "../services/runner.js";
-import { RequestSchema } from "./content.js";
+import { RunSchema } from "./content.js";
+import { assertLocalMode } from "../services/localMode.js";
+import { effectiveLimits, wireLimits } from "../services/executor.js";
 import { IMPLEMENTED } from "../protocols/index.js";
-import { connectWebSocket } from "../protocols/websocket.js";
-import { connectGrpc } from "../protocols/grpc.js";
-import { connectSubscription } from "../protocols/graphql.js";
-import { connectSse } from "../protocols/sse.js";
-import { connectTcp } from "../protocols/tcp.js";
-import { connectUdp } from "../protocols/udp.js";
-import { connectMqtt } from "../protocols/mqtt.js";
-import { connectAmqp } from "../protocols/amqp.js";
-
-// One connector per live protocol: (context) -> Promise<driver>
-const CONNECTORS = { websocket: connectWebSocket, grpc: connectGrpc, graphql: connectSubscription, sse: connectSse, tcp: connectTcp, udp: connectUdp, mqtt: connectMqtt, amqp: connectAmqp };
+import { CONNECTORS, connectFailure } from "../protocols/connectors.js";
 
 const toHttp = (e) => (e instanceof SessionError ? new HttpError(e.status, e.message) : e);
 
@@ -31,19 +23,19 @@ export function sessionsRouter(db, sessions = new SessionManager()) {
 
   r.get("/sessions", W("request:run"), (req, res) => res.json(sessions.list(req.user.id, req.wid).map(summary)));
 
-  r.post("/sessions", W("request:run"), wrap(async (req, res) => {
-    const b = z.object({
-      request: RequestSchema.omit({ name: true }).extend({ name: z.string().optional() }),
-      collection_id: z.string().nullable().optional(),
-      environment_id: z.string().nullable().optional(),
-      limits: z.object({ timeoutMs: z.number().int().min(0).max(3_600_000).optional(), maxResponseBytes: z.number().int().min(0).max(4 * 1024 ** 3).optional() }).optional(),
-    }).parse(req.body);
+  /** The validated body and the request with its variables and inherited auth resolved. */
+  const context = (req) => {
+    const b = RunSchema.parse(req.body);
     const protocol = b.request.protocol;
-    const connect = CONNECTORS[protocol];
-    if (!connect || !IMPLEMENTED.includes(protocol)) throw new HttpError(400, `Protocol "${protocol}" has no live connection`);
+    if (!CONNECTORS[protocol] || !IMPLEMENTED.includes(protocol)) throw new HttpError(400, `Protocol "${protocol}" has no live connection`);
     if (b.collection_id && !db.prepare("SELECT 1 FROM collections WHERE id=? AND workspace_id=?").get(b.collection_id, req.wid))
       throw new HttpError(404, "Collection not found");
-    const ctx = sessionContext(db, { wid: req.wid, request: b.request, collectionId: b.collection_id, environmentId: b.environment_id });
+    return { b, protocol, ctx: sessionContext(db, { wid: req.wid, request: b.request, collectionId: b.collection_id, environmentId: b.environment_id }) };
+  };
+
+  r.post("/sessions", W("request:run"), wrap(async (req, res) => {
+    const { b, protocol, ctx } = context(req);
+    const connect = CONNECTORS[protocol];
     let s;
     try {
       s = await sessions.create({ userId: req.user.id, wid: req.wid, protocol, label: ctx.request.url }, (c) =>
@@ -51,10 +43,19 @@ export function sessionsRouter(db, sessions = new SessionManager()) {
     } catch (e) {
       if (e instanceof SessionError || e instanceof z.ZodError) throw e;
       // connecting failed: a normal outcome the UI shows, not a server error
-      return res.status(200).json({ ok: false, error: { phase: e.phase ?? "network", message: e.message, status: e.status ?? null, body: e.body ?? null, headers: Object.entries(e.headers ?? {}).map(([key, value]) => ({ key, value: String(value) })) } });
+      return res.status(200).json({ ok: false, error: connectFailure(e) });
     }
     audit(db, req, "session.open", `${protocol} ${s.label}`.slice(0, 200));
     res.status(201).json({ ok: true, ...summary(s) });
+  }));
+
+  // Local mode: the Local Agent opens the connection on the user's computer; the server only resolves what it needs
+  // (variables, inherited auth, limits). Same input as POST /sessions; the agent takes the answer as is.
+  r.post("/sessions/prepare", W("request:run"), wrap(async (req, res) => {
+    assertLocalMode();
+    const { b, protocol, ctx } = context(req);
+    audit(db, req, "session.open", `${protocol} ${ctx.request.url} (local)`.slice(0, 200));
+    res.json({ protocol, request: ctx.request, inherited: ctx.inherited, vars: ctx.vars, limits: wireLimits(effectiveLimits(b.limits)) });
   }));
 
   // Server-Sent Events: `?since=<seq>` (or Last-Event-ID) replays what a reconnecting client missed; `follow=false` ends after the replay.

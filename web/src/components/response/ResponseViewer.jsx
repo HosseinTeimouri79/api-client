@@ -68,6 +68,7 @@ export function ResponseViewer({ tab }) {
     return (
       <div className="scroll pad">
         <div className="errbox"><b className="err">{t(r.error.phase === "script" ? "resp.errScript" : r.error.phase === "validation" ? "resp.errValidation" : "resp.errFailed")}</b>{"\n\n"}{r.error.message}</div>
+        {r.via === "local" && r.error.phase === "network" && <p className="muted">{t("agent.runHint")}</p>}
         <Tests tests={r.tests ?? []} />
       </div>
     );
@@ -102,6 +103,7 @@ export function ResponseViewer({ tab }) {
         <span className="pill" style={{ background: statusColor(res.status) }}>{res.status} {res.statusText}</span>
         <span>{res.durationMs} ms</span><span>{fmtBytes(res.size)}</span>
         {res.redirects.length > 0 && <span className="muted">{t("resp.redirects", { n: res.redirects.length })}</span>}
+        {r.via === "local" && <span className="via-badge" title={t("mode.localHint")}><Icon name="laptop" /> {t("mode.viaLocal")}</span>}
         {mod && <span className="badge-mod" title={t("resp.modTitle", { what: mod.join(", ") })}><Icon name="wand-magic-sparkles" /> {t("resp.modBadge")}</span>}
       </div>
       <div className="resp-bar">

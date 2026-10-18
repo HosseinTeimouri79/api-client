@@ -11,6 +11,7 @@ import { MembersModal } from "./MembersModal.jsx";
 import { InteropModal } from "./InteropModal.jsx";
 import { useI18n, useT } from "../i18n/index.js";
 import { LanguageSelect } from "../components/ui/LanguageSelect.jsx";
+import { ModeSwitch } from "./AgentMode.jsx";
 
 export function TopBar() {
   const { user, ws, workspaces, envs, envId, theme, sidebarOpen } = useStore();
@@ -29,6 +30,7 @@ export function TopBar() {
         renderOption={(o) => <><Icon name={o.icon} className="opt-icon" /><span className="opt-main"><span className="opt-label">{o.label}</span>{o.description && <span className="opt-desc">{o.description}</span>}</span></>} />
       {ws && <span className="role-badge">{t(`role.${ws.role}`)}</span>}
       <span className="grow" />
+      <ModeSwitch />
       {ws && (
         <>
           <Select className="env-select" aria-label={t("top.environment")} title={t("top.environment")} value={envId ?? ""} options={envOptions} renderOption={(o, { close: closeList }) => (o.env ? (

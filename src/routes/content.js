@@ -4,6 +4,8 @@ import { uid, j, parse } from "../db/index.js";
 import { HttpError, requireWorkspace, audit } from "../middleware/auth.js";
 import { can } from "../services/permissions.js";
 import { runRequest, collectionChain } from "../services/runner.js";
+import { PendingRuns } from "../services/pendingRuns.js";
+import { prepareLocalRun, completeLocalRun } from "../services/localMode.js";
 import { HTTP_METHODS, IMPLEMENTED } from "../protocols/index.js";
 
 export const kv = z
@@ -67,7 +69,22 @@ const colOut = (c) => ({
   auth: parse(c.auth, null),
 });
 
-export function contentRouter(db) {
+// What a run needs besides the request: where it lives and the user's limits (0 = as much as the server allows).
+export const RunSchema = z.object({
+  request: RequestSchema.omit({ name: true }).extend({
+    name: z.string().optional(),
+  }),
+  collection_id: z.string().nullable().optional(),
+  environment_id: z.string().nullable().optional(),
+  limits: z
+    .object({
+      timeoutMs: z.number().int().min(0).max(3_600_000).optional(),
+      maxResponseBytes: z.number().int().min(0).max(4 * 1024 ** 3).optional(),
+    })
+    .optional(),
+});
+
+export function contentRouter(db, pending = new PendingRuns()) {
   const r = Router({ mergeParams: true });
   const W = (p) => requireWorkspace(db, p);
   const col = (req, id) => {
@@ -438,32 +455,14 @@ export function contentRouter(db) {
 
   // ---- execution ----
   // Viewers may run requests (permission request:run) but the server never persists anything for them.
-  r.post("/run", W("request:run"), async (req, res) => {
-    const b = z
-      .object({
-        request: RequestSchema.omit({ name: true }).extend({
-          name: z.string().optional(),
-        }),
-        collection_id: z.string().nullable().optional(),
-        environment_id: z.string().nullable().optional(),
-        // per-user request limits from Settings (0 = as much as the server allows)
-        limits: z
-          .object({
-            timeoutMs: z.number().int().min(0).max(3_600_000).optional(),
-            maxResponseBytes: z.number().int().min(0).max(4 * 1024 ** 3).optional(),
-          })
-          .optional(),
-      })
-      .parse(req.body);
-    if (b.collection_id) col(req, b.collection_id);
-    const out = await runRequest(db, {
-      limits: b.limits,
-      wid: req.wid,
-      req: b.request,
-      collectionId: b.collection_id,
-      environmentId: b.environment_id,
-      canPersist: can(req.role, "content:write"),
-    });
+  const runOptions = (req, b) => ({
+    wid: req.wid,
+    req: b.request,
+    collectionId: b.collection_id,
+    environmentId: b.environment_id,
+    canPersist: can(req.role, "content:write"),
+  });
+  const record = (req, b, out) => {
     const id = uid(); // history stores the unresolved request (never resolved secrets) + outcome
     db.prepare(
       "INSERT INTO history(id,user_id,workspace_id,method,url,status,duration_ms,snapshot) VALUES(?,?,?,?,?,?,?,?)",
@@ -477,7 +476,31 @@ export function contentRouter(db) {
       out.response?.durationMs ?? null,
       j({ request: b.request, collection_id: b.collection_id ?? null }),
     );
-    res.json(out);
+    return out;
+  };
+  // Server mode: the server sends the request.
+  r.post("/run", W("request:run"), async (req, res) => {
+    const b = RunSchema.parse(req.body);
+    if (b.collection_id) col(req, b.collection_id);
+    const out = await runRequest(db, { ...runOptions(req, b), limits: b.limits });
+    res.json(record(req, b, out));
+  });
+  // Local mode: the server runs everything but the network call, which the Local Agent makes on the user's computer
+  // (see services/localMode.js). `complete` takes the agent's answer, or why it could not be reached.
+  r.post("/run/prepare", W("request:run"), async (req, res) => {
+    const b = RunSchema.parse(req.body);
+    if (b.collection_id) col(req, b.collection_id);
+    res.json(
+      await prepareLocalRun(db, pending, {
+        ...runOptions(req, b),
+        userId: req.user.id,
+        limits: b.limits,
+        onDone: (out) => record({ user: { id: req.user.id }, wid: req.wid }, b, out),
+      }),
+    );
+  });
+  r.post("/run/:runId/complete", W("request:run"), async (req, res) => {
+    res.json(await completeLocalRun(pending, { runId: req.params.runId, userId: req.user.id, wid: req.wid, result: req.body }));
   });
 
   // ---- history (per user, per workspace) ----

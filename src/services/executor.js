@@ -17,6 +17,27 @@ export function effectiveLimits(want = {}) {
     maxBytes: pick(want.maxResponseBytes, config.maxResponseBytes, config.maxResponseBytesLimit),
   };
 }
+/** Limits as numbers for JSON (0 = no limit: JSON has no Infinity). */
+export const wireLimits = (lim) => ({
+  timeoutMs: Number.isFinite(lim.timeoutMs) ? lim.timeoutMs : 0,
+  maxResponseBytes: Number.isFinite(lim.maxBytes) ? lim.maxBytes : 0,
+});
+/** A built request as JSON (to hand it to the Local Agent) and back; a binary body travels as base64. */
+export const toWire = (b) => ({
+  url: b.url,
+  method: b.method,
+  headers: b.headers,
+  body: b.body == null ? null : Buffer.isBuffer(b.body) ? b.body.toString("base64") : String(b.body),
+  bodyEncoding: Buffer.isBuffer(b.body) ? "base64" : "utf8",
+  ...(b.connectTarget && { connectTarget: b.connectTarget }),
+});
+export const fromWire = (w) => ({
+  url: w.url,
+  method: w.method,
+  headers: w.headers,
+  body: w.body == null ? undefined : w.bodyEncoding === "base64" ? Buffer.from(w.body, "base64") : w.body,
+  ...(w.connectTarget && { connectTarget: w.connectTarget }),
+});
 const active = (list = []) => list.filter((x) => x.key && x.enabled !== false);
 
 export function applyAuth(auth, headers, url) {

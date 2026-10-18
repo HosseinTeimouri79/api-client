@@ -20,6 +20,7 @@ import { AdminPanel } from "./features/AdminPanel.jsx";
 import { SettingsPage } from "./features/SettingsPage.jsx";
 import { applyLocale, useI18n, useT } from "./i18n/index.js";
 import { Console } from "./features/Console.jsx";
+import { useAgentWatch } from "./features/AgentMode.jsx";
 
 const LS = (k, v) => { try { localStorage.setItem(k, String(v)); } catch { /* private mode */ } };
 
@@ -57,6 +58,7 @@ function Shell() {
   const { ws, sidebarW, view, user } = useStore();
   const t = useT();
   const { set, createWorkspace } = useStore.getState();
+  useAgentWatch();
   return (
     <div className="app">
       <TopBar />

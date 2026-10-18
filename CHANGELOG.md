@@ -11,6 +11,23 @@ The version is shown in **Settings → General → About** and returned by `GET 
 
 ## [Unreleased]
 
+### Added
+- **Local mode and the Local Agent.** A **Server / Local** switch in the header chooses where requests are sent from. In Local
+  mode a small agent on the user's computer sends them, so `localhost`, the LAN and VPNs work while the server keeps its SSRF
+  protection. Scripts, variables, auth, tests and history still run on the server (`/run/prepare` + `/run/:id/complete`,
+  `/sessions/prepare`, `/graphql/introspect/prepare`), for HTTP, GraphQL and every live protocol. Switching applies to new
+  requests at once; open connections stay where they started; a stopped agent is reported, never bypassed.
+- **Installers with Node.js built in:** Windows setup `.exe` (Installed apps entry, user `PATH`, starts at logon), macOS `.zip`
+  (Apple Silicon and Intel, ad-hoc signed), Debian/Ubuntu `.deb` and Linux `.tar.gz` (x64 and arm64), built with
+  `npm run build:installers` and offered in **Settings → General → Local Agent**, the user's system first. Script installs
+  (`install.sh`, `install.ps1`, `agent.mjs`) for machines with Node.js.
+- Agent command line: `setup`, `install`, `uninstall`, `start`, `stop`, `restart`, `status`, `pair`, `origins`, `tokens`, `config`,
+  `update` (SHA-256 checked, from the install server), background service via systemd (user), launchd or Task Scheduler.
+- Agent security: loopback only, Host header check (DNS rebinding), origin allow-list with CORS and Private Network Access,
+  one-time pairing codes for site-bound tokens, no cookies, JSON-only bodies, target rules (link-local / metadata blocked by
+  default, allow and deny lists).
+- Configuration: `LOCAL_AGENT`, `PUBLIC_URL`, `AGENT_INSTALLERS_DIR`, `AGENT_DEFAULT_URL`. Translated into all languages.
+
 ### Fixed
 - The sidebar can no longer be narrowed below 310 px (it was 200 px, too narrow for its tabs, tools and tree).
 - The editor / response split stays between 40% and 60%; older saved sizes outside that range are corrected on load.

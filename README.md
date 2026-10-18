@@ -21,20 +21,21 @@ Version **1.0.0** · [Changelog](CHANGELOG.md) · [License: Apache-2.0](LICENSE)
 3. [Quick start](#quick-start)
 4. [Installation and setup](#installation-and-setup)
 5. [Testing internal web services](#testing-internal-web-services)
-6. [Configuration](#configuration)
-7. [Using the app](#using-the-app)
-8. [Import and export (Postman and Hoppscotch)](#import-and-export-postman-and-hoppscotch)
-9. [Scripting](#scripting)
-10. [Code snippets](#code-snippets)
-11. [Languages](#languages)
-12. [Accounts, roles and administration](#accounts-roles-and-administration)
-13. [HTTP API](#http-api)
-14. [Architecture](#architecture)
-15. [Security](#security)
-16. [Testing](#testing)
-17. [Versioning and releases](#versioning-and-releases)
-18. [Roadmap](#roadmap)
-19. [License and attribution](#license-and-attribution)
+6. [Local Agent (Server and Local mode)](#local-agent)
+7. [Configuration](#configuration)
+8. [Using the app](#using-the-app)
+9. [Import and export (Postman and Hoppscotch)](#import-and-export-postman-and-hoppscotch)
+10. [Scripting](#scripting)
+11. [Code snippets](#code-snippets)
+12. [Languages](#languages)
+13. [Accounts, roles and administration](#accounts-roles-and-administration)
+14. [HTTP API](#http-api)
+15. [Architecture](#architecture)
+16. [Security](#security)
+17. [Testing](#testing)
+18. [Versioning and releases](#versioning-and-releases)
+19. [Roadmap](#roadmap)
+20. [License and attribution](#license-and-attribution)
 
 ---
 
@@ -228,6 +229,9 @@ not on the public internet, with no tunnel and no cloud account:
 - services on your company network or VPN (private IP ranges such as `10.x.x.x`, `172.16–31.x.x`, `192.168.x.x`, internal hostnames);
 - staging and development environments, containers and Kubernetes services that the server can resolve.
 
+**On a shared server, prefer [Local mode](#local-agent):** each user's requests to `localhost` and their own network are sent
+by the Local Agent on their computer, and the server keeps refusing private targets.
+
 **By default the app refuses private, loopback and link-local targets** (this is an SSRF protection, see [Security](#security)), so
 on a deployment that is only used inside your organization, or on your own computer, enable them:
 
@@ -243,6 +247,178 @@ ALLOW_PRIVATE_TARGETS=true
   nobody can use the server to reach your internal network.
 - Use environments and variables (`{{baseUrl}}`) to switch between local, staging and production targets, and share collections
   with your team in a workspace.
+
+---
+
+## Local Agent
+
+Requests can be sent from two places, and every user picks one with the **Server / Local** switch in the header:
+
+- **Server mode** (the default): the API Client server sends them, as described above. It reaches what the server can reach.
+- **Local mode**: the **Local Agent**, a small program installed on the user's own computer, sends them. `localhost`, the
+  user's LAN, VPN and anything else that computer can reach just work, even when the server is shared and keeps its SSRF
+  protection on (`ALLOW_PRIVATE_TARGETS=false`).
+
+Everything else is identical in both modes: variables, environments, inherited auth, pre-request and post-request scripts,
+tests, history, the console and all nine protocols. Only the place the bytes come from changes.
+
+### How it works
+
+```
+ Browser (API Client UI)                     API Client server                    User's computer
+ ───────────────────────                     ─────────────────                    ───────────────
+ lib/transport.js ── Server mode ─────────▶  POST /run → runner → network
+        │
+        └────────── Local mode ──────────▶  POST /run/prepare                    (pre-request scripts, variables,
+                                             ◀── { runId, built request }          auth, the request is built)
+               ── POST /v1/execute ──────────────────────────────────────────▶  Local Agent (127.0.0.1:47823)
+               ◀── response / error ────────────────────────────────────────── → localhost, LAN, internet
+                                             POST /run/:runId/complete  ──▶      (post-request scripts, tests,
+                                             ◀── the same result as /run          saved variables, history)
+```
+
+- **One pipeline.** `services/runner.js` is split around the network call (`startRun` → `finish`). Server mode runs both
+  halves in one request; Local mode runs the first half, lets the agent make the call, and finishes with what the agent got.
+  The browser's `lib/transport.js` is the single layer the store talks to (`run`, `introspect`, `open`, `follow`, `act`,
+  `close`), so switching modes never touches the rest of the app.
+- **Live protocols** (WebSocket, gRPC streams, GraphQL subscriptions, SSE, TCP, UDP, MQTT, AMQP): the server resolves the
+  variables and auth (`POST /sessions/prepare`), and the agent opens and holds the connection with the same drivers
+  (`src/protocols`) and event log (`services/sessions.js`) as the server.
+- **Switching while the app runs**: a request already on its way, and every open connection, stays with the mode it started
+  in until it ends; new requests use the new mode. Nothing falls back silently: in Local mode a stopped agent is an error
+  (it is shown in the response panel and the header turns red), never a request quietly sent from the server.
+- **The agent going away**: an unanswered run is completed as a network error ("Local Agent is not reachable") and recorded
+  in history like any failed request; an open connection is marked as lost; the header checks the agent every 5 s and when
+  the window gets focus, so it turns green again once the agent is back.
+
+### Installing the agent
+
+Users open **Settings → General → Local Agent** (or **Server / Local → Local Agent settings…** in the header). It offers the
+installers this server has, the one for the user's system first. **Node.js is built into all of them**; nothing else is
+needed, and nothing needs administrator rights: the agent is installed for the current user and starts at login.
+
+| System                      | File                                        | What to do                                                                                                                  |
+| --------------------------- | ------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| Windows 10/11 (x64)         | `api-client-agent-setup-<v>-windows-x64.exe` | Double-click. It asks for the API Client address, installs to `%LOCALAPPDATA%\api-client-agent`, adds itself to **Settings → Apps → Installed apps** (with Uninstall) and to the user's `PATH`, starts at logon (Task Scheduler, hidden) and shows a pairing code. |
+| macOS 12+ (Apple Silicon / Intel) | `api-client-agent-<v>-macos-arm64.zip` / `-x64.zip` | Unzip and double-click `api-client-agent`. It is not notarized: if macOS blocks it, open **System Settings → Privacy & Security → Open Anyway** (macOS 15+), or right-click → **Open** on older versions. It opens in Terminal, asks for the address, installs to `~/Library/Application Support/api-client-agent`, registers a LaunchAgent and shows a pairing code. |
+| Debian / Ubuntu (amd64, arm64) | `api-client-agent_<v>_amd64.deb` / `_arm64.deb` | `sudo apt install ./api-client-agent_<v>_amd64.deb`, then **as your normal user** `api-client-agent setup`. The package ships the program in `/usr/lib/api-client-agent` and a systemd *user* unit. |
+| Other Linux (x64, arm64)    | `api-client-agent-<v>-linux-x64.tar.gz` / `-arm64` | `tar xzf …` and run `./api-client-agent` in a terminal: installs to `~/.local/share/api-client-agent`, a systemd user service (or an XDG autostart entry without systemd) and `~/.local/bin/api-client-agent`. |
+
+Then, in API Client: **Server / Local → Local**, type the pairing code, **Pair**. The header shows **Local** with a green dot.
+
+Without the installers (or with Node.js 22.13+ already there), the same page shows one-line installs that download the
+script version (`agent.mjs`) from this server and check its SHA-256:
+
+```bash
+curl -fsSL https://api.example.com/agent/install.sh | sh                                                   # Linux, macOS
+powershell -NoProfile -ExecutionPolicy Bypass -Command "irm https://api.example.com/agent/install.ps1 | iex"  # Windows
+node agent.mjs install --server https://api.example.com                                                     # by hand
+```
+
+### Managing it
+
+The program is also its command line (`api-client-agent help`; on Windows it is on the user's `PATH` after setup):
+
+| Command | What it does |
+| ------- | ------------ |
+| `setup [--server URL]` | The guided install the installers run (asks for the address when it is not given). |
+| `install --server URL [--port N] [--no-service]` | The same without questions; `--no-service` for a portable copy you start with `run`. |
+| `status` | Service state, port, allowed sites, paired tokens, target rules, where the files are. |
+| `pair [--origin URL]` | A new one-time pairing code (8 characters, valid 10 minutes, cancelled after 5 wrong tries). |
+| `start` · `stop` · `restart` · `run` | Control the background agent; `run` is the foreground process the service starts. |
+| `origins [add URL \| remove URL]` · `tokens [revoke ID]` | Sites allowed to use the agent, and paired browsers (removing a site revokes its tokens). |
+| `config [get KEY \| set KEY VALUE]` | Agent settings (below). |
+| `update [--check] [--force] [--sha256 HASH]` | Installs the version the server offers (checked against its SHA-256; Windows renames the running `.exe` aside). A `.deb` install is updated with the new package instead. |
+| `uninstall [--purge]` | Stops it and removes the service, the `PATH` / Installed apps entries and the program; `--purge` also deletes settings, tokens and logs. |
+
+Where things live (`API_CLIENT_AGENT_HOME` puts everything in one folder):
+
+| | Settings, tokens (`config.json`, `tokens.json`) | Program | Logs | Background service |
+| --- | --- | --- | --- | --- |
+| Linux | `~/.config/api-client-agent` | `~/.local/share/api-client-agent` (`.deb`: `/usr/lib/api-client-agent`) | `~/.local/state/api-client-agent` | `systemctl --user` unit `api-client-agent.service` |
+| macOS | `~/Library/Application Support/api-client-agent` | same | `~/Library/Logs/api-client-agent` | LaunchAgent `com.apiclient.agent` |
+| Windows | `%APPDATA%\api-client-agent` | `%LOCALAPPDATA%\api-client-agent` | `%LOCALAPPDATA%\api-client-agent\logs` | Task Scheduler task **API Client Agent** (at logon) |
+
+Agent settings (`api-client-agent config set KEY VALUE`, then `restart`):
+
+| Key | Default | Meaning |
+| --- | --- | --- |
+| `port` | `47823` | Loopback port it listens on (change the **Agent address** in Settings to match). |
+| `targets.public` / `targets.private` / `targets.loopback` | `true` | May requests go to the internet / private ranges (10/8, 172.16/12, 192.168/16, 100.64/10, fc00::/7) / this computer. |
+| `targets.linkLocal` | `false` | Link-local addresses, which include cloud metadata endpoints (169.254.169.254 …). |
+| `targets.allow` | *(empty)* | When set, only these targets: host names (`*.corp.local`), IPs or CIDRs, comma-separated. |
+| `targets.deny` | *(empty)* | Never these targets (wins over everything). |
+| `limits.maxTimeoutMs` / `limits.maxResponseBytes` | 10 min / 100 MB | Ceilings on what a run may ask for (the server's ceilings apply too). |
+| `limits.maxConcurrent` / `limits.maxSessions` | `32` / `20` | Requests in flight and open live connections. |
+| `udpListenPorts` | `1024-65535` | Local UDP ports a "listen" request may bind. |
+| `autoUpdate` | `false` | Install the server's newer version by itself once a day. |
+
+### Security of Local mode
+
+The agent is an HTTP service on the user's machine, so it assumes every web page the user opens may try to talk to it:
+
+- **Loopback only.** It refuses to listen on anything but `127.0.0.1` / `::1`.
+- **DNS rebinding.** It answers only when the `Host` header is its own loopback address and port (`421` otherwise), so a page
+  on `evil.example` that re-resolves to 127.0.0.1 gets nothing.
+- **Origins and CORS.** A browser request must come from a site the user allowed (`setup` / `pair --origin`). Other sites get
+  `403` and no CORS headers, so their scripts cannot read anything, not even whether the agent exists. Allowed sites get exact
+  CORS headers (never `*`, no credentials) and the `Access-Control-Allow-Private-Network` answer that Chrome's Private Network
+  Access preflight asks for.
+- **Authentication.** Pairing exchanges a one-time code typed by the user for a 256-bit token bound to that site's origin;
+  the agent keeps only its SHA-256. Every call except `/v1/health` (name, version, paired yes/no) and `/v1/pair` needs it.
+- **CSRF.** No cookies or ambient credentials exist; requests need the `Authorization` header and `application/json` bodies,
+  which cross-site forms cannot send and which always trigger a preflight.
+- **SSRF / local network access.** The agent uses the server's engine with its own address rules (`targets.*`): link-local and
+  metadata addresses are blocked by default, `allow` / `deny` narrow it further, the checked address is the one connected to
+  (`lookup` hook, no DNS-rebinding gap), redirects are re-checked, and it never sends requests to itself.
+- **Credentials.** The agent stores no API credentials: the server builds each request (with the environment's secrets, which
+  the user can already see) and the agent only sends it. Logs record method, target origin and status, never headers or bodies.
+  Config and token files are readable by the user only.
+- **Authorization stays on the server.** The run endpoints are the same permission checks as `/run` (`request:run`); runs
+  waiting for the agent belong to the user and workspace that started them, expire, complete once, and the reported response
+  is validated and size-checked again on the server.
+- **Updates and downloads** come only from the server the agent was installed from and must match the SHA-256 in its
+  manifest (`--sha256` checks against a hash you got another way). Installers download Node.js from nodejs.org and check it
+  against `SHASUMS256.txt` when they are built.
+- **Operators** can turn Local mode off with `LOCAL_AGENT=false` (the routes answer 403 and the switch disappears).
+
+### Building the installers
+
+**Ready-made installers** for each version are attached to the
+[GitHub Releases](https://github.com/HosseinTeimouri79/api-client/releases), with `index.json` and `SHA256SUMS.txt`. To offer
+them from your server without building, download all files of the release that matches your server's version into
+`AGENT_INSTALLERS_DIR` (default `./build/installers`).
+
+To build them yourself:
+
+```bash
+npm run build                 # the UI and dist/agent/agent.mjs
+npm run build:installers      # build/installers/: all systems (or: -- --targets linux-x64,win32-x64)
+```
+
+`agent/packaging/build.mjs` bundles the agent into one CommonJS file, turns it into a Node.js
+[single executable application](https://nodejs.org/api/single-executable-applications.html) and injects it (`postject`) into
+the official Node.js binary of each system, downloaded once into `.cache/` and verified against nodejs.org's
+`SHASUMS256.txt`. It runs on Linux or macOS; the `.deb` needs `dpkg-deb`. macOS binaries are signed ad hoc (`codesign` on a
+Mac, otherwise `rcodesign`, fetched and checksum-verified automatically). The server serves whatever `index.json` in
+`AGENT_INSTALLERS_DIR` lists under `/agent/download/` and in `/agent/manifest.json`, which installed agents use for updates.
+With Docker, build them on a build machine and mount the folder (`./build/installers:/installers:ro` in `docker-compose.yml`).
+
+For distribution outside your organization, sign them: Windows with your code-signing certificate (`signtool`, or
+`osslsigncode` on Linux) to avoid SmartScreen warnings; macOS with a Developer ID and notarization. On a Mac,
+`agent/packaging/macos-pkg.sh` turns the macOS binary into a signed, notarized `.pkg` installer when you set
+`DEVELOPER_ID_APP`, `DEVELOPER_ID_INSTALLER` and `NOTARY_PROFILE`.
+
+### Known limits
+
+- **Browsers.** Chrome, Edge and Firefox allow an HTTPS page to call `http://127.0.0.1`. Recent Chrome versions may ask
+  once whether the site may access devices on the local network: allow it. Safari may block it; use another browser for
+  Local mode there.
+- The installers are not code-signed or notarized by this project (see above); Windows shows SmartScreen ("More info → Run
+  anyway") and macOS needs "Open Anyway" the first time. Setup removes the quarantine flag from the copy it installs.
+- No `.rpm` is built; on Fedora, RHEL and others use the `.tar.gz`.
+- Secrets in environments reach the browser in Local mode as part of the built request; they are the values the user can
+  already read in the workspace, and the agent does not keep them.
 
 ---
 
@@ -271,6 +447,10 @@ All configuration is through environment variables (`.env.example` lists the com
 | `UDP_LISTEN_PORTS`            | *(empty: listening off)* | Local UDP ports (or ranges, `40000-40100,50000`) a user may *listen* on; with Docker, publish them too.        |
 | `SESSION_IDLE_MS`             | `900000` (15 min)      | A live connection nobody watches or uses for this long is closed.                               |
 | `SESSION_EVENT_LIMIT`         | `5000`                 | Events kept per live connection (what a reconnecting browser can still replay).                 |
+| `LOCAL_AGENT`                 | `true`                 | Offer Local mode (requests sent by the [Local Agent](#local-agent) on the user's computer). `false` turns it off. |
+| `PUBLIC_URL`                  | from the request       | The address users open the app at (`https://api.example.com`); used in the agent's install commands.  |
+| `AGENT_INSTALLERS_DIR`        | `./build/installers`   | Folder with the agent installers from `npm run build:installers` (`/installers` in Docker).           |
+| `AGENT_DEFAULT_URL`           | `http://127.0.0.1:47823` | Where the browser looks for the agent unless the user changes it.                                   |
 | `CHROME_PATH`                 | auto-detected          | Chromium/Chrome binary for the end-to-end tests.                                                |
 
 **Per-user limits.** Each user can set a request timeout and maximum response size under **Settings → General → Request**.
@@ -722,6 +902,13 @@ web/             index.html vite.config.js
     lib/         codegen (35 snippet targets) settings http snippets …
     i18n/        index.js locales.js locales/<code>.js
 dist/            build output served by Express (npm run build)
+agent/           the Local Agent (one program for Linux, macOS and Windows; see Local Agent)
+  src/           main.js (CLI) server.js (API: Host/Origin/token checks) policy.js (target rules) store.js (config, pairing,
+                 tokens) service.js (systemd / launchd / Task Scheduler) integration.js (PATH, Installed apps) update.js paths.js
+  install/       install.sh install.ps1 (script installs, served with the server's address filled in)
+  packaging/     build.mjs (standalone executables, .exe / .zip / .deb / .tar.gz) macos-pkg.sh
+  vite.config.js bundles agent + shared engine to dist/agent/agent.mjs
+build/installers the installers from npm run build:installers (served under /agent/download/)
 tests/           unit, API and end-to-end tests
 ```
 
@@ -767,6 +954,11 @@ otherwise stateless.
 - **SQLite first.** Zero-ops team deployments; single writer mitigated by WAL. Revisit above ~50 concurrent writers.
 - **QuickJS-WASM for scripts.** Node `vm` is not a security boundary and `isolated-vm` needs native builds.
 - **Server-side execution.** No CORS problems, shared history and consistent scripting, at the price of SSRF risk (handled below).
+- **Local mode keeps the pipeline on the server.** The agent only makes the network call; scripts, variables, permissions and
+  history stay in one place, so both modes behave the same and the agent stays small. The agent reuses the server's engine
+  (`src/services/executor.js`, `src/protocols`) rather than a second implementation.
+- **Agent installers as Node.js single executables.** One code base, no runtime to install, and every target can be built from
+  Linux; per-user installs need no administrator rights.
 - **React + Vite, in-house components.** Keeps the dependency surface small; the production image only ships `dist/`.
 - **Username login.** Email was never verified or used, so it was dropped.
 - **Dictionaries, not hard-coded text.** All UI text lives in `web/src/i18n/locales`; a test fails when a component hard-codes
@@ -776,6 +968,8 @@ otherwise stateless.
 
 ## Security
 
+- **Local mode**: the Local Agent's own protections (loopback only, Host check, origin allow-list, pairing tokens, target rules)
+  are described in [Security of Local mode](#security-of-local-mode).
 - **SSRF**: private, loopback, link-local and metadata ranges are blocked. The check runs on the DNS-resolved IP (anti-rebinding via
   a `lookup` hook), IP literals are validated explicitly, redirects are re-checked and credentials are dropped on cross-origin
   redirects. `ALLOW_PRIVATE_TARGETS` turns this off (default off).
@@ -815,6 +1009,11 @@ npm test      # builds the UI, then runs unit, API and end-to-end tests (node --
   on amqplib's frame codec), both through the API and in the browser. Set `AMQP_TEST_URL` to run one more test against a real
   RabbitMQ.
 - One test (compiling the generated C code against libcurl) is skipped on machines without the libcurl headers.
+- The **Local Agent** is tested as a real process (`tests/agent.test.js`): Host / Origin / CORS / pairing / token checks, target
+  rules, Local-mode runs through the server's pipeline, switching modes, the agent stopping and restarting, API errors,
+  live sessions, updates and the service files for all three systems. `tests/agent-ui.test.js` does it in the browser.
+  `tests/agent-installer.test.js` installs and runs the real Linux standalone program and checks the `.deb` and the other
+  installers; it is skipped until `npm run build:installers` has run.
 
 ---
 

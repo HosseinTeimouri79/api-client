@@ -31,7 +31,9 @@
     "start": "node src/server.js",
     "dev": "node --watch src/server.js",
     "dev:web": "vite --config web/vite.config.js",
-    "build": "vite build --config web/vite.config.js",
+    "agent": "node agent/src/main.js",
+    "build": "vite build --config web/vite.config.js && vite build --config agent/vite.config.js",
+    "build:installers": "node agent/packaging/build.mjs",
     "pretest": "npm run build",
     "test": "node --test --no-warnings --test-concurrency=1 tests/*.test.js"
   },
@@ -56,6 +58,7 @@
     "@vitejs/plugin-react": "^6.1.2",
     "aedes": "^1.2.0",
     "playwright-core": "^1.63.0",
+    "postject": "^1.0.0-alpha.6",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
     "vite": "^8.3.3",
