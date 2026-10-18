@@ -1,9 +1,9 @@
 import http from "node:http";
 import https from "node:https";
 import { z } from "zod";
-import { safeLookup, assertPublicHost } from "../services/ssrf.js";
-import { buildRequest, effectiveLimits } from "../services/executor.js";
-import { config } from "../config.js";
+import { safeLookup, assertPublicHost } from "../ssrf.js";
+import { buildRequest, effectiveLimits } from "../executor.js";
+import { engine as config } from "../config.js";
 
 export const SseData = z.object({
   reconnect: z.boolean().default(false), // reopen the stream when the server ends it, resuming with Last-Event-ID

@@ -6,7 +6,7 @@ import { can } from "../services/permissions.js";
 import { runRequest, collectionChain } from "../services/runner.js";
 import { PendingRuns } from "../services/pendingRuns.js";
 import { prepareLocalRun, completeLocalRun } from "../services/localMode.js";
-import { HTTP_METHODS, IMPLEMENTED } from "../protocols/index.js";
+import { HTTP_METHODS, IMPLEMENTED } from "../../core/shared/protocols.js";
 
 export const kv = z
   .array(

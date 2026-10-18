@@ -1,13 +1,13 @@
 import test, { before, after } from "node:test";
 import assert from "node:assert/strict";
-import { openDb } from "../src/db/index.js";
-import { createApp } from "../src/app.js";
+import { openDb } from "../server/db/index.js";
+import { createApp } from "../server/app.js";
 import {
   detect,
   parseImport,
   toPostmanCollection,
   toHoppCollection,
-} from "../src/services/interop.js";
+} from "../server/services/interop.js";
 
 const postman = {
   info: {

@@ -5,8 +5,8 @@ import { runRequest } from "../services/runner.js";
 import { RunSchema } from "./content.js";
 import { PendingRuns } from "../services/pendingRuns.js";
 import { prepareLocalRun, completeLocalRun } from "../services/localMode.js";
-import { describeProto } from "../protocols/grpc.js";
-import { analyze, introspectionQuery, schemaFromIntrospection } from "../protocols/graphql.js";
+import { describeProto } from "../../core/protocols/grpc.js";
+import { analyze, introspectionQuery, schemaFromIntrospection } from "../../core/protocols/graphql.js";
 
 /** Helpers the editor needs while you write a request: read a .proto, analyse a GraphQL document, fetch a GraphQL schema. */
 // The introspection query as a GraphQL request with the tab's address, auth and variables.

@@ -1,11 +1,11 @@
 import express from "express";
 import { z, ZodError } from "zod";
-import { execute, fromWire } from "../../src/services/executor.js";
-import { SessionManager, SessionError } from "../../src/services/sessions.js";
-import { CONNECTORS, connectFailure } from "../../src/protocols/connectors.js";
-import { setAddressPolicy } from "../../src/services/ssrf.js";
-import { config as engine } from "../../src/config.js";
-import { HTTP_METHODS } from "../../src/protocols/index.js";
+import { execute, fromWire } from "../../core/executor.js";
+import { SessionManager, SessionError } from "../../core/sessions.js";
+import { CONNECTORS, connectFailure } from "../../core/protocols/connectors.js";
+import { setAddressPolicy } from "../../core/ssrf.js";
+import { configureEngine } from "../../core/config.js";
+import { HTTP_METHODS } from "../../core/shared/protocols.js";
 import { makeAddressPolicy } from "./policy.js";
 
 /**
@@ -18,13 +18,13 @@ import { makeAddressPolicy } from "./policy.js";
  * - every call except /v1/health and /v1/pair needs a bearer token, which pairing hands out once per site; a token works
  *   only from the origin it was paired for. No cookies are used, so there is no ambient authority to forge (CSRF), and
  *   POST bodies must be application/json, which a cross-site form cannot send;
- * - requests go out through the same engine as the server's (src/services/executor.js, src/protocols), with the agent's
+ * - requests go out through the same engine as the server's (core/: executor, protocols, sessions), with the agent's
  *   own address policy (agent/src/policy.js) in place of the server's SSRF rule.
  */
 export function createAgentApp({ store, version, log, port: getPort }) {
   const cfg = store.config();
-  // the shared engine reads its limits from the server's config object; the agent sets its own
-  Object.assign(engine, {
+  // the shared engine (core/config.js) gets the agent's limits instead of the server's defaults
+  configureEngine({
     requestTimeoutMs: Math.min(30_000, cfg.limits.maxTimeoutMs || 30_000),
     maxRequestTimeoutMs: cfg.limits.maxTimeoutMs,
     maxResponseBytes: Math.min(10 * 1024 * 1024, cfg.limits.maxResponseBytes || 10 * 1024 * 1024),
@@ -153,7 +153,7 @@ export function createAgentApp({ store, version, log, port: getPort }) {
     }
   }));
 
-  // ---- live sessions: same drivers and event log as the server's (src/services/sessions.js) ----
+  // ---- live sessions: same drivers and event log as the server's (core/sessions.js) ----
   const kv = z.array(z.object({ key: z.string(), value: z.string().default(""), enabled: z.boolean().optional() }).passthrough()).max(500).default([]);
   const AuthSchema = z.object({ type: z.string() }).passthrough().nullable().default(null);
   const Open = z.object({

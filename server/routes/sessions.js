@@ -1,13 +1,13 @@
 import { Router } from "express";
 import { z } from "zod";
 import { HttpError, requireWorkspace, audit } from "../middleware/auth.js";
-import { SessionManager, SessionError } from "../services/sessions.js";
+import { SessionManager, SessionError } from "../../core/sessions.js";
 import { sessionContext } from "../services/runner.js";
 import { RunSchema } from "./content.js";
 import { assertLocalMode } from "../services/localMode.js";
-import { effectiveLimits, wireLimits } from "../services/executor.js";
-import { IMPLEMENTED } from "../protocols/index.js";
-import { CONNECTORS, connectFailure } from "../protocols/connectors.js";
+import { effectiveLimits, wireLimits } from "../../core/executor.js";
+import { IMPLEMENTED } from "../../core/shared/protocols.js";
+import { CONNECTORS, connectFailure } from "../../core/protocols/connectors.js";
 
 const toHttp = (e) => (e instanceof SessionError ? new HttpError(e.status, e.message) : e);
 

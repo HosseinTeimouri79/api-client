@@ -1,9 +1,9 @@
 // Per-user app settings, stored on the account.
 import test, { before, after } from "node:test";
 import assert from "node:assert/strict";
-import { openDb } from "../src/db/index.js";
-import { createApp } from "../src/app.js";
-import { SettingsSchema } from "../src/services/userSettings.js";
+import { openDb } from "../server/db/index.js";
+import { createApp } from "../server/app.js";
+import { SettingsSchema } from "../server/services/userSettings.js";
 import { DEFAULT_SETTINGS } from "../web/src/lib/settings.js";
 
 let server, base, tok;

@@ -1,5 +1,5 @@
 import crypto from "node:crypto";
-import { config } from "../config.js";
+import { engine as config } from "./config.js";
 
 /**
  * Live sessions: one open connection (WebSocket, ...) owned by a user, with an event log that clients follow

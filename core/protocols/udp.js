@@ -1,10 +1,10 @@
 import dgram from "node:dgram";
 import net from "node:net";
 import { z } from "zod";
-import { resolvePublicAddress } from "../services/ssrf.js";
-import { effectiveLimits } from "../services/executor.js";
-import { config } from "../config.js";
-import { resolve as resolveVars } from "../services/variables.js";
+import { resolvePublicAddress } from "../ssrf.js";
+import { effectiveLimits } from "../executor.js";
+import { engine as config } from "../config.js";
+import { resolve as resolveVars } from "../shared/variables.js";
 import { parseEndpoint, decodePayload, describePayload } from "./common.js";
 
 export const UdpData = z.object({

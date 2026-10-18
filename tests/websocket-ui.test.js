@@ -3,7 +3,7 @@ import test, { before, after } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import { WebSocketServer } from "ws";
-import { PROTOCOLS, IMPLEMENTED } from "../src/protocols/index.js";
+import { PROTOCOLS, IMPLEMENTED } from "../core/shared/protocols.js";
 process.env.ALLOW_PRIVATE_TARGETS = "true";
 const CHROME =
   process.env.CHROME_PATH ||
@@ -16,9 +16,9 @@ const got = [];
 before(async () => {
   if (skip) return;
   const { chromium } = await import("playwright-core");
-  const { openDb } = await import("../src/db/index.js");
-  const { createApp } = await import("../src/app.js");
-  const { config } = await import("../src/config.js");
+  const { openDb } = await import("../server/db/index.js");
+  const { createApp } = await import("../server/app.js");
+  const { config } = await import("../server/config.js");
   config.allowPrivateTargets = true;
   app = createApp(openDb(":memory:"));
   server = app.listen(0);

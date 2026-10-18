@@ -1,5 +1,5 @@
 // App settings: defaults, font presets and applying them to the page. The server schema
-// (src/services/userSettings.js) is the source of truth; a test keeps DEFAULT_SETTINGS in step with it.
+// (server/services/userSettings.js) is the source of truth; a test keeps DEFAULT_SETTINGS in step with it.
 export const DEFAULT_SETTINGS = {
   request: { timeoutMs: 30000, maxResponseMb: 10 },
   ui: { openConsole: false, layout: "stacked" },

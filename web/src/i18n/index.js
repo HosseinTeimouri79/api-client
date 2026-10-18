@@ -4,7 +4,7 @@ import { LOCALES, DEFAULT_LOCALE, normalizeLocale, matchLocale } from "./locales
 
 export { LOCALES, DEFAULT_LOCALE };
 // Flat keys, `{name}` placeholders, English fallback. Dictionaries load on demand, one chunk per language.
-// Add a language: a file in ./locales, an entry in ./locales.js and in src/services/locales.js.
+// Add a language: a file in ./locales, an entry in ./locales.js and in server/services/locales.js.
 const loaders = import.meta.glob(["./locales/*.js", "!./locales/en-US.js"]);
 const DICT = { [DEFAULT_LOCALE]: enUS };
 const read = () => { try { return localStorage.getItem("locale"); } catch { return null; } };

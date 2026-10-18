@@ -1,10 +1,10 @@
 import * as grpc from "@grpc/grpc-js";
 import protobuf from "protobufjs";
 import { z } from "zod";
-import { resolvePublicAddress } from "../services/ssrf.js";
-import { effectiveLimits } from "../services/executor.js";
-import { config } from "../config.js";
-import { resolve as resolveVars } from "../services/variables.js";
+import { resolvePublicAddress } from "../ssrf.js";
+import { effectiveLimits } from "../executor.js";
+import { engine as config } from "../config.js";
+import { resolve as resolveVars } from "../shared/variables.js";
 import { prepareTarget } from "./common.js";
 
 export const GrpcData = z.object({

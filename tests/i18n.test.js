@@ -4,7 +4,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
-import { LOCALES as SERVER_LOCALES } from "../src/services/locales.js";
+import { LOCALES as SERVER_LOCALES } from "../server/services/locales.js";
 import { LOCALES, DEFAULT_LOCALE, matchLocale, normalizeLocale } from "../web/src/i18n/locales.js";
 
 const SRC = new URL("../web/src/", import.meta.url).pathname;

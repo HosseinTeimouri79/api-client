@@ -1,4 +1,5 @@
-export const METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS", "TRACE", "CONNECT"];
+// the methods the server accepts (core/shared: one list for the UI, the server and the Local Agent)
+export { HTTP_METHODS as METHODS } from "../../../core/shared/protocols.js";
 // header name -> i18n key of its description
 export const HEADER_NAMES = {
   Accept: "hdr.acceptTypes",

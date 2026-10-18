@@ -1,10 +1,10 @@
 import { parse, j } from "../db/index.js";
-import { mergeScopes, resolve, resolveDeep, toMap } from "./variables.js";
-import { buildRequest, execute } from "./executor.js";
+import { mergeScopes, resolve, resolveDeep, toMap } from "../../core/shared/variables.js";
+import { buildRequest, execute } from "../../core/executor.js";
 import { runScript } from "./scriptEngine.js";
-import { graphqlAsHttp } from "../protocols/graphql.js";
+import { graphqlAsHttp } from "../../core/protocols/graphql.js";
 
-import { HTTP_METHODS as METHODS, BODYLESS_METHODS } from "../protocols/index.js";
+import { HTTP_METHODS as METHODS, BODYLESS_METHODS } from "../../core/shared/protocols.js";
 const BODY_MODES = ["none", "json", "text", "urlencoded", "multipart", "raw"];
 const kv = (obj) =>
   Object.entries(obj).map(([key, value]) => ({ key, value, enabled: true }));

@@ -4,10 +4,10 @@ import assert from "node:assert/strict";
 import mqtt from "mqtt";
 import { startBroker } from "./fixtures/mqtt-broker.js";
 import { selfSigned } from "./fixtures/tls.js";
-import { openDb } from "../src/db/index.js";
-import { createApp } from "../src/app.js";
-import { config } from "../src/config.js";
-import { checkFilter, checkTopic } from "../src/protocols/mqtt.js";
+import { openDb } from "../server/db/index.js";
+import { createApp } from "../server/app.js";
+import { config } from "../server/config.js";
+import { checkFilter, checkTopic } from "../core/protocols/mqtt.js";
 
 let server, app, base, b, tok, ws, watcher;
 const heard = []; // what an independent client subscribed to "#" hears

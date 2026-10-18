@@ -1,18 +1,12 @@
 // Turns an editor request into a neutral, fully resolved model that every language generator consumes.
-// It mirrors what the server sends (executor.buildRequest): enabled rows only, auth applied, default Content-Type,
+// It mirrors what the server sends (core/executor.js buildRequest): enabled rows only, auth applied, default Content-Type,
 // no body for GET/HEAD. Scripts are not run, and unresolved {{variables}} are left as-is.
-const VAR = /\{\{\s*([\w.\-]+)\s*\}\}/g;
+import { resolve } from "../../../../core/shared/variables.js";
+import { BODYLESS_METHODS } from "../../../../core/shared/protocols.js";
 const active = (l = []) => l.filter((x) => x.key && x.enabled !== false);
 
-export function resolveVars(str, vars) {
-  let cur = String(str ?? "");
-  for (let i = 0; i < 5; i++) { // nested references, bounded like the server
-    const next = cur.replace(VAR, (m, k) => (k in vars ? vars[k] : m));
-    if (next === cur) break;
-    cur = next;
-  }
-  return cur;
-}
+/** {{variables}} resolved exactly as the server and the Local Agent do (core/shared/variables.js). */
+export const resolveVars = (str, vars) => resolve(String(str ?? ""), vars);
 /** Percent-encodes like the server's URLSearchParams, but leaves unresolved {{vars}} readable. */
 export const encodeQuery = (s) =>
   String(s).split(/(\{\{[^}]*\}\})/).map((p, i) => (i % 2 ? p : new URLSearchParams([["", p]]).toString().slice(1))).join("");
@@ -65,7 +59,7 @@ export function buildModel(req, { vars = {}, inheritedAuth = null, substitute = 
 
   let body = null;
   const b = req.body ?? { mode: "none" };
-  if (!["GET", "HEAD", "TRACE", "CONNECT"].includes(method)) {
+  if (!BODYLESS_METHODS.includes(method)) {
     if (["json", "text", "raw"].includes(b.mode)) {
       const text = R(b.content ?? "");
       if (text) {

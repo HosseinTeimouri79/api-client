@@ -3,7 +3,7 @@ import path from "node:path";
 import fs from "node:fs";
 import { fileURLToPath } from "node:url";
 
-// Bundles the Local Agent and everything it uses (the shared engine in src/, express, ws, gRPC, MQTT, AMQP ...) into one
+// Bundles the Local Agent and everything it uses (the shared engine in core/, express, ws, gRPC, MQTT, AMQP ...) into one
 // file, dist/agent/agent.mjs, that runs with a plain Node.js on Linux, macOS and Windows. `npm run build` runs it.
 const here = path.dirname(fileURLToPath(import.meta.url));
 const pkg = JSON.parse(fs.readFileSync(path.resolve(here, "../package.json"), "utf8"));
@@ -13,10 +13,6 @@ export default defineConfig({
   root: here,
   logLevel: "warn",
   define: { __AGENT_VERSION__: JSON.stringify(pkg.version), __AGENT_BUNDLED__: "true" },
-  resolve: {
-    // the server's config (JWT secret, package.json) is replaced by the agent's
-    alias: [{ find: /^(\.\.\/)+(src\/)?config\.js$/, replacement: path.resolve(here, "src/engine-config.js") }],
-  },
   ssr: { noExternal: true, target: "node" },
   build: {
     ssr: path.resolve(here, "src/main.js"),

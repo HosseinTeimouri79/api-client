@@ -1,3 +1,4 @@
+// Shared by the server, the Local Agent and the UI (code snippets): plain JavaScript, no Node.js APIs.
 // Variable resolution. Precedence (highest first): runtime > request > collection (nearest first) > environment > workspace.
 const RE = /\{\{\s*([\w.\-]+)\s*\}\}/g;
 export const toMap = (list = []) =>

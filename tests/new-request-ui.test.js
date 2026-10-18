@@ -2,7 +2,7 @@
 import test, { before, after } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
-import { PROTOCOLS } from "../src/protocols/index.js";
+import { PROTOCOLS } from "../core/shared/protocols.js";
 process.env.ALLOW_PRIVATE_TARGETS = "true";
 const CHROME =
   process.env.CHROME_PATH ||
@@ -14,8 +14,8 @@ let browser, server, base;
 before(async () => {
   if (skip) return;
   const { chromium } = await import("playwright-core");
-  const { openDb } = await import("../src/db/index.js");
-  const { createApp } = await import("../src/app.js");
+  const { openDb } = await import("../server/db/index.js");
+  const { createApp } = await import("../server/app.js");
   server = createApp(openDb(":memory:")).listen(0);
   base = `http://127.0.0.1:${server.address().port}`;
   browser = await chromium.launch({ executablePath: CHROME, args: ["--no-sandbox"] });

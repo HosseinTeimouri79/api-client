@@ -1,4 +1,4 @@
-// GraphQL requests travel as ordinary HTTP requests (the server does the same in src/protocols/graphql.js);
+// GraphQL requests travel as ordinary HTTP requests (the server does the same in core/protocols/graphql.js);
 // this mirror feeds the code snippet generators.
 export function gqlToHttp(req) {
   const d = req.protocol_data ?? {};

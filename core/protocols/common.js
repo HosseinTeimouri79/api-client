@@ -1,5 +1,5 @@
-import { applyAuth } from "../services/executor.js";
-import { assertPublicHost } from "../services/ssrf.js";
+import { applyAuth } from "../executor.js";
+import { assertPublicHost } from "../ssrf.js";
 
 const active = (list = []) => list.filter((x) => x.key && x.enabled !== false);
 

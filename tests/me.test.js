@@ -1,8 +1,8 @@
 import test, { before, after } from "node:test";
 import assert from "node:assert/strict";
-import { openDb } from "../src/db/index.js";
-import { createApp } from "../src/app.js";
-import { LOCALES } from "../src/services/locales.js";
+import { openDb } from "../server/db/index.js";
+import { createApp } from "../server/app.js";
+import { LOCALES } from "../server/services/locales.js";
 
 let server, base;
 before(() => {

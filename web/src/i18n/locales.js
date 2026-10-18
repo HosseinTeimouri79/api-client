@@ -1,5 +1,5 @@
 // The interface languages: native name, flag (see components/ui/Flag.jsx) and text direction.
-// Keep in step with src/services/locales.js (a test compares the two).
+// Keep in step with server/services/locales.js (a test compares the two).
 export const LOCALES = [
   { id: "en-US", label: "English", flag: "us", dir: "ltr" },
   { id: "es-ES", label: "Español", flag: "es", dir: "ltr" },

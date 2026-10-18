@@ -1,10 +1,10 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { resolve, mergeScopes } from "../src/services/variables.js";
-import { can, outranks } from "../src/services/permissions.js";
-import { runScript } from "../src/services/scriptEngine.js";
-import { buildRequest } from "../src/services/executor.js";
-import { isPrivateIp } from "../src/services/ssrf.js";
+import { resolve, mergeScopes } from "../core/shared/variables.js";
+import { can, outranks } from "../server/services/permissions.js";
+import { runScript } from "../server/services/scriptEngine.js";
+import { buildRequest } from "../core/executor.js";
+import { isPrivateIp } from "../core/ssrf.js";
 
 test("variables: precedence and unresolved passthrough", () => {
   const v = mergeScopes({
@@ -164,7 +164,7 @@ test("ssrf: private ranges", () => {
     assert.ok(!isPrivateIp(ip), ip);
 });
 test("ssrf: IP-literal targets are rejected before connecting", async () => {
-  const { execute } = await import("../src/services/executor.js");
+  const { execute } = await import("../core/executor.js");
   for (const u of [
     "http://127.0.0.1:9/",
     "http://169.254.169.254/latest/meta-data",

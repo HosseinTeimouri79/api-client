@@ -2,10 +2,10 @@
 import test, { before, after } from "node:test";
 import assert from "node:assert/strict";
 import { startSseServer } from "./fixtures/sse-server.js";
-import { openDb } from "../src/db/index.js";
-import { createApp } from "../src/app.js";
-import { config } from "../src/config.js";
-import { SseParser } from "../src/protocols/sse.js";
+import { openDb } from "../server/db/index.js";
+import { createApp } from "../server/app.js";
+import { config } from "../server/config.js";
+import { SseParser } from "../core/protocols/sse.js";
 
 const parse = (chunks, opts = {}) => {
   const out = [], comments = [];

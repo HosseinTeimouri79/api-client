@@ -277,13 +277,13 @@ tests, history, the console and all nine protocols. Only the place the bytes com
                                              ◀── the same result as /run          saved variables, history)
 ```
 
-- **One pipeline.** `services/runner.js` is split around the network call (`startRun` → `finish`). Server mode runs both
+- **One pipeline.** `server/services/runner.js` is split around the network call (`startRun` → `finish`). Server mode runs both
   halves in one request; Local mode runs the first half, lets the agent make the call, and finishes with what the agent got.
   The browser's `lib/transport.js` is the single layer the store talks to (`run`, `introspect`, `open`, `follow`, `act`,
   `close`), so switching modes never touches the rest of the app.
 - **Live protocols** (WebSocket, gRPC streams, GraphQL subscriptions, SSE, TCP, UDP, MQTT, AMQP): the server resolves the
   variables and auth (`POST /sessions/prepare`), and the agent opens and holds the connection with the same drivers
-  (`src/protocols`) and event log (`services/sessions.js`) as the server.
+  (`core/protocols`) and event log (`core/sessions.js`) as the server.
 - **Switching while the app runs**: a request already on its way, and every open connection, stays with the mode it started
   in until it ends; new requests use the new mode. Nothing falls back silently: in Local mode a stopped agent is an error
   (it is shown in the response panel and the header turns red), never a request quietly sent from the server.
@@ -459,7 +459,7 @@ All configuration is through environment variables (`.env.example` lists the com
 A value of `0` means "as much as the server allows", i.e. the two ceilings above. Operators who want no ceiling at all can set
 a ceiling to `0`.
 
-**Database and migrations.** Migrations run automatically at start (`src/db/migrations.js`). They are append-only,
+**Database and migrations.** Migrations run automatically at start (`server/db/migrations.js`). They are append-only,
 transactional and tracked in the `_migrations` table: to change the schema add a new entry with the next `id`, never edit an
 applied one.
 
@@ -879,39 +879,59 @@ curl -s http://localhost:3000/api/workspaces -H "authorization: Bearer $TOKEN"
 | Layer         | Choice                                                                        | Why                                                                                          |
 | ------------- | ----------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
 | Backend       | Node 22 + Express 5 routers, zod validation                                   | small, well understood, easy to extend                                                       |
-| Database      | SQLite (`node:sqlite`, WAL, foreign keys on) + versioned migrations           | zero ops, single file, no native build; the data layer is isolated in `src/db`               |
+| Database      | SQLite (`node:sqlite`, WAL, foreign keys on) + versioned migrations           | zero ops, single file, no native build; the data layer is isolated in `server/db`               |
 | Auth          | username + password (bcrypt), JWT in an httpOnly SameSite=Strict cookie or Bearer | CSRF-resistant (custom header required for cookie auth)                                  |
 | Script engine | QuickJS compiled to WASM (`quickjs-emscripten`)                               | a real sandbox: no fs/net/process, CPU and memory limits                                     |
 | Frontend      | React 19 + Vite + zustand (`web/`, built to `dist/`)                          | in-house component library (no UI kit); React escapes by default; Vite is build-time only    |
 
 ### Layout
 
+Four parts, with one rule each (`tests/architecture.test.js` enforces them):
+
+| Part | What it is | May use |
+| --- | --- | --- |
+| `core/` | The request engine: building and sending requests, the SSRF / address guard, the nine protocols, live sessions. No Express, no database, no UI. | its npm packages (ws, gRPC, MQTT, AMQP, GraphQL, zod) |
+| `core/shared/` | Plain JavaScript that also runs in the browser: protocol and method lists, `{{variable}}` resolution. | only `core/shared` |
+| `server/` | The API Client server: Express routes, SQLite, accounts and permissions, scripts (QuickJS), the run pipeline, Local-mode prepare / complete. | `core` |
+| `agent/` | The Local Agent: its CLI, its HTTP API and security, OS integration, packaging. | `core` (never `server`) |
+| `web/` | The React UI. | `core/shared` only |
+
+So the server and the Local Agent send requests with the same code, and the UI resolves variables and lists protocols
+exactly as they do.
+
 ```
-src/
-  app.js server.js config.js
+core/
+  config.js      engine settings (limits, timeouts, sessions, UDP ports, SSRF switch); configureEngine()
+  executor.js    build a request, send it (manual redirects, limits), the wire format for the agent
+  ssrf.js        address checks with a replaceable policy (the server's: public only; the agent's: agent/src/policy.js)
+  sessions.js    live sessions: connection, numbered event log, replay
+  protocols/     common.js connectors.js websocket.js grpc.js graphql.js sse.js tcp.js udp.js mqtt.js amqp.js
+  shared/        protocols.js (protocols, HTTP methods) variables.js (scopes, {{var}} resolution)
+server/
+  app.js server.js config.js (extends core/config.js)
   db/            index.js (open + migrate)  migrations.js (append-only)
   middleware/    auth.js (authenticate, csrfGuard, requireWorkspace, requireAdmin, audit)
-  routes/        auth.js me.js admin.js workspaces.js content.js interop.js sessions.js protocolTools.js
-  services/      permissions.js variables.js executor.js runner.js scriptEngine.js ssrf.js sessions.js
-  protocols/     index.js (protocol list) common.js websocket.js grpc.js graphql.js sse.js tcp.js udp.js mqtt.js amqp.js (one module per protocol)
-                 interop.js (Postman/Hoppscotch) settings.js userSettings.js locales.js
+  routes/        auth.js me.js admin.js workspaces.js content.js interop.js sessions.js protocolTools.js agent.js
+  services/      runner.js (pipeline, split around the network call) localMode.js pendingRuns.js scriptEngine.js
+                 permissions.js interop.js (Postman/Hoppscotch) settings.js userSettings.js locales.js
+agent/           the Local Agent (one program for Linux, macOS and Windows; see Local Agent)
+  src/           main.js (CLI) server.js (API: Host/Origin/token checks) policy.js (target rules) store.js (config, pairing,
+                 tokens) service.js (systemd / launchd / Task Scheduler) integration.js (PATH, Installed apps) update.js paths.js
+  install/       install.sh install.ps1 (script installs, served with the server's address filled in)
+  packaging/     build.mjs (standalone executables, .exe / .zip / .deb / .tar.gz) macos-pkg.sh release-notes.mjs
+  vite.config.js bundles agent + core to dist/agent/agent.mjs
 web/             index.html vite.config.js
   src/           main.jsx App.jsx store.js api.js
     components/  ui (AutoComplete Select Popover Menu Modal Toasts Splitter Flag LanguageSelect …)
                  editor (VarInput CodeEditor KeyValueEditor BodyEditor AuthEditor ScriptEditor)
                  response (ResponseViewer JsonTree)
-    features/    TopBar Sidebar RequestEditor RequestTabs Console CodeSnippet SettingsPage AdminPanel + dialogs
-    lib/         codegen (35 snippet targets) settings http snippets …
+    features/    TopBar Sidebar RequestEditor RequestTabs Console CodeSnippet SettingsPage AdminPanel AgentMode + dialogs
+    lib/         transport.js (Server / Local mode) agent.js (Local Agent client) codegen (35 snippet targets) settings http …
     i18n/        index.js locales.js locales/<code>.js
 dist/            build output served by Express (npm run build)
-agent/           the Local Agent (one program for Linux, macOS and Windows; see Local Agent)
-  src/           main.js (CLI) server.js (API: Host/Origin/token checks) policy.js (target rules) store.js (config, pairing,
-                 tokens) service.js (systemd / launchd / Task Scheduler) integration.js (PATH, Installed apps) update.js paths.js
-  install/       install.sh install.ps1 (script installs, served with the server's address filled in)
-  packaging/     build.mjs (standalone executables, .exe / .zip / .deb / .tar.gz) macos-pkg.sh
-  vite.config.js bundles agent + shared engine to dist/agent/agent.mjs
 build/installers the installers from npm run build:installers (served under /agent/download/)
 tests/           unit, API and end-to-end tests
+.github/         workflows/release.yml (tests on every push; installers and the GitHub Release on version tags)
 ```
 
 ### Data model
@@ -924,7 +944,7 @@ url, params, headers, body, auth, variables, scripts, description) · `environme
 Migrations: 1 initial schema · 2 username login · 3 admin panel (admin/disabled/token version) · 4 profile (avatar, locale) ·
 5 instance settings · 6 collection description · 7 per-user settings · 8 full locale codes.
 
-### Request pipeline (`services/runner.js`)
+### Request pipeline (`server/services/runner.js`)
 
 1. Load the variable scopes.
 2. Run pre-request scripts (collections root→leaf, then the request). A script may rewrite url, method, headers, params and
@@ -939,7 +959,7 @@ Migrations: 1 initial schema · 2 username login · 3 admin panel (admin/disable
 
 ### Authorization
 
-Workspace roles are `owner > admin > editor > viewer`; `services/permissions.js` is the single permission table, and
+Workspace roles are `owner > admin > editor > viewer`; `server/services/permissions.js` is the single permission table, and
 `requireWorkspace(db, perm)` loads the membership from the database on every request (never trusting the client) and answers
 404 to non-members. Admins cannot grant admin or touch peers or the owner; the owner is immutable; nobody changes their own
 role. Administrator access (`users.is_admin`) is separate and guards `/api/admin`.
@@ -958,7 +978,7 @@ otherwise stateless.
 - **Server-side execution.** No CORS problems, shared history and consistent scripting, at the price of SSRF risk (handled below).
 - **Local mode keeps the pipeline on the server.** The agent only makes the network call; scripts, variables, permissions and
   history stay in one place, so both modes behave the same and the agent stays small. The agent reuses the server's engine
-  (`src/services/executor.js`, `src/protocols`) rather than a second implementation.
+  (`core/`) rather than a second implementation; `tests/architecture.test.js` keeps `core` free of server code.
 - **Agent installers as Node.js single executables.** One code base, no runtime to install, and every target can be built from
   Linux; per-user installs need no administrator rights.
 - **React + Vite, in-house components.** Keeps the dependency surface small; the production image only ships `dist/`.
@@ -1039,7 +1059,7 @@ Current version: **1.0.0**.
 
 Not yet available: file upload in multipart bodies, inviting people who have no account yet, share-by-link, XML pretty-printing,
 a collection runner, mock servers, OpenAPI import, per-secret encryption, gRPC server reflection, and MQTT 5 user properties.
-The code is structured so these can be added without rewriting the core: a `protocol` column, one module per live protocol in `src/protocols/` behind the session manager, a runner route on top of
+The code is structured so these can be added without rewriting the core: a `protocol` column, one module per live protocol in `core/protocols/` behind the session manager, a runner route on top of
 `runner.js` (which already returns test results), and new routes and services reading the same tables.
 
 ---

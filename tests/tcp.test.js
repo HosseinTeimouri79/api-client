@@ -4,9 +4,9 @@ import assert from "node:assert/strict";
 import net from "node:net";
 import tls from "node:tls";
 import { selfSigned } from "./fixtures/tls.js";
-import { openDb } from "../src/db/index.js";
-import { createApp } from "../src/app.js";
-import { config } from "../src/config.js";
+import { openDb } from "../server/db/index.js";
+import { createApp } from "../server/app.js";
+import { config } from "../server/config.js";
 
 let server, base, app, tcp, tlsSrv, tok, ws;
 const served = [];

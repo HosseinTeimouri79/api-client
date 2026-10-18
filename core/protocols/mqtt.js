@@ -4,10 +4,10 @@ import crypto from "node:crypto";
 import { MqttClient } from "mqtt";
 import { createWebSocketStream } from "ws";
 import { z } from "zod";
-import { safeLookup } from "../services/ssrf.js";
-import { effectiveLimits } from "../services/executor.js";
-import { config } from "../config.js";
-import { resolve as resolveVars } from "../services/variables.js";
+import { safeLookup } from "../ssrf.js";
+import { effectiveLimits } from "../executor.js";
+import { engine as config } from "../config.js";
+import { resolve as resolveVars } from "../shared/variables.js";
 import { newSocket } from "./websocket.js";
 import { parseEndpoint, decodePayload, describePayload } from "./common.js";
 

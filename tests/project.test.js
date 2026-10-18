@@ -2,9 +2,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
-import { openDb } from "../src/db/index.js";
-import { createApp } from "../src/app.js";
-import { version } from "../src/config.js";
+import { openDb } from "../server/db/index.js";
+import { createApp } from "../server/app.js";
+import { version } from "../server/config.js";
 
 const read = (f) => fs.readFileSync(new URL(`../${f}`, import.meta.url), "utf8");
 const pkg = JSON.parse(read("package.json"));

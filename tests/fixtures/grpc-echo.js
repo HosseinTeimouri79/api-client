@@ -1,6 +1,6 @@
 // A small in-process gRPC server for the tests: unary, failing, slow, server streaming, client streaming and bidirectional methods.
 import * as grpc from "@grpc/grpc-js";
-import { loadProto } from "../../src/protocols/grpc.js";
+import { loadProto } from "../../core/protocols/grpc.js";
 
 export const PROTO = `
 syntax = "proto3";

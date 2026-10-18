@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { parse, buildClientSchema, getIntrospectionQuery, printSchema } from "graphql";
-import { effectiveLimits } from "../services/executor.js";
+import { effectiveLimits } from "../executor.js";
 import { newSocket } from "./websocket.js";
 import { prepareTarget } from "./common.js";
 

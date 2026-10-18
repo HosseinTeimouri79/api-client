@@ -1,8 +1,8 @@
 import { WebSocket } from "ws";
 import { z } from "zod";
-import { safeLookup } from "../services/ssrf.js";
-import { effectiveLimits } from "../services/executor.js";
-import { resolve as resolveVars } from "../services/variables.js";
+import { safeLookup } from "../ssrf.js";
+import { effectiveLimits } from "../executor.js";
+import { resolve as resolveVars } from "../shared/variables.js";
 import { prepareTarget, decodePayload, describePayload } from "./common.js";
 
 export const WebSocketData = z.object({

@@ -2,8 +2,8 @@ import http from "node:http";
 import https from "node:https";
 import zlib from "node:zlib";
 import { safeLookup, assertPublicHost } from "./ssrf.js";
-import { config } from "../config.js";
-import { BODYLESS_METHODS } from "../protocols/index.js";
+import { engine as config } from "./config.js";
+import { BODYLESS_METHODS } from "./shared/protocols.js";
 
 /** Limits for one run: what the user asked for, never above the server's ceilings (0 = as much as allowed). */
 export function effectiveLimits(want = {}) {

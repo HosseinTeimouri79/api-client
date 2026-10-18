@@ -33,6 +33,12 @@ The version is shown in **Settings → General → About** and returned by `GET 
 - Releases: pushing a version tag tests the app, builds the installers and publishes them on GitHub Releases with
   `SHA256SUMS.txt` (`.github/workflows/release.yml`).
 
+### Changed
+- **Code layout:** the request engine shared by the server and the Local Agent is now `core/` (executor, SSRF guard, the nine
+  protocols, live sessions, engine settings in `core/config.js`); its browser-safe part `core/shared/` (protocol and method
+  lists, variable resolution) is also used by the UI instead of its own copies. The server moved from `src/` to `server/`
+  (`npm start` and the Docker image follow). `tests/architecture.test.js` enforces who may import whom.
+
 ### Fixed
 - The sidebar can no longer be narrowed below 310 px (it was 200 px, too narrow for its tabs, tools and tree).
 - The editor / response split stays between 40% and 60%; older saved sizes outside that range are corrected on load.

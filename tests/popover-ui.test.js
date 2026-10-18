@@ -12,8 +12,8 @@ let browser, server, base;
 before(async () => {
   if (skip) return;
   const { chromium } = await import("playwright-core");
-  const { openDb } = await import("../src/db/index.js");
-  const { createApp } = await import("../src/app.js");
+  const { openDb } = await import("../server/db/index.js");
+  const { createApp } = await import("../server/app.js");
   server = createApp(openDb(":memory:")).listen(0);
   base = `http://127.0.0.1:${server.address().port}`;
   browser = await chromium.launch({ executablePath: CHROME, args: ["--no-sandbox"] });

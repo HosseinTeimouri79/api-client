@@ -5,9 +5,9 @@ import assert from "node:assert/strict";
 import http from "node:http";
 import fs from "node:fs";
 import { WebSocketServer } from "ws";
-import { openDb } from "../src/db/index.js";
-import { createApp } from "../src/app.js";
-import { config } from "../src/config.js";
+import { openDb } from "../server/db/index.js";
+import { createApp } from "../server/app.js";
+import { config } from "../server/config.js";
 import { agentHome, cli, pairingCode, startAgent } from "./fixtures/agent.js";
 
 let server, base, site, target, targetUrl, agent, home, token, tok, other, ws, envId, wss, wsUrl;

@@ -25,11 +25,11 @@
   "engines": {
     "node": ">=22.13"
   },
-  "main": "src/server.js",
+  "main": "server/server.js",
   "type": "module",
   "scripts": {
-    "start": "node src/server.js",
-    "dev": "node --watch src/server.js",
+    "start": "node server/server.js",
+    "dev": "node --watch server/server.js",
     "dev:web": "vite --config web/vite.config.js",
     "agent": "node agent/src/main.js",
     "build": "vite build --config web/vite.config.js && vite build --config agent/vite.config.js",

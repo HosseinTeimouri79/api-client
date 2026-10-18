@@ -2,10 +2,10 @@
 import test, { before, after } from "node:test";
 import assert from "node:assert/strict";
 import { startGraphqlServer } from "./fixtures/graphql-server.js";
-import { openDb } from "../src/db/index.js";
-import { createApp } from "../src/app.js";
-import { config } from "../src/config.js";
-import { analyze, graphqlAsHttp } from "../src/protocols/graphql.js";
+import { openDb } from "../server/db/index.js";
+import { createApp } from "../server/app.js";
+import { config } from "../server/config.js";
+import { analyze, graphqlAsHttp } from "../core/protocols/graphql.js";
 
 let server, base, gql, tok, ws, col;
 before(async () => {

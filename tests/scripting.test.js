@@ -4,11 +4,11 @@ import http from "node:http";
 import { DatabaseSync } from "node:sqlite";
 import fs from "node:fs";
 import CryptoJS from "crypto-js";
-import { runScript } from "../src/services/scriptEngine.js";
-import { openDb, migrate } from "../src/db/index.js";
-import { migrations } from "../src/db/migrations.js";
-import { createApp } from "../src/app.js";
-import { config } from "../src/config.js";
+import { runScript } from "../server/services/scriptEngine.js";
+import { openDb, migrate } from "../server/db/index.js";
+import { migrations } from "../server/db/migrations.js";
+import { createApp } from "../server/app.js";
+import { config } from "../server/config.js";
 
 const base = (over = {}) => ({
   variables: {},

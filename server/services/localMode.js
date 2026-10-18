@@ -2,7 +2,7 @@ import { z } from "zod";
 import { config } from "../config.js";
 import { HttpError } from "../middleware/auth.js";
 import { startRun } from "./runner.js";
-import { effectiveLimits, toWire, wireLimits } from "./executor.js";
+import { effectiveLimits, toWire, wireLimits } from "../../core/executor.js";
 
 /**
  * Local mode: the server prepares a run (scripts, variables, auth, the built request), the browser has the Local Agent

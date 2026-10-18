@@ -1,6 +1,6 @@
 import dns from "node:dns";
 import net from "node:net";
-import { config } from "../config.js";
+import { engine as config } from "./config.js";
 
 export function isPrivateIp(ip) {
   if (net.isIPv4(ip)) {

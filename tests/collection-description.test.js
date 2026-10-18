@@ -1,9 +1,9 @@
 // Collections and folders carry a description (like requests): API, duplicate, and Postman/Hoppscotch import-export.
 import test, { before, after } from "node:test";
 import assert from "node:assert/strict";
-import { openDb } from "../src/db/index.js";
-import { createApp } from "../src/app.js";
-import { parseImport, toPostmanCollection, toHoppCollection } from "../src/services/interop.js";
+import { openDb } from "../server/db/index.js";
+import { createApp } from "../server/app.js";
+import { parseImport, toPostmanCollection, toHoppCollection } from "../server/services/interop.js";
 
 let server, base, tok, ws;
 before(async () => {
