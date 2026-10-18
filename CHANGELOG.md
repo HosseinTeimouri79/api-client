@@ -11,6 +11,8 @@ The version is shown in **Settings → General → About** and returned by `GET 
 
 ## [Unreleased]
 
+## [1.11.0] - 2026-10-18
+
 ### Added
 - **Local mode and the Local Agent.** A **Server / Local** switch in the header chooses where requests are sent from. In Local
   mode a small agent on the user's computer sends them, so `localhost`, the LAN and VPNs work while the server keeps its SSRF
