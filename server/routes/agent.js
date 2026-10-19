@@ -5,6 +5,7 @@ import crypto from "node:crypto";
 import { fileURLToPath } from "node:url";
 import { config, version } from "../config.js";
 import { HttpError } from "../middleware/auth.js";
+import { latestRelease } from "../services/agentRelease.js";
 
 // The Local Agent is built with the UI (`npm run build` -> dist/agent/agent.mjs) and handed out by this server, which is
 // also where installed agents look for updates. The install scripts are templates with this server's address filled in.
@@ -90,5 +91,7 @@ export function agentInfoRouter() {
       installers: (m?.installers ?? []).map(({ platform, arch, kind, url, size, sha256 }) => ({ platform, arch, kind, url, size, sha256 })),
     });
   });
+  // the installers of the latest GitHub release (null: use this server's own, above)
+  r.get("/release", async (_req, res) => res.json(config.localAgent ? await latestRelease() : null));
   return r;
 }

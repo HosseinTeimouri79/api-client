@@ -8,6 +8,7 @@ import { Tabs } from "../components/ui/Tabs.jsx";
 import { Icon } from "../components/ui/Icon.jsx";
 import { toast } from "../components/ui/Toasts.jsx";
 import { cx } from "../lib/utils.js";
+import { api } from "../api.js";
 
 // Where requests are sent from (Server or Local mode, see lib/transport.js) and the Local Agent's status, pairing and
 // install instructions. The agent's state is checked every few seconds while Local mode is on.
@@ -153,8 +154,8 @@ const INSTALLER_LABEL = { exe: "agent.dl.win", pkg: "agent.dl.pkg", deb: "agent.
 const ORDER = { exe: 0, pkg: 1, zip: 2, deb: 3, "tar.gz": 4 };
 const mb = (n) => `${(n / 1048576).toFixed(0)} MB`;
 
-/** Download buttons for the installers this server built (Node.js built in), the one for this computer first. */
-function Installers({ list, server }) {
+/** The installers (Node.js built in) as a table, one row each, the ones for this computer first. */
+function Installers({ list, server, release }) {
   const t = useT();
   const os = thisOs();
   const sorted = [...list].sort((a, b) => (b.platform === os) - (a.platform === os) || ORDER[a.kind] - ORDER[b.kind] || a.arch.localeCompare(b.arch));
@@ -162,18 +163,49 @@ function Installers({ list, server }) {
   return (
     <div className="stack">
       <p className="muted about">{t("agent.installersHint", { server })}</p>
-      <div className="agent-dls">
-        {sorted.map((f) => (
-          <a key={f.url} className={cx("btn", f.platform === os ? "btn-primary" : "btn-default", "agent-dl")} href={f.url} download title={`SHA-256 ${f.sha256}`}>
-            <Icon name="download" /><span className="btn-label">{label(f)}</span><span className="agent-dl-size">{mb(f.size)}</span>
-            {f.platform === os && <span className="agent-dl-tag">{t("agent.forThis")}</span>}
-          </a>
-        ))}
+      <p className="agent-release">
+        {release ? (
+          <><Icon name="tag" /> {t("agent.release", { version: release.version })}
+            {release.url && <> · <a href={release.url} target="_blank" rel="noreferrer">{t("agent.releasePage")} <Icon name="arrow-up-right-from-square" /></a></>}</>
+        ) : <><Icon name="server" /> {t("agent.fromServer")}</>}
+      </p>
+      <div className="agent-dl-wrap">
+        <table className="agent-dls">
+          <thead>
+            <tr><th>{t("agent.col.system")}</th><th className="agent-dl-file">{t("agent.col.file")}</th><th className="agent-dl-size">{t("agent.col.size")}</th><th><span className="sr-only">{t("agent.get")}</span></th></tr>
+          </thead>
+          <tbody>
+            {sorted.map((f) => (
+              <tr key={f.url} className={cx(f.platform === os && "mine")}>
+                <td><span className="agent-dl-name">{label(f)}</span>{f.platform === os && <span className="agent-dl-tag">{t("agent.forThis")}</span>}</td>
+                <td className="agent-dl-file"><code dir="ltr" title={`SHA-256 ${f.sha256}`}>{f.file}</code></td>
+                <td className="agent-dl-size" dir="ltr">{mb(f.size)}</td>
+                <td>
+                  <a className={cx("btn btn-sm", f.platform === os ? "btn-primary" : "btn-default", "agent-dl")} href={f.url} download aria-label={`${t("agent.get")}: ${label(f)}`} title={`SHA-256 ${f.sha256}`}>
+                    <Icon name="download" /><span className="btn-label">{t("agent.get")}</span>
+                  </a>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
       {list.some((f) => f.kind === "zip") && <p className="muted about agent-hint">{t("agent.macNote")}</p>}
       {list.some((f) => f.kind === "deb") && <p className="muted about agent-hint">{t("agent.debNote")}</p>}
     </div>
   );
+}
+
+// The latest GitHub release's installers, asked of the server (it keeps them a while); null: none, use the server's own.
+function useLatestRelease(enabled) {
+  const [release, setRelease] = useState(undefined); // undefined: still asking
+  useEffect(() => {
+    if (!enabled) return;
+    let live = true;
+    api("GET", "/agent/release").then((r) => live && setRelease(r?.installers?.length ? r : null), () => live && setRelease(null));
+    return () => { live = false; };
+  }, [enabled]);
+  return release;
 }
 
 /** Settings → General → Local Agent */
@@ -183,8 +215,10 @@ export function AgentSettings() {
   const [url, setUrl] = useState(agentUrl);
   const [urlErr, setUrlErr] = useState("");
   useEffect(() => setUrl(agentUrl), [agentUrl]);
+  const release = useLatestRelease(!!agentInfo?.enabled);
   if (!agentInfo?.enabled) return <p className="muted">{t("agent.disabled")}</p>;
   const server = agentInfo.server;
+  const installers = release?.installers ?? agentInfo.installers ?? [];
   const saveUrl = () => {
     if (url === agentUrl) return;
     if (useStore.getState().setAgentAddress(url)) setUrlErr("");
@@ -204,9 +238,10 @@ export function AgentSettings() {
       {urlErr && <div className="err" role="alert">{urlErr}</div>}
 
       <h4>{t("agent.install")}</h4>
-      {agentInfo.installers?.length ? <Installers list={agentInfo.installers} server={server} /> : <p className="muted about">{t("agent.noInstallers")}</p>}
+      {release === undefined ? <p className="muted about"><Icon name="circle-notch" spin /> {t("agent.releaseLoading")}</p>
+        : installers.length ? <Installers list={installers} server={server} release={release} /> : <p className="muted about">{t("agent.noInstallers")}</p>}
       {agentInfo.available ? (
-        <details className="agent-alt" open={!agentInfo.installers?.length}>
+        <details className="agent-alt" open={release !== undefined && !installers.length}>
           <summary>{t("agent.orCommand")}</summary>
           <div className="stack">
             <Group label={t("agent.os.unix")}><Command text={`curl -fsSL ${server}/agent/install.sh | sh`} /></Group>
@@ -217,7 +252,7 @@ export function AgentSettings() {
             </Group>
           </div>
         </details>
-      ) : !agentInfo.installers?.length && <p className="warn">{t("agent.notAvailable")}</p>}
+      ) : release !== undefined && !installers.length && <p className="warn">{t("agent.notAvailable")}</p>}
 
       <h4>{t("agent.manage")}</h4>
       {MANAGE.map((m) => <Group key={m.cmd} label={t(m.key)}><Command text={m.cmd} /></Group>)}

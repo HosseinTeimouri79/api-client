@@ -12,6 +12,13 @@ The version is shown in **Settings → General → About** and returned by `GET 
 
 ## [Unreleased]
 
+### Changed
+
+- Local Agent downloads (**Settings → General → Local Agent**) are a table, one row per installer with its file name, size and
+  download button, this computer's first, and link to the **latest GitHub release** with a link to its release page. The
+  server reads the release from the GitHub API (`GET /api/agent/release`, kept for 10 minutes) and falls back to its own
+  installers when GitHub is unreachable. New settings: `AGENT_RELEASES`, `GITHUB_API_URL`. Translated into all languages.
+
 ## [1.11.0] - 2026-10-18
 
 ### Added

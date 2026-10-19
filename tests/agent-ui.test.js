@@ -11,7 +11,7 @@ const CHROME =
   ["/opt/pw-browsers/chromium-1194/chrome-linux/chrome", "/usr/bin/chromium", "/usr/bin/google-chrome"].find((p) => fs.existsSync(p));
 const dist = new URL("../dist/index.html", import.meta.url);
 const skip = (!CHROME && "no Chromium found (set CHROME_PATH)") || (!fs.existsSync(dist) && "UI not built (npm run build)");
-let browser, server, base, target, targetUrl, agent, home;
+let browser, server, base, target, targetUrl, agent, home, github;
 
 before(async () => {
   if (skip) return;
@@ -20,6 +20,9 @@ before(async () => {
   const { createApp } = await import("../server/app.js");
   const { config } = await import("../server/config.js");
   config.allowPrivateTargets = false; // like a shared server: it must not reach the user's machine
+  const { fakeGitHub } = await import("./fixtures/github.js");
+  github = await fakeGitHub();
+  Object.assign(config, { agentReleases: "owner/repo", githubApi: github.url });
   server = createApp(openDb(":memory:")).listen(0);
   base = `http://127.0.0.1:${server.address().port}`;
   target = http.createServer((req, res) => (req.url.startsWith("/fail") ? res.writeHead(503).end("down") : res.writeHead(200, { "content-type": "application/json" }).end('{"from":"local api"}'))).listen(0, "127.0.0.1");
@@ -34,6 +37,7 @@ after(async () => {
   await agent?.stop();
   server?.close();
   target?.close();
+  github?.close();
   if (home) fs.rmSync(home, { recursive: true, force: true });
 });
 
@@ -119,11 +123,15 @@ test("E2E: Server and Local mode: pair, switch while running, agent stops and co
   await page.getByRole("tab", { name: "Local Agent", selected: true }).waitFor();
   await page.getByText("api-client-agent uninstall").waitFor();
   await page.getByText("Or install with a command").waitFor();
-  const built = (() => { try { return JSON.parse(fs.readFileSync(new URL("../build/installers/index.json", import.meta.url), "utf8")).files; } catch { return []; } })();
-  if (built.some((f) => f.kind === "exe")) {
-    const win = page.locator("a.agent-dl", { hasText: "Windows installer (.exe)" });
-    assert.match(await win.getAttribute("href"), /^\/agent\/download\/api-client-agent-setup-.*-windows-x64\.exe$/);
-    assert.equal((await page.locator("a.agent-dl.btn-primary").first().textContent()).includes("This computer"), true, "this computer's installer comes first");
-  }
+  // the latest GitHub release's installers, one row each, this computer's first, linking to the release
+  await page.getByText("Latest release: v9.9.9").waitFor();
+  assert.equal(await page.getByRole("link", { name: /Release page on GitHub/ }).getAttribute("href"), "https://github.com/owner/repo/releases/tag/v9.9.9");
+  const rows = page.locator("table.agent-dls tbody tr");
+  assert.equal(await rows.count(), 4);
+  assert.deepEqual(await page.locator("table.agent-dls th").allTextContents(), ["System", "File", "Size", "Download"]);
+  assert.match(await rows.first().textContent(), /This computer/, "this computer's installer comes first");
+  const win = page.getByRole("link", { name: "Download: Windows installer (.exe)" });
+  assert.equal(await win.getAttribute("href"), "https://github.com/owner/repo/releases/download/v9.9.9/api-client-agent-setup-9.9.9-windows-x64.exe");
+  assert.equal((await rows.filter({ hasText: "Windows installer (.exe)" }).locator("td").allTextContents()).slice(1, 3).join(" | "), "api-client-agent-setup-9.9.9-windows-x64.exe | 93 MB");
   assert.deepEqual(errors, []);
 });

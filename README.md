@@ -387,9 +387,11 @@ The agent is an HTTP service on the user's machine, so it assumes every web page
 **Ready-made installers** for each version are attached to the
 [GitHub Releases](https://github.com/HosseinTeimouri79/api-client/releases), with `index.json` and `SHA256SUMS.txt`: pushing a
 `vX.Y.Z` tag runs `.github/workflows/release.yml`, which tests, builds them and publishes the release (no personal token needed);
-pushes to `main` and pull requests run the tests only. To offer
-them from your server without building, download all files of the release that matches your server's version into
-`AGENT_INSTALLERS_DIR` (default `./build/installers`).
+pushes to `main` and pull requests run the tests only. The download table in **Settings → General → Local Agent** links to
+the installers of the **latest** release (the server reads it from the GitHub API and keeps it for 10 minutes;
+`AGENT_RELEASES` picks the repository). When GitHub cannot be reached, or with `AGENT_RELEASES=off`, it lists this server's
+own installers instead: download all files of the release that matches your server's version into `AGENT_INSTALLERS_DIR`
+(default `./build/installers`). Installed agents always update from the server's `/agent/manifest.json`.
 
 To build them yourself:
 
@@ -452,6 +454,8 @@ All configuration is through environment variables (`.env.example` lists the com
 | `LOCAL_AGENT`                 | `true`                 | Offer Local mode (requests sent by the [Local Agent](#local-agent) on the user's computer). `false` turns it off. |
 | `PUBLIC_URL`                  | from the request       | The address users open the app at (`https://api.example.com`); used in the agent's install commands.  |
 | `AGENT_INSTALLERS_DIR`        | `./build/installers`   | Folder with the agent installers from `npm run build:installers` (`/installers` in Docker).           |
+| `AGENT_RELEASES`              | from `package.json`    | GitHub repository (`owner/name`) whose latest release the download table links to; `off`: this server's installers only. |
+| `GITHUB_API_URL`              | `https://api.github.com` | GitHub API address (GitHub Enterprise).                                                              |
 | `AGENT_DEFAULT_URL`           | `http://127.0.0.1:47823` | Where the browser looks for the agent unless the user changes it.                                   |
 | `CHROME_PATH`                 | auto-detected          | Chromium/Chrome binary for the end-to-end tests.                                                |
 

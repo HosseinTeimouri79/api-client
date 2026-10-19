@@ -459,3 +459,27 @@ test("the server lists and serves the installers it has, and nothing else from t
     fs.rmSync(dir, { recursive: true, force: true });
   }
 });
+
+test("download links point to the latest GitHub release's installers; off or unreachable: none (the UI uses the server's)", async () => {
+  const { fakeGitHub, RELEASE_FILES, DOWNLOAD } = await import("./fixtures/github.js");
+  const gh = await fakeGitHub({ extra: [{ name: "evil.deb", size: 1, browser_download_url: "javascript:alert(1)" }] });
+  const saved = { agentReleases: config.agentReleases, githubApi: config.githubApi };
+  try {
+    Object.assign(config, { agentReleases: "owner/repo", githubApi: gh.url });
+    const r = (await call(tok, "GET", "/agent/release")).body;
+    assert.equal(r.version, "9.9.9");
+    assert.equal(r.url, "https://github.com/owner/repo/releases/tag/v9.9.9");
+    assert.deepEqual(r.installers, RELEASE_FILES.map((f) => ({ ...f, url: DOWNLOAD + f.file })), "only https links to the release's own files");
+    await call(tok, "GET", "/agent/release");
+    assert.equal(gh.hits, 1, "kept for a while, GitHub is not asked on every page load");
+    assert.equal((await fetch(`${base}/agent/release`)).status, 401, "signed in only");
+
+    config.agentReleases = "off";
+    assert.equal((await call(tok, "GET", "/agent/release")).body, null);
+    Object.assign(config, { agentReleases: "owner/repo", githubApi: "http://127.0.0.1:1" });
+    assert.equal((await call(tok, "GET", "/agent/release")).body, null);
+  } finally {
+    Object.assign(config, saved);
+    gh.close();
+  }
+});
