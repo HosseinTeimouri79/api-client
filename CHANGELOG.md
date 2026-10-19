@@ -12,6 +12,8 @@ The version is shown in **Settings → General → About** and returned by `GET 
 
 ## [Unreleased]
 
+## [1.12.0] - 2026-10-19
+
 ### Added
 
 - **The Local Agent's own page** at `http://127.0.0.1:47823/ui/`, in the web app's look and all its languages: status,
@@ -197,5 +199,6 @@ First versioned release.
 - Docker image (non-root, read-only root filesystem), SQLite with automatic versioned migrations, health check.
 - Licensed under the Apache License 2.0; see `LICENSE` and `NOTICE`.
 
-[Unreleased]: https://github.com/HosseinTeimouri79/api-client/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/HosseinTeimouri79/api-client/compare/v1.12.0...HEAD
+[1.12.0]: https://github.com/HosseinTeimouri79/api-client/compare/v1.11.0...v1.12.0
 [1.0.0]: https://github.com/HosseinTeimouri79/api-client/releases/tag/v1.0.0
