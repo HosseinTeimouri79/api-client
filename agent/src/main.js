@@ -33,8 +33,10 @@ const HELP = `API Client Local Agent ${VERSION}
 
 Usage: api-client-agent <command> [options]     (or: node agent.mjs <command>)
 
-  setup [--server URL]                guided install (what opening the installer does): asks for your API Client's
-                                      address, installs, starts and prints a pairing code
+  setup [--server URL]                guided install (what opening the installer does): installs, starts and opens the
+                                      agent's page in your browser (without a desktop: asks here, prints a pairing code)
+  ui [--print]                        open the agent's page: status, sites, pairing, network access, activity, settings
+                                      (--print: only print the one-time address)
   install [--server URL] [--port N] [--no-service]
                                       copy the agent to its folder, run it in the background at logon, allow the
                                       web app at URL and print a pairing code (--no-service: portable, start it with run)
@@ -64,9 +66,10 @@ function parseArgs(argv) {
       else flags[k] = true;
     } else pos.push(a);
   }
-  // opened without arguments in a window (double-click): the standalone program sets itself up. Without a terminal
-  // (scripts, pipes) or as the script, it only shows the help: installing needs someone who asked for it.
-  return { cmd: pos[0] ?? (STANDALONE && process.stdin.isTTY && process.stdout.isTTY ? "setup" : "help"), args: pos.slice(1), flags };
+  // opened without arguments in a window (double-click): the standalone program sets itself up, or opens its page when
+  // it is the installed copy (main() decides). Without a terminal (scripts, pipes) or as the script, it only shows the
+  // help: installing needs someone who asked for it.
+  return { cmd: pos[0] ?? (STANDALONE && process.stdin.isTTY && process.stdout.isTTY ? "default" : "help"), args: pos.slice(1), flags };
 }
 /** Waits for Enter when there is someone to press it. */
 function pause(msg = "Press Enter to close this window.") {
@@ -88,6 +91,25 @@ const nodeTooOld = () => {
   const [a, b] = process.versions.node.split(".").map(Number), [x, y] = MIN_NODE.split(".").map(Number);
   return a < x || (a === x && b < y);
 };
+
+/** Is there a desktop to open a browser on (not over SSH / in a container)? */
+const hasDesktop = () => process.platform !== "linux" || !!(process.env.DISPLAY || process.env.WAYLAND_DISPLAY);
+/** Opens `url` in the default browser; false when that did not work. API_CLIENT_AGENT_NO_BROWSER=1 never opens one. */
+function openBrowser(url) {
+  if (process.env.API_CLIENT_AGENT_NO_BROWSER === "1" || !hasDesktop()) return Promise.resolve(false);
+  const [cmd, args] = process.platform === "win32" ? ["rundll32.exe", ["url.dll,FileProtocolHandler", url]] : [process.platform === "darwin" ? "open" : "xdg-open", [url]];
+  return new Promise((resolve) => {
+    let child;
+    try { child = spawn(cmd, args, { stdio: "ignore", detached: true, windowsHide: true }); } catch { return resolve(false); }
+    // most openers return at once; one that keeps running has started the browser
+    const t = setTimeout(() => { child.unref(); resolve(true); }, 5000);
+    child.once("error", () => { clearTimeout(t); resolve(false); });
+    child.once("exit", (code) => { clearTimeout(t); resolve(code === 0 || process.platform === "win32"); });
+  });
+}
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+/** A one-time address that opens the agent's page (swapped for a session cookie, see ui.js). */
+const uiLink = (store, port) => `http://127.0.0.1:${port}/ui/open?key=${store.startUiLaunch()}`;
 
 async function health(port) {
   try {
@@ -120,11 +142,12 @@ async function main() {
   // the installed program and the command that starts it
   const program = PACKAGED ? self : path.join(paths.install, STANDALONE ? EXE : "agent.mjs");
   const command = STANDALONE ? [program] : [process.execPath, program];
-  const service = () => createService({ command, paths, packaged: PACKAGED, env: process.env.API_CLIENT_AGENT_HOME ? { API_CLIENT_AGENT_HOME: process.env.API_CLIENT_AGENT_HOME } : {} });
+  // API_CLIENT_AGENT_SERVICE: the service runs the agent and starts it again when it exits to restart (see run)
+  const service = () => createService({ command, paths, packaged: PACKAGED, env: { API_CLIENT_AGENT_SERVICE: "1", ...(process.env.API_CLIENT_AGENT_HOME && { API_CLIENT_AGENT_HOME: process.env.API_CLIENT_AGENT_HOME }) } });
   const cliName = PACKAGED || STANDALONE ? "api-client-agent" : `node "${program}"`;
 
-  /** Copies the program into place, starts it at logon and allows `server`; prints a pairing code for it. */
-  async function install({ server, port, noService = false }) {
+  /** Copies the program into place, starts it at logon and allows `server`; prints a pairing code for it (`pairing`). */
+  async function install({ server, port, noService = false, pairing = true }) {
     if (!BUNDLED) die("install from the built agent: npm run build, then node dist/agent/agent.mjs install");
     if (!PACKAGED) {
       fs.mkdirSync(paths.install, { recursive: true });
@@ -151,12 +174,28 @@ async function main() {
       const s = service();
       s.install();
       console.log(`Installed ${program}\nBackground service: ${s.kind} (${s.files.map((f) => f.path).join(", ") || "installed by the package"})`);
-      if (!PACKAGED) console.log(applyIntegration({ command, dir: paths.install, version: VERSION }));
+      if (!PACKAGED) {
+        const { uiAssets } = await import("./ui-assets.js");
+        console.log(applyIntegration({ command, dir: paths.install, version: VERSION, icon: uiAssets()?.get("logo.png")?.body ?? null }));
+      }
     }
     const p = store.config().port;
     if (!noService) console.log((await waitHealthy(p)) ? `The agent is running on http://127.0.0.1:${p}` : `The agent did not answer on port ${p} yet; check "${cliName} status" and ${paths.logs}`);
+    if (!PACKAGED) store.write("installed.json", { version: VERSION });
+    if (!pairing) return;
     if (origin) printPairing(store.startPairing(origin));
     else console.log(`Allow your API Client site with: ${cliName} pair --origin https://your-api-client`);
+  }
+  /** Opens the agent's page, starting the background agent first when it is installed but not running. */
+  async function openUi({ print = false } = {}) {
+    const rt = store.read("runtime.json", {});
+    let port = readPid(paths) && rt.pid === readPid(paths) ? rt.port : store.config().port;
+    if (!(await health(port)) && service().status() !== "not installed") { service().start(); port = store.config().port; await waitHealthy(port); }
+    if (!(await health(port))) die(`the agent is not running; start it with "${cliName} start" (or "${cliName} run")`);
+    const url = uiLink(store, port);
+    if (!print && (await openBrowser(url))) return true;
+    console.log(`Open this address in your browser (it works once, for 2 minutes):\n\n    ${url}\n`);
+    return false;
   }
 
   switch (cmd) {
@@ -166,17 +205,41 @@ async function main() {
       const running = readPid(paths);
       if (running && running !== process.pid) die(`the agent is already running (pid ${running}); use "restart"`);
       const port = flags.port !== undefined ? Number(flags.port) : undefined;
+      // what the agent's page may ask the running program to do (agent/src/ui.js)
+      const control = {
+        managed: process.env.API_CLIENT_AGENT_SERVICE === "1", // the service starts it again after restart()
+        packaged: PACKAGED, paths,
+        checkUpdate: async () => {
+          const s = store.config().server;
+          if (!s) throw new Error("No API Client site to update from: add one first");
+          const r = await checkForUpdate({ server: s, current: VERSION });
+          return { available: r.available, current: r.current, latest: r.latest };
+        },
+        update: BUNDLED && !PACKAGED ? () => applyUpdate({ server: store.config().server, target: self, current: VERSION, standalone: STANDALONE }) : null,
+      };
       let server;
       try {
-        server = await startAgent({ store, version: VERSION, log, port });
+        server = await startAgent({ store, version: VERSION, log, port, control });
       } catch (e) {
         die(e.code === "EADDRINUSE" ? `port ${port ?? store.config().port} is in use (change it: config set port N)` : e.message);
       }
       writePid(paths);
+      store.write("runtime.json", { pid: process.pid, port: server.address().port }); // for `ui` when it runs on another port
       if (process.platform === "win32") fs.rmSync(`${self}.old`, { force: true }); // left by an update
+      if (store.read("installed.json", {}).version !== VERSION && BUNDLED && !PACKAGED && path.resolve(self) === path.resolve(program)) {
+        // the first start after an update: service files and shortcuts as this version makes them
+        try {
+          service().refresh();
+          const { uiAssets } = await import("./ui-assets.js");
+          applyIntegration({ command, dir: paths.install, version: VERSION, icon: uiAssets()?.get("logo.png")?.body ?? null });
+          store.write("installed.json", { version: VERSION });
+        } catch (e) { log.warn("could not refresh the install after an update", { message: e.message }); }
+      }
       const addr = server.address();
       log.info(`API Client Local Agent ${VERSION} listening on http://127.0.0.1:${addr.port}`, { origins: store.config().origins });
       const stop = (code = 0) => { clearPid(paths); server.close(); server.closeAllConnections?.(); setTimeout(() => process.exit(code), 200).unref(); };
+      control.restart = () => { log.info("restarting (from the agent's page)"); stop(RESTART_EXIT_CODE); };
+      control.stop = () => { log.info("stopping (from the agent's page)"); stop(0); };
       process.on("SIGTERM", () => stop(0));
       process.on("SIGINT", () => stop(0));
       process.on("unhandledRejection", (e) => log.error("unhandledRejection", { message: e?.message }));
@@ -199,16 +262,50 @@ async function main() {
       pauseAtExit = true;
       console.log(`API Client Local Agent ${VERSION} — setup\n\nThe agent sends API Client's requests from this computer, so they can reach localhost and your\nlocal network. It is installed for your user only and starts when you log in.\n`);
       let server = flags.server ?? store.config().server;
-      if (!server && process.stdin.isTTY) {
+      const noService = !!flags["no-service"];
+      // with a desktop, the rest happens on the agent's page (address, pairing code); otherwise here
+      const browse = !noService && hasDesktop() && !flags["no-browser"];
+      const ask = async () => {
+        if (server || !process.stdin.isTTY) return;
         const rl = createInterface({ input: process.stdin, output: process.stdout });
         server = (await rl.question("Address of your API Client (e.g. https://api.example.com): ")).trim() || null;
         rl.close();
+      };
+      if (!browse) await ask();
+      await install({ server, port: flags.port, noService, pairing: !browse });
+      if (browse) {
+        const port = store.config().port;
+        if ((await health(port)) && (await openBrowser(uiLink(store, port)))) {
+          console.log(`\nThe agent's page is open in your browser: ${server ? "pair your API Client there" : "type your API Client's address there"}.\nOpen it again later from the "API Client Agent" shortcut or with: ${cliName} ui`);
+          await sleep(4000); // time to read it; the window closes by itself
+          return;
+        }
+        // no browser after all: as without a desktop
+        await ask();
+        if (server) {
+          const origin = store.allowOrigin(normalizeOrigin(/^[a-z][a-z0-9+.-]*:\/\//i.test(server) ? server : `https://${server}`) ?? die(`not a web address: ${server}`));
+          if (!store.config().server) store.updateConfig({ server: origin });
+          printPairing(store.startPairing(origin));
+        }
       }
-      await install({ server, port: flags.port, noService: !!flags["no-service"] });
-      console.log(`\nManage it later with: ${cliName} status | pair | update | uninstall`);
+      console.log(`\nManage it later with: ${cliName} ui | status | pair | update | uninstall`);
       pause();
       return;
     }
+
+    case "default": {
+      // double-clicked: the installed copy (Start menu, a terminal) opens its page; a downloaded one installs itself
+      const installedCopy = PACKAGED || path.resolve(self) === path.resolve(program);
+      if (installedCopy && service().status() !== "not installed") {
+        pauseAtExit = true;
+        if (!(await openUi())) pause();
+        return;
+      }
+      process.argv.splice(2, 0, "setup");
+      return main();
+    }
+
+    case "ui": case "open": await openUi({ print: !!flags.print }); return;
 
     case "install": await install({ server: flags.server, port: flags.port, noService: !!flags["no-service"] }); return;
 

@@ -12,6 +12,18 @@ The version is shown in **Settings → General → About** and returned by `GET 
 
 ## [Unreleased]
 
+### Added
+
+- **The Local Agent's own page** at `http://127.0.0.1:47823/ui/`, in the web app's look and all its languages: status,
+  restart / stop and updates; the allowed sites with pairing codes (the page notices when one is used), unpairing and
+  removing; network access (internet, local network, this computer, link-local, allow / deny lists) applied at once; recent
+  activity (addresses only); settings and files. It opens with a one-time link (`api-client-agent ui`, the new **API Client
+  Agent** shortcut in the Start menu, applications menu or `~/Applications`, or double-clicking the installed program) that
+  becomes a `SameSite=Strict` session cookie; its API answers only to the page itself, never to the sites.
+- Installing by double-click now opens the agent's page to type the API Client address and see the pairing code, instead
+  of asking in a terminal (which stays the way without a desktop). The `.deb` adds an applications-menu entry.
+- The first start after an update rewrites the service files and adds the shortcut, so updated installs get them too.
+
 ### Changed
 
 - Local Agent downloads (**Settings → General → Local Agent**) are a table, one row per installer with its file name, size and

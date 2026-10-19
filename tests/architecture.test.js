@@ -3,7 +3,8 @@
 //   core/shared/ plain JavaScript that also runs in the browser: no Node.js APIs, nothing outside core/shared
 //   server/      the API Client server (Express, SQLite, auth, scripts): uses core
 //   agent/       the Local Agent: uses core, never the server
-//   web/         the UI: may use core/shared only
+//   web/         the UI: the web app (web/src) and the Local Agent's own page (web/agent-ui), which reuses the web app's
+//                components, styles and translations; both may use core/shared only
 import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
@@ -36,4 +37,8 @@ test("the server and the Local Agent never import each other", () => {
 });
 test("the UI uses only core/shared from outside web/", () => {
   check("web/src", (t, spec) => !spec.startsWith(".") || inside(t, "web") || inside(t, "core/shared"), "the browser bundle must not pull in Node.js code");
+  check("web/agent-ui", (t, spec) => !spec.startsWith(".") || inside(t, "web") || inside(t, "core/shared"), "the agent's page talks to the agent over HTTP only");
+});
+test("the agent's page is its own app: it does not pull in the web app's store or server API client", () => {
+  check("web/agent-ui", (t) => !["web/src/store.js", "web/src/api.js", "web/src/App.jsx"].includes(t) && !inside(t, "web/src/features"), "only shared components, styles, translations and helpers");
 });

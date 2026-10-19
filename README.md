@@ -299,12 +299,14 @@ needed, and nothing needs administrator rights: the agent is installed for the c
 
 | System                      | File                                        | What to do                                                                                                                  |
 | --------------------------- | ------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| Windows 10/11 (x64)         | `api-client-agent-setup-<v>-windows-x64.exe` | Double-click. It asks for the API Client address, installs to `%LOCALAPPDATA%\api-client-agent`, adds itself to **Settings → Apps → Installed apps** (with Uninstall) and to the user's `PATH`, starts at logon (Task Scheduler, hidden) and shows a pairing code. |
-| macOS 12+ (Apple Silicon / Intel) | `api-client-agent-<v>-macos-arm64.zip` / `-x64.zip` | Unzip and double-click `api-client-agent`. It is not notarized: if macOS blocks it, open **System Settings → Privacy & Security → Open Anyway** (macOS 15+), or right-click → **Open** on older versions. It opens in Terminal, asks for the address, installs to `~/Library/Application Support/api-client-agent`, registers a LaunchAgent and shows a pairing code. |
-| Debian / Ubuntu (amd64, arm64) | `api-client-agent_<v>_amd64.deb` / `_arm64.deb` | `sudo apt install ./api-client-agent_<v>_amd64.deb`, then **as your normal user** `api-client-agent setup`. The package ships the program in `/usr/lib/api-client-agent` and a systemd *user* unit. |
-| Other Linux (x64, arm64)    | `api-client-agent-<v>-linux-x64.tar.gz` / `-arm64` | `tar xzf …` and run `./api-client-agent` in a terminal: installs to `~/.local/share/api-client-agent`, a systemd user service (or an XDG autostart entry without systemd) and `~/.local/bin/api-client-agent`. |
+| Windows 10/11 (x64)         | `api-client-agent-setup-<v>-windows-x64.exe` | Double-click. It installs to `%LOCALAPPDATA%\api-client-agent`, adds itself to **Settings → Apps → Installed apps** (with Uninstall), to the user's `PATH` and to the **Start menu** (**API Client Agent**), starts at logon (Task Scheduler, hidden) and opens [the agent's page](#the-agents-page) in the browser. |
+| macOS 12+ (Apple Silicon / Intel) | `api-client-agent-<v>-macos-arm64.zip` / `-x64.zip` | Unzip and double-click `api-client-agent`. It is not notarized: if macOS blocks it, open **System Settings → Privacy & Security → Open Anyway** (macOS 15+), or right-click → **Open** on older versions. It installs to `~/Library/Application Support/api-client-agent`, registers a LaunchAgent, adds **~/Applications/API Client Agent** and opens the agent's page. |
+| Debian / Ubuntu (amd64, arm64) | `api-client-agent_<v>_amd64.deb` / `_arm64.deb` | `sudo apt install ./api-client-agent_<v>_amd64.deb`, then **as your normal user** `api-client-agent setup`. The package ships the program in `/usr/lib/api-client-agent`, a systemd *user* unit and an **API Client Agent** entry in the applications menu. |
+| Other Linux (x64, arm64)    | `api-client-agent-<v>-linux-x64.tar.gz` / `-arm64` | `tar xzf …` and run `./api-client-agent`: installs to `~/.local/share/api-client-agent`, a systemd user service (or an XDG autostart entry without systemd), `~/.local/bin/api-client-agent` and an applications-menu entry. |
 
-Then, in API Client: **Server / Local → Local**, type the pairing code, **Pair**. The header shows **Local** with a green dot.
+On the agent's page, type your API Client's address: it shows a pairing code. Then, in API Client: **Server / Local → Local**,
+type the code, **Pair**. The header shows **Local** with a green dot. (Without a desktop, e.g. over SSH, `setup` asks for the
+address in the terminal and prints the code there.)
 
 Without the installers (or with Node.js 22.13+ already there), the same page shows one-line installs that download the
 script version (`agent.mjs`) from this server and check its SHA-256:
@@ -315,13 +317,33 @@ powershell -NoProfile -ExecutionPolicy Bypass -Command "irm https://api.example.
 node agent.mjs install --server https://api.example.com                                                     # by hand
 ```
 
+### The agent's page
+
+The agent has its own page, served by the agent itself at `http://127.0.0.1:47823/ui/`, with the web app's look and languages:
+
+- **Overview**: running or not, address, version, system, how many sites are allowed and paired, requests in progress and
+  open connections, restart / stop, and **updates** (check, install, restart) from the site the agent belongs to.
+- **Sites**: the sites allowed to use the agent; add one, make a **pairing code** (with a countdown and the steps to type it
+  into the web app; the page notices when it is used), unpair a browser, remove a site.
+- **Network access**: the internet / local network / this computer / link-local switches and the allow / deny lists
+  (`targets.*`). Changes apply to the next request at once.
+- **Activity**: the last requests, connections, pairings and refused attempts, with site, target origin and result: addresses
+  only, never paths, headers or bodies.
+- **Settings**: port and limits (applied by a restart), automatic updates, where the files are, how to uninstall.
+
+Open it from the **API Client Agent** shortcut (Start menu, applications menu, `~/Applications`), by double-clicking the
+installed program, or with `api-client-agent ui` (which starts the background agent first when it is installed but stopped).
+These make a one-time link; opening the page's address without one shows how to open it, since the page belongs to the
+person at this computer, not to the sites (see [Security of Local mode](#security-of-local-mode)).
+
 ### Managing it
 
 The program is also its command line (`api-client-agent help`; on Windows it is on the user's `PATH` after setup):
 
 | Command | What it does |
 | ------- | ------------ |
-| `setup [--server URL]` | The guided install the installers run (asks for the address when it is not given). |
+| `setup [--server URL]` | The guided install the installers run: installs, starts and opens the agent's page (without a desktop: asks for the address and prints a pairing code). |
+| `ui [--print]` | Opens [the agent's page](#the-agents-page) (`--print`: prints its one-time address instead). |
 | `install --server URL [--port N] [--no-service]` | The same without questions; `--no-service` for a portable copy you start with `run`. |
 | `status` | Service state, port, allowed sites, paired tokens, target rules, where the files are. |
 | `pair [--origin URL]` | A new one-time pairing code (8 characters, valid 10 minutes, cancelled after 5 wrong tries). |
@@ -339,7 +361,7 @@ Where things live (`API_CLIENT_AGENT_HOME` puts everything in one folder):
 | macOS | `~/Library/Application Support/api-client-agent` | same | `~/Library/Logs/api-client-agent` | LaunchAgent `com.apiclient.agent` |
 | Windows | `%APPDATA%\api-client-agent` | `%LOCALAPPDATA%\api-client-agent` | `%LOCALAPPDATA%\api-client-agent\logs` | Task Scheduler task **API Client Agent** (at logon) |
 
-Agent settings (`api-client-agent config set KEY VALUE`, then `restart`):
+Agent settings (on the agent's page, or `api-client-agent config set KEY VALUE`, then `restart`):
 
 | Key | Default | Meaning |
 | --- | --- | --- |
@@ -380,6 +402,11 @@ The agent is an HTTP service on the user's machine, so it assumes every web page
 - **Updates and downloads** come only from the server the agent was installed from and must match the SHA-256 in its
   manifest (`--sha256` checks against a hash you got another way). Installers download Node.js from nodejs.org and check it
   against `SHASUMS256.txt` when they are built.
+- **The agent's own page** (`/ui`) can change what the agent allows, so the sites never get to use it: it opens only with a
+  one-time link (2 minutes, used once) that the `ui` command or the shortcut makes, which is swapped for a session cookie
+  (`HttpOnly`, `SameSite=Strict`, `Path=/ui`, stored hashed). Its API answers only to the page's own origin: requests from any
+  other origin, the allowed sites included, and changes without an `Origin` are refused (no CSRF), and it sends no CORS
+  headers. The `Host` check applies to it too, and a strict `Content-Security-Policy` (own scripts only, no frames) protects it.
 - **Operators** can turn Local mode off with `LOCAL_AGENT=false` (the routes answer 403 and the switch disappears).
 
 ### Building the installers
@@ -898,7 +925,7 @@ Four parts, with one rule each (`tests/architecture.test.js` enforces them):
 | `core/shared/` | Plain JavaScript that also runs in the browser: protocol and method lists, `{{variable}}` resolution. | only `core/shared` |
 | `server/` | The API Client server: Express routes, SQLite, accounts and permissions, scripts (QuickJS), the run pipeline, Local-mode prepare / complete. | `core` |
 | `agent/` | The Local Agent: its CLI, its HTTP API and security, OS integration, packaging. | `core` (never `server`) |
-| `web/` | The React UI. | `core/shared` only |
+| `web/` | The React UI: the web app (`web/src`) and [the agent's page](#the-agents-page) (`web/agent-ui`), which reuses the web app's components, styles and translations and is built into the agent. | `core/shared` only |
 
 So the server and the Local Agent send requests with the same code, and the UI resolves variables and lists protocols
 exactly as they do.
@@ -920,11 +947,13 @@ server/
                  permissions.js interop.js (Postman/Hoppscotch) settings.js userSettings.js locales.js
 agent/           the Local Agent (one program for Linux, macOS and Windows; see Local Agent)
   src/           main.js (CLI) server.js (API: Host/Origin/token checks) policy.js (target rules) store.js (config, pairing,
-                 tokens) service.js (systemd / launchd / Task Scheduler) integration.js (PATH, Installed apps) update.js paths.js
+                 tokens) service.js (systemd / launchd / Task Scheduler) integration.js (PATH, Installed apps, shortcuts)
+                 ui.js (the agent's page: its API and rules) ui-assets.js update.js paths.js
   install/       install.sh install.ps1 (script installs, served with the server's address filled in)
   packaging/     build.mjs (standalone executables, .exe / .zip / .deb / .tar.gz) macos-pkg.sh release-notes.mjs
-  vite.config.js bundles agent + core to dist/agent/agent.mjs
+  vite.config.js bundles agent + core + the agent's page (dist/agent-ui) to dist/agent/agent.mjs
 web/             index.html vite.config.js
+  agent-ui/      the agent's page: App.jsx (Overview, Sites, Network access, Activity, Settings) api.js vite.config.js
   src/           main.jsx App.jsx store.js api.js
     components/  ui (AutoComplete Select Popover Menu Modal Toasts Splitter Flag LanguageSelect …)
                  editor (VarInput CodeEditor KeyValueEditor BodyEditor AuthEditor ScriptEditor)
@@ -1037,7 +1066,9 @@ npm test      # builds the UI, then runs unit, API and end-to-end tests (node --
 - One test (compiling the generated C code against libcurl) is skipped on machines without the libcurl headers.
 - The **Local Agent** is tested as a real process (`tests/agent.test.js`): Host / Origin / CORS / pairing / token checks, target
   rules, Local-mode runs through the server's pipeline, switching modes, the agent stopping and restarting, API errors,
-  live sessions, updates and the service files for all three systems. `tests/agent-ui.test.js` does it in the browser.
+  live sessions, updates and the service files for all three systems, and the agent's page (one-time link, cookie, Origin
+  rules, sites, pairing, network rules, settings, activity). `tests/agent-ui.test.js` does it in the browser, and
+  `tests/agent-page-ui.test.js` uses the agent's page and the web app together.
   `tests/agent-installer.test.js` installs and runs the real Linux standalone program and checks the `.deb` and the other
   installers; it is skipped until `npm run build:installers` has run.
 

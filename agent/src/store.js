@@ -102,6 +102,45 @@ export class Store {
     return { token, id: entry.id };
   }
 
+  cancelPairing() {
+    fs.rmSync(this.file("pairing.json"), { force: true });
+  }
+
+  // ---- the agent's own page (/ui): opened with a one-time link that only someone on this computer can make (the
+  // `ui` command, the shortcut), which is swapped for a session cookie. Both are stored hashed, like tokens. ----
+  /** A one-time key for /ui/open, valid for `ttlMs`; replaces the previous one. */
+  startUiLaunch(ttlMs = 2 * 60_000) {
+    const key = crypto.randomBytes(24).toString("base64url");
+    this.write("ui-launch.json", { hash: sha256(key), expiresAt: Date.now() + ttlMs });
+    return key;
+  }
+  /** True once for a valid key; the key is used up either way. */
+  useUiLaunch(key) {
+    const l = this.read("ui-launch.json", null);
+    if (!l || !key) return false;
+    const ok = l.expiresAt > Date.now() && same(sha256(String(key)), l.hash);
+    if (ok) fs.rmSync(this.file("ui-launch.json"), { force: true });
+    return ok;
+  }
+  uiSessions() {
+    const s = this.read("ui-sessions.json", []);
+    return Array.isArray(s) ? s.filter((x) => x.expiresAt > Date.now()) : [];
+  }
+  createUiSession(ttlMs = 30 * 24 * 3600_000) {
+    const token = crypto.randomBytes(32).toString("base64url");
+    this.write("ui-sessions.json", [...this.uiSessions().slice(-9), { hash: sha256(token), expiresAt: Date.now() + ttlMs }]);
+    return token;
+  }
+  hasUiSession(token) {
+    if (!token) return false;
+    const h = sha256(String(token));
+    return this.uiSessions().some((x) => same(x.hash, h));
+  }
+  endUiSession(token) {
+    const h = sha256(String(token ?? ""));
+    this.write("ui-sessions.json", this.uiSessions().filter((x) => !same(x.hash, h)));
+  }
+
   // ---- tokens ----
   tokens() {
     const t = this.read("tokens.json", []);

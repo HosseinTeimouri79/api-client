@@ -76,6 +76,8 @@ export function createApp(db) {
     path.dirname(fileURLToPath(import.meta.url)),
     "../dist",
   );
+  // dist/agent-ui/ is the Local Agent's own page, built into the agent: not served from here
+  app.use("/agent-ui", (_req, _res, next) => next(new HttpError(404, "Not found")));
   app.use(express.static(dist));
   app.get(/^\/(?!api\/|healthz|agent\/).*/, (_req, res, next) =>
     res.sendFile(path.join(dist, "index.html"), (e) => e && next()),

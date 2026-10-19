@@ -63,3 +63,15 @@ export function makeAddressPolicy(targets = {}) {
     return null;
   };
 }
+
+/** An entry of targets.allow / targets.deny: an IP, a CIDR range or a host name pattern such as "*.corp.local". */
+export function validTarget(raw) {
+  const e = String(raw ?? "").trim().toLowerCase();
+  if (!e || e.length > 253) return false;
+  const [addr, bits, extra] = e.split("/");
+  if (extra !== undefined) return false;
+  const fam = net.isIPv4(addr) ? 32 : net.isIPv6(addr) ? 128 : 0;
+  if (fam) return bits === undefined || (/^\d{1,3}$/.test(bits) && Number(bits) <= fam);
+  const label = "(?:\\*|[a-z0-9_](?:[a-z0-9_-]*[a-z0-9_])?)";
+  return bits === undefined && new RegExp(`^${label}(?:\\.${label})*$`).test(e);
+}

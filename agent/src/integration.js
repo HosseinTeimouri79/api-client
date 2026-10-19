@@ -6,7 +6,9 @@ import { execFileSync } from "node:child_process";
 /**
  * What an installed program is expected to have on each system, for the current user only (no administrator rights):
  *  - Windows: an entry in Settings → Apps → Installed apps (with Uninstall), and the program folder on the user's PATH;
- *  - Linux / macOS: the `api-client-agent` command in ~/.local/bin.
+ *  - Linux / macOS: the `api-client-agent` command in ~/.local/bin;
+ *  - everywhere: a shortcut that opens the agent's page (`ui`): Start menu on Windows, the applications menu on Linux,
+ *    ~/Applications/API Client Agent.app on macOS.
  * The `*Spec` functions are pure (tested on every system); `applyIntegration` / `removeIntegration` do the work.
  */
 export const UNINSTALL_KEY = "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\ApiClientAgent";
@@ -50,6 +52,74 @@ export function unixIntegrationSpec({ command, home = os.homedir() }) {
     : { link, script: `#!/bin/sh\nexec ${command.map(q).join(" ")} "$@"\n` };
 }
 
+export const SHORTCUT_NAME = "API Client Agent";
+const psRun = (script) => ["powershell.exe", ["-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-EncodedCommand", Buffer.from(script, "utf16le").toString("base64")]];
+
+/**
+ * The shortcut that opens the agent's page, per system: files to write (`files`, with `mode`), folders to remove on
+ * uninstall (`remove`), commands to run (`install` / `uninstall`). `icon`: the PNG to show (Linux).
+ */
+export function shortcutSpec({ platform = process.platform, command, dir, home = os.homedir(), osEnv = process.env, icon = null }) {
+  const args = [...command.slice(1), "ui"];
+  if (platform === "win32") {
+    const lnk = `(Join-Path ([Environment]::GetFolderPath('Programs')) ${ps(`${SHORTCUT_NAME}.lnk`)})`;
+    const quoteArg = (a) => (/[\s"]/.test(a) ? `"${a.replace(/"/g, '\\"')}"` : a);
+    return {
+      files: [], remove: [],
+      install: [psRun([
+        `$s = (New-Object -ComObject WScript.Shell).CreateShortcut(${lnk})`,
+        `$s.TargetPath = ${ps(command[0])}`,
+        `$s.Arguments = ${ps(args.map(quoteArg).join(" "))}`,
+        `$s.WorkingDirectory = ${ps(dir)}`,
+        `$s.IconLocation = ${ps(`${command.at(-1).endsWith(".exe") ? command.at(-1) : command[0]},0`)}`,
+        "$s.WindowStyle = 7", // minimized: the console window of the command is not in the way
+        "$s.Description = 'Status and settings of the API Client Local Agent'",
+        "$s.Save()",
+      ].join("; "))],
+      uninstall: [psRun(`Remove-Item -LiteralPath ${lnk} -Force -ErrorAction SilentlyContinue`)],
+    };
+  }
+  if (platform === "darwin") {
+    // a minimal application bundle whose program is a shell script: Finder, Launchpad and Spotlight list it
+    const app = path.posix.join(home, "Applications", `${SHORTCUT_NAME}.app`);
+    const q = (x) => `'${String(x).replace(/'/g, "'\\''")}'`;
+    const plist = `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+  <dict>
+    <key>CFBundleName</key><string>${SHORTCUT_NAME}</string>
+    <key>CFBundleDisplayName</key><string>${SHORTCUT_NAME}</string>
+    <key>CFBundleIdentifier</key><string>com.apiclient.agent.ui</string>
+    <key>CFBundleExecutable</key><string>open-agent</string>
+    <key>CFBundlePackageType</key><string>APPL</string>
+    <key>CFBundleShortVersionString</key><string>1.0</string>
+    <key>LSUIElement</key><true/>
+  </dict>
+</plist>
+`;
+    return {
+      files: [
+        { path: path.posix.join(app, "Contents", "Info.plist"), content: plist, mode: 0o644 },
+        { path: path.posix.join(app, "Contents", "MacOS", "open-agent"), content: `#!/bin/sh\nexec ${[...command, "ui"].map(q).join(" ")}\n`, mode: 0o755 },
+      ],
+      remove: [app], install: [], uninstall: [],
+    };
+  }
+  const apps = path.posix.join(osEnv.XDG_DATA_HOME || path.posix.join(home, ".local", "share"), "applications");
+  const q = (x) => `"${String(x).replace(/(["`$\\])/g, "\\$1")}"`;
+  const iconFile = icon ? path.posix.join(dir, "icon.png") : null;
+  return {
+    files: [
+      ...(icon ? [{ path: iconFile, content: icon, mode: 0o644 }] : []),
+      { path: path.posix.join(apps, "api-client-agent.desktop"), mode: 0o644, content: [
+        "[Desktop Entry]", "Type=Application", `Name=${SHORTCUT_NAME}`, "Comment=Status and settings of the API Client Local Agent",
+        `Exec=${[...command, "ui"].map(q).join(" ")}`, ...(iconFile ? [`Icon=${iconFile}`] : []), "Terminal=false", "Categories=Network;Development;", "",
+      ].join("\n") },
+    ],
+    remove: [], install: [], uninstall: [],
+  };
+}
+
 const run = ([cmd, args, opts = {}]) => {
   try {
     execFileSync(cmd, args, { stdio: "ignore", windowsHide: true });
@@ -58,8 +128,27 @@ const run = ([cmd, args, opts = {}]) => {
   }
 };
 
-/** Returns a note for the user (where the command is), never throws: the agent works without these extras. */
-export function applyIntegration({ platform = process.platform, command, dir, version }) {
+function applyShortcut(opts) {
+  try {
+    const spec = shortcutSpec(opts);
+    for (const f of spec.files) {
+      fs.mkdirSync(path.dirname(f.path), { recursive: true });
+      fs.writeFileSync(f.path, f.content, { mode: f.mode });
+      fs.chmodSync(f.path, f.mode);
+    }
+    for (const c of spec.install) run(c);
+    return opts.platform === "win32" ? `Start menu: ${SHORTCUT_NAME}` : opts.platform === "darwin" ? `Applications: ${SHORTCUT_NAME}` : `Applications menu: ${SHORTCUT_NAME}`;
+  } catch (e) {
+    return `(could not add the ${SHORTCUT_NAME} shortcut: ${e.message})`;
+  }
+}
+
+/** Returns a note for the user (where the command and the shortcut are), never throws: the agent works without these extras. */
+export function applyIntegration({ platform = process.platform, command, dir, version, icon = null }) {
+  const shortcut = applyShortcut({ platform, command, dir, icon });
+  return `${commandIntegration({ platform, command, dir, version })}\nOpen the agent's page from: ${shortcut} (or: api-client-agent ui)`;
+}
+function commandIntegration({ platform, command, dir, version }) {
   try {
     if (platform === "win32") {
       const exe = command.length === 1 ? command[0] : command[1];
@@ -80,6 +169,12 @@ export function applyIntegration({ platform = process.platform, command, dir, ve
 }
 
 export function removeIntegration({ platform = process.platform, command, dir, version }) {
+  try {
+    const spec = shortcutSpec({ platform, command, dir });
+    for (const c of spec.uninstall) run([...c, { ignore: true }]);
+    for (const f of spec.files) if (!f.path.startsWith(dir)) fs.rmSync(f.path, { force: true });
+    for (const d of spec.remove) fs.rmSync(d, { recursive: true, force: true });
+  } catch { /* nothing to remove */ }
   try {
     if (platform === "win32") {
       for (const c of windowsIntegrationSpec({ exe: command.at(-1), dir, version }).uninstall) run(c);

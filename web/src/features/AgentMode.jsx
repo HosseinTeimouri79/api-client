@@ -19,6 +19,7 @@ const STATE = {
 const TONE = { connected: "ok", checking: "warn", unpaired: "warn", unreachable: "err", forbidden: "err", off: "" };
 const CLI = "api-client-agent";
 const MANAGE = [
+  { cmd: `${CLI} ui`, key: "agent.cmd.ui" },
   { cmd: `${CLI} status`, key: "agent.cmd.status" },
   { cmd: `${CLI} pair`, key: "agent.cmd.pair" },
   { cmd: `${CLI} update`, key: "agent.cmd.update" },

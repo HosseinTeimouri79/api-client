@@ -7,6 +7,7 @@ import { setAddressPolicy } from "../../core/ssrf.js";
 import { configureEngine } from "../../core/config.js";
 import { HTTP_METHODS } from "../../core/shared/protocols.js";
 import { makeAddressPolicy } from "./policy.js";
+import { uiRouter, createActivity } from "./ui.js";
 
 /**
  * The Local Agent's API, for the web app open in the user's browser (and nothing else):
@@ -20,8 +21,9 @@ import { makeAddressPolicy } from "./policy.js";
  *   POST bodies must be application/json, which a cross-site form cannot send;
  * - requests go out through the same engine as the server's (core/: executor, protocols, sessions), with the agent's
  *   own address policy (agent/src/policy.js) in place of the server's SSRF rule.
+ * The agent's own page (/ui, agent/src/ui.js) has rules of its own: only that page may use its API.
  */
-export function createAgentApp({ store, version, log, port: getPort }) {
+export function createAgentApp({ store, version, log, port: getPort, control }) {
   const cfg = store.config();
   // the shared engine (core/config.js) gets the agent's limits instead of the server's defaults
   configureEngine({
@@ -31,8 +33,10 @@ export function createAgentApp({ store, version, log, port: getPort }) {
     maxResponseBytesLimit: cfg.limits.maxResponseBytes,
     udpListenPorts: cfg.udpListenPorts,
   });
-  setAddressPolicy(makeAddressPolicy(cfg.targets));
+  const applyTargets = (targets) => setAddressPolicy(makeAddressPolicy(targets));
+  applyTargets(cfg.targets);
   const sessions = new SessionManager({ perUser: cfg.limits.maxSessions, total: cfg.limits.maxSessions * 4 });
+  const activity = createActivity();
   let inFlight = 0;
 
   const app = express();
@@ -48,6 +52,10 @@ export function createAgentApp({ store, version, log, port: getPort }) {
     res.set({ "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff" });
     next();
   });
+  // the agent's page, before the CORS layer: it is for this computer's user, not for the allowed sites
+  app.get("/", (_req, res) => res.redirect(302, "/ui/"));
+  const openSessions = () => [...sessions.sessions.values()].filter((s) => !s.closed).length;
+  app.use("/ui", uiRouter({ store, version, log, port: getPort, activity, control, engine: { applyTargets, openSessions, inFlight: () => inFlight } }));
   // 2. Origin + CORS: allowed sites only; requests without an Origin come from programs on this computer (CLI, scripts)
   app.use((req, res, next) => {
     const origin = req.headers.origin;
@@ -55,6 +63,7 @@ export function createAgentApp({ store, version, log, port: getPort }) {
     if (origin === undefined) return next();
     if (!store.config().origins.includes(origin)) {
       log.warn("refused a request from a site that is not allowed", { origin });
+      activity.add({ kind: "refused", site: origin, reason: "site" });
       return fail(res, 403, "This site is not allowed to use the Local Agent");
     }
     res.set({ "Access-Control-Allow-Origin": origin, Vary: "Origin" });
@@ -105,15 +114,18 @@ export function createAgentApp({ store, version, log, port: getPort }) {
     const r = store.completePairing(req.siteOrigin, b.code, b.label ?? req.headers["user-agent"] ?? "");
     if (r.error) {
       log.warn("pairing refused", { origin: req.siteOrigin, reason: r.error });
+      activity.add({ kind: "pairing-failed", site: req.siteOrigin });
       return fail(res, 403, r.error);
     }
     log.info("paired", { origin: req.siteOrigin, token: r.id.slice(0, 8) });
+    activity.add({ kind: "paired", site: req.siteOrigin });
     res.json({ token: r.token, version });
   });
   app.delete("/v1/pair", auth, (req, res) => {
     store.revokeToken(req.client.id);
     for (const s of sessions.list(req.client.id, "local")) sessions.close(s);
     log.info("unpaired", { origin: req.client.origin, token: req.client.id.slice(0, 8) });
+    activity.add({ kind: "unpaired", site: req.client.origin });
     res.json({ ok: true });
   });
 
@@ -144,9 +156,11 @@ export function createAgentApp({ store, version, log, port: getPort }) {
     try {
       const response = await execute(fromWire(b.request), { limits: b.limits });
       log.info("request", { method: b.request.method, target: u.origin, status: response.status, ms: response.durationMs, site: req.client.origin });
+      activity.add({ kind: "request", site: req.client.origin, method: b.request.method, target: u.origin, status: response.status, ms: response.durationMs });
       res.json({ ok: true, response });
     } catch (e) {
       log.info("request failed", { method: b.request.method, target: u.origin, code: e.code ?? null, site: req.client.origin });
+      activity.add({ kind: "request", site: req.client.origin, method: b.request.method, target: u.origin, error: e.code ?? "ERROR", message: String(e.message ?? "").slice(0, 300) });
       res.json({ ok: false, error: describe(e) });
     } finally {
       inFlight--;
@@ -163,6 +177,7 @@ export function createAgentApp({ store, version, log, port: getPort }) {
     vars: z.record(z.string(), z.string()).default({}),
     limits: Limits,
   });
+  const safeOrigin = (url) => { try { const u = new URL(url); return `${u.protocol}//${u.host}`; } catch { return null; } };
   const summary = (s) => ({ id: s.id, protocol: s.protocol, label: s.label, closed: s.closed, createdAt: s.createdAt });
   const own = (req) => sessions.get(req.params.id, req.client.id, "local");
 
@@ -178,6 +193,7 @@ export function createAgentApp({ store, version, log, port: getPort }) {
       return res.json({ ok: false, error: connectFailure(e) });
     }
     log.info("connection opened", { protocol: b.protocol, site: req.client.origin });
+    activity.add({ kind: "connection", site: req.client.origin, protocol: b.protocol, target: safeOrigin(b.request.url) });
     res.status(201).json({ ok: true, ...summary(s) });
   }));
   app.get("/v1/sessions/:id/events", auth, (req, res) => {
@@ -223,11 +239,11 @@ export function createAgentApp({ store, version, log, port: getPort }) {
 }
 
 /** Starts the agent on loopback. Resolves with the server once it listens. */
-export async function startAgent({ store, version, log, port }) {
+export async function startAgent({ store, version, log, port, control }) {
   const cfg = store.config();
   if (!["127.0.0.1", "::1", "localhost"].includes(cfg.host)) throw new Error(`The agent listens on loopback only (host "${cfg.host}" is not allowed)`);
   let bound = 0;
-  const app = createAgentApp({ store, version, log, port: () => bound });
+  const app = createAgentApp({ store, version, log, port: () => bound, control });
   const server = await new Promise((ok, no) => {
     const s = app.listen(port ?? cfg.port, cfg.host === "localhost" ? "127.0.0.1" : cfg.host);
     s.once("listening", () => ok(s));

@@ -205,6 +205,13 @@ export function createService(opts) {
       if (!linuxFallback) for (const c of spec.stop) run([...c.slice(0, 2), { ignore: true }]);
       stopPid(); // the process itself, also when it was started by hand
     },
+    /** Rewrites the service files of an existing install (after an update) without restarting it. */
+    refresh() {
+      if (linuxFallback || !spec.files.every((f) => fs.existsSync(f.path))) return false;
+      for (const f of spec.files) write(f);
+      if (spec.kind === "systemd") run([...spec.install[0], { ignore: true }]); // daemon-reload
+      return true;
+    },
     restart() {
       if (linuxFallback) { stopPid(); setTimeout(() => spawnDetached(opts), 500); return; }
       for (const c of spec.restart) run(c);

@@ -44,6 +44,20 @@ test("the Linux installer: a standalone program that sets itself up and serves p
       const r = await ag("POST", "/v1/execute", { request: { url: `http://127.0.0.1:${target.address().port}/x`, method: "GET", headers: {} } }, token);
       assert.equal(r.ok, true, JSON.stringify(r));
       assert.equal(r.response.body, "hello from /x");
+
+      // its own page is inside the program: nothing next to it is needed
+      const link = execFileSync(installed, ["ui", "--print"], { env, encoding: "utf8" }).match(/http:\/\/\S+/)[0];
+      assert.ok(link.startsWith(`http://127.0.0.1:${port}/ui/open?key=`));
+      const cookie = (await fetch(link, { redirect: "manual" })).headers.get("set-cookie").split(";")[0];
+      const html = await (await fetch(`http://127.0.0.1:${port}/ui/`)).text();
+      const script = html.match(/src="(\/ui\/assets\/[^"]+\.js)"/)[1];
+      const js = await fetch(`http://127.0.0.1:${port}${script}`);
+      assert.equal(js.status, 200);
+      assert.match(js.headers.get("content-type"), /javascript/);
+      assert.equal((await fetch(`http://127.0.0.1:${port}/ui/vendor/fa/webfonts/fa-solid-900.woff2`)).headers.get("content-type"), "font/woff2");
+      const state = await (await fetch(`http://127.0.0.1:${port}/ui/api/state`, { headers: { cookie } })).json();
+      assert.equal(state.version, index.version);
+      assert.deepEqual(state.config.origins, [site]);
     } finally {
       proc.kill("SIGTERM");
       target.close();
@@ -59,12 +73,17 @@ test("the Debian package: program in /usr/lib, command in /usr/bin, a systemd us
   assert.match(info, /Package: api-client-agent/);
   assert.match(info, new RegExp(`Version: ${index.version.replaceAll(".", "\\.")}`));
   const files = execFileSync("dpkg-deb", ["--contents", `${DIR}/${deb.file}`], { encoding: "utf8" });
-  for (const f of ["./usr/lib/api-client-agent/api-client-agent", "./usr/bin/api-client-agent -> ../lib/api-client-agent/api-client-agent", "./usr/lib/systemd/user/api-client-agent.service"]) assert.ok(files.includes(f), f);
+  for (const f of ["./usr/lib/api-client-agent/api-client-agent", "./usr/bin/api-client-agent -> ../lib/api-client-agent/api-client-agent", "./usr/lib/systemd/user/api-client-agent.service", "./usr/share/applications/api-client-agent.desktop", "./usr/share/pixmaps/api-client-agent.png"]) assert.ok(files.includes(f), f);
   assert.match(files, /-rwxr-xr-x root\/root .* \.\/usr\/lib\/api-client-agent\/api-client-agent/);
   const dir = agentHome();
   try {
     execFileSync("dpkg-deb", ["-e", `${DIR}/${deb.file}`, dir]);
     assert.match(fs.readFileSync(`${dir}/postinst`, "utf8"), /api-client-agent setup/);
+    execFileSync("dpkg-deb", ["-x", `${DIR}/${deb.file}`, `${dir}/root`]);
+    const desktop = fs.readFileSync(`${dir}/root/usr/share/applications/api-client-agent.desktop`, "utf8");
+    assert.match(desktop, /^Exec=api-client-agent ui$/m, "the applications menu opens the agent's page");
+    assert.match(desktop, /^Icon=api-client-agent$/m);
+    assert.match(fs.readFileSync(`${dir}/root/usr/lib/systemd/user/api-client-agent.service`, "utf8"), /^Environment="API_CLIENT_AGENT_SERVICE=1"$/m, "the page can restart it");
   } finally { fs.rmSync(dir, { recursive: true, force: true }); }
 });
 

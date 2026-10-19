@@ -1,0 +1,66 @@
+/* The Local Agent's page: the web app's tokens and components (../src/styles/app.css), laid out as one scrolling page. */
+body { overflow: auto; }
+#root { height: auto; min-height: 100%; }
+.au { min-height: 100vh; display: flex; flex-direction: column; }
+
+.au-top { position: sticky; top: 0; z-index: 10; display: flex; align-items: center; gap: 10px; padding: 10px 16px; background: var(--panel); border-bottom: 1px solid var(--border); }
+.au-logo { width: 28px; height: 28px; border-radius: 7px; flex: none; }
+.au-name { display: flex; align-items: baseline; gap: 8px; min-width: 0; white-space: nowrap; } .au-name b { font-size: 14px; } .au-name .muted { font-size: 12px; }
+.au-run { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--ok); background: color-mix(in srgb, var(--ok) 12%, transparent); padding: 2px 10px; border-radius: 999px; white-space: nowrap; }
+.au-lang { max-width: 180px; }
+
+.au-nav { position: sticky; top: 49px; z-index: 9; background: var(--bg); border-bottom: 1px solid var(--border); padding: 0 16px; overflow-x: auto; }
+.au-nav .tabstrip { max-width: 880px; margin: 0 auto; }
+.au-main { width: 100%; max-width: 912px; margin: 0 auto; padding: 16px; }
+.au-grid { display: flex; flex-direction: column; gap: 14px; }
+
+.au-card { background: var(--panel); border: 1px solid var(--border); border-radius: var(--r-lg); padding: 14px 16px; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.au-card-h { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.au-card-h h2 { font-size: 14px; display: flex; align-items: center; gap: 8px; min-width: 0; } .au-card-h h2 > i { color: var(--accent); width: 16px; text-align: center; }
+.au-welcome { border-color: var(--accent); background: linear-gradient(var(--accent-soft), var(--accent-soft)), var(--panel); }
+.au-origin { font-family: var(--mono); font-size: 13px; overflow-wrap: anywhere; }
+.au-line { padding: 4px 0; border-top: 1px solid var(--border); } .au-line:first-of-type { border-top: 0; }
+.au-dl { grid-template-columns: max-content 1fr; } .au-dl dd { overflow-wrap: anywhere; }
+.au-dl .agent-dot { display: inline-block; vertical-align: middle; }
+.au-empty { text-align: center; padding: 18px 0; margin: 0; }
+.au-two { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+.au-two textarea { width: 100%; resize: vertical; }
+.au-save { position: sticky; bottom: 0; padding: 10px 0; background: linear-gradient(transparent, var(--bg) 30%); }
+.au-banner { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 10px 14px; border-radius: var(--r); border: 1px solid currentColor; background: color-mix(in srgb, currentColor 8%, transparent); }
+.au-banner .grow { color: var(--text); }
+.au-badges { gap: 12px; font-size: 12px; } .au-badges a { text-decoration: none; }
+.au-badge { display: inline-flex; align-items: center; gap: 5px; padding: 1px 9px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); font-weight: 600; font-size: 11px; }
+
+.au-add .row { align-items: stretch; } .au-add input { font-family: var(--mono); }
+.au-add-big input { font-size: 15px; padding: 10px 12px; } .au-add-big .btn { padding: 8px 16px; }
+
+.au-pair { display: flex; flex-direction: column; gap: 10px; padding: 14px; border: 1px dashed var(--accent); border-radius: var(--r); background: var(--accent-soft); }
+.au-pair-code { font-family: var(--mono); font-size: 34px; font-weight: 700; letter-spacing: .12em; text-align: center; color: var(--text); user-select: all; }
+.au-pair-meta { justify-content: center; }
+.au-steps { margin: 0; padding-inline-start: 20px; display: flex; flex-direction: column; gap: 4px; } .au-steps a { text-decoration: none; white-space: nowrap; }
+.au-wait { margin: 0; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 12px; }
+
+.au-tokens { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; border: 1px solid var(--border); border-radius: var(--r); }
+.au-tokens li { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-top: 1px solid var(--border); } .au-tokens li:first-child { border-top: 0; }
+.au-tok-name { display: block; font-weight: 500; } .au-tok-meta { display: block; font-size: 11.5px; }
+
+.au-act-wrap { max-height: 60vh; overflow: auto; }
+.au-act th { position: sticky; top: 0; }
+.au-act td { font-size: 12px; } .au-nowrap { white-space: nowrap; }
+.au-site-cell { font-family: var(--mono); font-size: 11.5px; overflow-wrap: anywhere; color: var(--muted); }
+.au-what { overflow-wrap: anywhere; } .au-what [dir=ltr] { font-family: var(--mono); font-size: 11.5px; } .au-what b { font-weight: 700; }
+.au-act td:last-child, .au-act th:last-child { text-align: start; width: auto; }
+.au-status { font-family: var(--mono); font-weight: 700; }
+
+.au-center { flex: 1; display: flex; align-items: center; justify-content: center; padding: 32px 16px; }
+.au-problem { max-width: 460px; text-align: center; align-items: center; } .au-problem h1 { font-size: 18px; } .au-problem p { margin: 0; }
+.au-problem-i { font-size: 34px; color: var(--muted); } .au-problem .agent-cmd { width: 100%; }
+
+@media (max-width: 640px) {
+  .au-top { padding: 8px 12px; gap: 6px; } .au-name .muted, .au-run { display: none; }
+  .au-lang .lang-name { display: none; }
+  .au-nav { padding: 0 8px; } .au-main { padding: 12px; }
+  .au-card { padding: 12px; } .au-pair-code { font-size: 26px; }
+  .au-dl { grid-template-columns: 1fr; gap: 2px 0; } .au-dl dd { margin-bottom: 6px; }
+  .au-act .au-site-cell { display: none; } .au-act th:nth-child(2) { display: none; }
+}

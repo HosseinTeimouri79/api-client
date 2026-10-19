@@ -11,7 +11,9 @@ const SRC = new URL("../web/src/", import.meta.url).pathname;
 const en = (await import("../web/src/i18n/locales/en-US.js")).default;
 const dicts = Object.fromEntries(await Promise.all(LOCALES.map(async (l) => [l.id, (await import(`../web/src/i18n/locales/${l.id}.js`)).default])));
 const walk = (d) => fs.readdirSync(d, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? walk(path.join(d, e.name)) : [path.join(d, e.name)]));
-const sources = walk(SRC).filter((f) => /\.jsx?$/.test(f) && !f.includes("/i18n/")).map((f) => [path.relative(SRC, f), fs.readFileSync(f, "utf8")]);
+// the web app and the Local Agent's page (web/agent-ui), which share the dictionaries
+const AGENT_UI = new URL("../web/agent-ui/", import.meta.url).pathname;
+const sources = [...walk(SRC), ...walk(AGENT_UI)].filter((f) => /\.jsx?$/.test(f) && !f.includes("/i18n/") && !f.endsWith("vite.config.js")).map((f) => [path.relative(SRC, f), fs.readFileSync(f, "utf8")]);
 const ph = (s) => [...s.matchAll(/\{(\w+)\}/g)].map((m) => m[1]).sort().join(",");
 
 test("the language list: 15 languages, matching the server, RTL only for Arabic and Persian", () => {
@@ -58,7 +60,7 @@ test("every t('key') in the source exists, and every key is used", () => {
     for (const m of s.matchAll(/\b(?:t|tr)\(\s*["`]([\w.${}]+)["`]/g)) used.add(m[1]);
     for (const m of s.matchAll(/["'`]([a-z][A-Za-z]*(?:\.[A-Za-z0-9]+)+)["'`]/g)) literals.add(m[1]);
   }
-  const dynamic = ["role.", "vars.scope.", "rt.status.", "rt.filter.", "rt.ev.", "ws.format.", "grpc.kind.", "gql.type.", "gql.transport.", "tcp.lineEnding.", "udp.mode.", "mqtt.qos.", "about.f."]; // keys built at runtime, e.g. t(`role.${r}`)
+  const dynamic = ["role.", "vars.scope.", "rt.status.", "rt.filter.", "rt.ev.", "ws.format.", "grpc.kind.", "gql.type.", "gql.transport.", "tcp.lineEnding.", "udp.mode.", "mqtt.qos.", "about.f.", "agentUi.tab.", "agentUi.act."]; // keys built at runtime, e.g. t(`role.${r}`)
   const missing = [...used].filter((k) => !k.includes("$") && !k.endsWith(".") && !(k in en));
   assert.deepEqual(missing, [], "keys used in the source but absent from en-US");
   const dead = Object.keys(en).filter((k) => !literals.has(k) && !dynamic.some((p) => k.startsWith(p)));
@@ -66,7 +68,7 @@ test("every t('key') in the source exists, and every key is used", () => {
 });
 
 test("no UI text is hard-coded in the components", () => {
-  const allowed = new Set(["Ctrl", "Enter", "API Client", "JSON", "Postman", "Hoppscotch", "GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS", "Ctrl+S", "Ctrl+Enter", "OK", "Raw", "pm.test(...)", "console.log", "Tab", "Esc", "Basic", "Bearer", "API", "Apache", "cURL", "graphql-ws, chat", "wss://api.example.com/graphql", "api.example.com", "orders", "devices/{{deviceId}}/state", "sensors/+/temperature", "syntax = \"proto3\"; ... paste a .proto file here"]);
+  const allowed = new Set(["API Client Agent", "https://api.example.com", "Ctrl", "Enter", "API Client", "JSON", "Postman", "Hoppscotch", "GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS", "Ctrl+S", "Ctrl+Enter", "OK", "Raw", "pm.test(...)", "console.log", "Tab", "Esc", "Basic", "Bearer", "API", "Apache", "cURL", "graphql-ws, chat", "wss://api.example.com/graphql", "api.example.com", "orders", "devices/{{deviceId}}/state", "sensors/+/temperature", "syntax = \"proto3\"; ... paste a .proto file here"]);
   const found = [];
   for (const [file, src] of sources) {
     if (/lib\/(snippets|http|highlight|image|settings)\.js|lib\/codegen|\.test\./.test(file)) continue; // data and code, not UI chrome

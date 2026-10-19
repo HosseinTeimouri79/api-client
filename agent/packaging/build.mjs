@@ -109,12 +109,12 @@ const README = (target) => `API Client Local Agent ${VERSION}
 The agent sends API Client's requests from this computer, so they can reach localhost and your local network.
 Node.js is built in; nothing else is needed.
 
-Install: ${target.startsWith("darwin") ? "double-click api-client-agent (it is not notarized by Apple: if macOS blocks it, use System Settings → Privacy & Security → Open Anyway)," : "run ./api-client-agent (or double-click it),"}
-then type the address of your API Client and, in API Client, the pairing code it shows
-(header: Server / Local switch → Local).
+Install: ${target.startsWith("darwin") ? "double-click api-client-agent (it is not notarized by Apple: if macOS blocks it, use System Settings → Privacy & Security → Open Anyway)." : "run ./api-client-agent (or double-click it)."}
+Its page opens in your browser: type the address of your API Client there, then type the pairing code it shows into
+API Client (header: Server / Local switch → Local).
 
 It installs for your user only (no administrator rights) and starts when you log in.
-Later: api-client-agent status | pair | update | uninstall      (help: api-client-agent help)
+Later: the "API Client Agent" shortcut, or api-client-agent ui | status | pair | update | uninstall      (help: api-client-agent help)
 Documentation: ${PKG.homepage.replace("#readme", "")}#local-agent
 `;
 // only the targets being built are replaced; installers of the other systems (same version) stay listed
@@ -163,12 +163,17 @@ async function debPackage(target, exe) {
   const root = path.join(CACHE, "work", `${target}-deb`);
   fs.rmSync(root, { recursive: true, force: true });
   const p = (...x) => path.join(root, ...x);
-  for (const d of ["DEBIAN", "usr/lib/api-client-agent", "usr/bin", "usr/lib/systemd/user", "usr/share/doc/api-client-agent"]) fs.mkdirSync(p(d), { recursive: true });
+  for (const d of ["DEBIAN", "usr/lib/api-client-agent", "usr/bin", "usr/lib/systemd/user", "usr/share/doc/api-client-agent", "usr/share/applications", "usr/share/pixmaps"]) fs.mkdirSync(p(d), { recursive: true });
   fs.copyFileSync(exe, p("usr/lib/api-client-agent/api-client-agent"));
   fs.chmodSync(p("usr/lib/api-client-agent/api-client-agent"), 0o755);
   fs.symlinkSync("../lib/api-client-agent/api-client-agent", p("usr/bin/api-client-agent"));
   const { systemdUnit } = await import("../src/service.js");
-  fs.writeFileSync(p("usr/lib/systemd/user/api-client-agent.service"), systemdUnit({ command: ["/usr/lib/api-client-agent/api-client-agent"] }));
+  fs.writeFileSync(p("usr/lib/systemd/user/api-client-agent.service"), systemdUnit({ command: ["/usr/lib/api-client-agent/api-client-agent"], env: { API_CLIENT_AGENT_SERVICE: "1" } }));
+  // the applications-menu entry that opens the agent's page (a per-user install writes its own, agent/src/integration.js)
+  const { shortcutSpec } = await import("../src/integration.js");
+  fs.copyFileSync(path.join(ROOT, "web/public/logo.png"), p("usr/share/pixmaps/api-client-agent.png"));
+  const desktop = shortcutSpec({ platform: "linux", command: ["/usr/bin/api-client-agent"], dir: "/usr/lib/api-client-agent", home: "/nonexistent", osEnv: { XDG_DATA_HOME: "/usr/share" } }).files.at(-1).content;
+  fs.writeFileSync(p("usr/share/applications/api-client-agent.desktop"), desktop.replace(/^Exec=.*$/m, "Exec=api-client-agent ui\nIcon=api-client-agent"));
   fs.copyFileSync(path.join(ROOT, "LICENSE"), p("usr/share/doc/api-client-agent/copyright"));
   fs.writeFileSync(p("usr/share/doc/api-client-agent/README"), README(target));
   const size = Math.ceil(fs.statSync(exe).size / 1024);
@@ -194,7 +199,8 @@ if [ "$1" = "configure" ]; then
   echo
   echo "    api-client-agent setup"
   echo
-  echo "It asks for your API Client's address, starts the agent at login and shows a pairing code."
+  echo "It starts the agent at login and opens its page, where you add your API Client and get a pairing code."
+  echo "Later, open that page from \"API Client Agent\" in the applications menu."
 fi
 exit 0
 `, { mode: 0o755 });

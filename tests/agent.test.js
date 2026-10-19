@@ -483,3 +483,132 @@ test("download links point to the latest GitHub release's installers; off or unr
     gh.close();
   }
 });
+
+// ---- the agent's own page (/ui) ----
+const pageLink = () => cli(home, "ui", "--print").match(/http:\/\/\S+/)[0];
+async function pageSession() {
+  const r = await fetch(pageLink(), { redirect: "manual" });
+  return r.headers.get("set-cookie").split(";")[0];
+}
+/** The page's API as the page calls it: same origin, with its cookie. */
+const page = async (cookie, p, { method = "GET", body, origin = agent.url, headers = {} } = {}) => {
+  const r = await fetch(`${agent.url}/ui/api${p}`, { method, headers: { ...(cookie && { cookie }), ...(origin && { origin }), ...(body !== undefined && { "content-type": "application/json" }), ...headers }, body: body !== undefined ? JSON.stringify(body) : undefined });
+  return { status: r.status, headers: r.headers, body: await r.json().catch(() => null) };
+};
+
+test("the agent's page: opened with a one-time link only; its API answers to the page itself and nothing else", async () => {
+  const link = pageLink();
+  assert.match(link, new RegExp(`^${agent.url.replace(/\./g, "\\.")}/ui/open\\?key=[\\w-]{30,}$`), "printed for the agent that runs, on its port");
+  const open = await fetch(link, { redirect: "manual" });
+  assert.equal(open.status, 303);
+  assert.equal(open.headers.get("location"), "/ui/");
+  assert.match(open.headers.get("set-cookie"), /^agent_ui=[\w-]{40,}; Path=\/ui; HttpOnly; SameSite=Strict; Max-Age=\d+$/);
+  const cookie = open.headers.get("set-cookie").split(";")[0];
+  const again = await fetch(link, { redirect: "manual" });
+  assert.equal(again.headers.get("location"), "/ui/#expired");
+  assert.equal(again.headers.get("set-cookie"), null, "a link works once");
+  assert.equal((await fetch(`${agent.url}/ui/open?key=guess`, { redirect: "manual" })).headers.get("set-cookie"), null);
+  assert.ok(!fs.readdirSync(home).some((f) => f.startsWith("ui-") && fs.readFileSync(`${home}/${f}`, "utf8").includes(cookie.split("=")[1])), "the session is stored hashed");
+
+  assert.equal((await page(null, "/state")).status, 401, "locked without the cookie");
+  assert.equal((await page("agent_ui=forged", "/state")).status, 401);
+  const st = await page(cookie, "/state");
+  assert.equal(st.status, 200);
+  assert.ok(st.body.config.origins.includes(site));
+  assert.ok(st.body.tokens.length && st.body.tokens.every((x) => !("hash" in x)), "paired sites are listed, their secrets are not");
+  assert.equal(st.headers.get("access-control-allow-origin"), null, "no CORS: no other site may read it");
+
+  assert.equal((await page(cookie, "/state", { origin: site })).status, 403, "not even a site allowed to use the agent");
+  assert.equal((await page(cookie, "/sites", { method: "POST", body: { address: "x.example" }, origin: "https://evil.example" })).status, 403);
+  assert.equal((await page(cookie, "/sites", { method: "POST", body: { address: "x.example" }, origin: null })).status, 403, "a change needs the page's own Origin (no CSRF)");
+  assert.equal((await page(cookie, "/state", { origin: null, headers: { "sec-fetch-site": "same-site" } })).status, 403, "another port of 127.0.0.1 is another site");
+  assert.equal((await page(cookie, "/sites", { method: "POST", body: "address=x", headers: { "content-type": "application/x-www-form-urlencoded" } })).status, 415, "JSON only: no form can post here");
+  assert.equal((await rawHttp(agent.port, { host: `evil.example:${agent.port}`, path: "/ui/api/state", headers: { cookie } })).status, 421, "DNS rebinding");
+  assert.ok(!(await page(cookie, "/state")).body.config.origins.includes("https://x.example"), "none of the refused calls changed anything");
+
+  const root = await fetch(`${agent.url}/`, { redirect: "manual" });
+  assert.equal(root.headers.get("location"), "/ui/");
+  const html = await fetch(`${agent.url}/ui/`);
+  const csp = html.headers.get("content-security-policy");
+  for (const d of ["default-src 'none'", "script-src 'self'", "connect-src 'self'", "frame-ancestors 'none'", "form-action 'none'"]) assert.ok(csp.includes(d), d);
+  assert.equal(html.headers.get("x-frame-options"), "DENY");
+  if (html.status === 200) assert.match(await html.text(), /<div id="root">/);
+
+  assert.equal((await page(cookie, "/logout", { method: "POST", body: {} })).status, 200);
+  assert.equal((await page(cookie, "/state")).status, 401, "locked again");
+});
+
+test("the agent's page: add a site and pair it, unpair it, network rules apply at once, settings, activity", async () => {
+  const cookie = await pageSession();
+  const second = "https://second.example";
+  assert.equal((await page(cookie, "/sites", { method: "POST", body: { address: "not a url ::" } })).body.error, "not-an-address");
+  assert.equal((await page(cookie, "/sites", { method: "POST", body: { address: agent.url } })).body.error, "self", "the agent's own address is not a site");
+  const added = await page(cookie, "/sites", { method: "POST", body: { address: "second.example/any/path" } });
+  assert.equal(added.body.origin, second, "https by default, the origin only");
+  assert.ok(added.body.state.config.origins.includes(second));
+
+  // a code from the page pairs that site, as typing it into the web app does
+  const p = await page(cookie, "/pair", { method: "POST", body: { origin: second } });
+  assert.match(p.body.code, /^[A-Z2-9]{4}-[A-Z2-9]{4}$/);
+  assert.equal((await page(cookie, "/state")).body.pairing.origin, second, "the code itself is not in the state");
+  const tok2 = await pair(p.body.code, second);
+  const paired = (await page(cookie, "/state")).body.tokens.find((x) => x.origin === second);
+  assert.ok(paired, "listed as paired");
+  assert.equal((await ag("GET", "/v1/health", undefined, { origin: second, auth: tok2 })).body.paired, true);
+  await page(cookie, "/tokens/revoke", { method: "POST", body: { id: paired.id } });
+  assert.equal((await ag("GET", "/v1/health", undefined, { origin: second, auth: tok2 })).body.paired, false, "unpaired from the page");
+  assert.equal((await page(cookie, "/pair", { method: "POST", body: { origin: "https://unknown.example" } })).body.error, "unknown-site");
+  await page(cookie, "/sites/remove", { method: "POST", body: { origin: second } });
+  assert.ok(!(await page(cookie, "/state")).body.config.origins.includes(second));
+
+  // network rules: in force for the next request, no restart
+  const targets = (await page(cookie, "/state")).body.config.targets;
+  assert.equal((await page(cookie, "/targets", { method: "POST", body: { ...targets, deny: ["bad host!", "10.0.0.0/99"] } })).body.entries.length, 2);
+  await page(cookie, "/targets", { method: "POST", body: { ...targets, loopback: false } });
+  try {
+    const off = await ag("POST", "/v1/execute", { request: { url: `${targetUrl}/off`, method: "GET", headers: {} } });
+    assert.equal(off.body.error.code, "SSRF_BLOCKED");
+    assert.match(off.body.error.message, /targets\.loopback/);
+  } finally {
+    await page(cookie, "/targets", { method: "POST", body: targets });
+  }
+  assert.equal((await ag("POST", "/v1/execute", { request: { url: `${targetUrl}/on`, method: "GET", headers: {} } })).body.response.status, 200);
+
+  // settings: saved; a restart applies them (this agent was started by hand, so the page cannot restart it)
+  const before = (await page(cookie, "/state")).body.config;
+  const saved = await page(cookie, "/settings", { method: "POST", body: { limits: { ...before.limits, maxConcurrent: 16 } } });
+  assert.equal(saved.body.restart, true);
+  assert.equal(saved.body.state.config.limits.maxConcurrent, 16);
+  assert.equal((await page(cookie, "/settings", { method: "POST", body: { port: 80 } })).status, 400, "no privileged ports");
+  await page(cookie, "/settings", { method: "POST", body: { limits: before.limits } });
+  assert.equal((await page(cookie, "/restart", { method: "POST", body: {} })).body.error, "not-managed");
+
+  // activity: what went through the agent, addresses only
+  const act = (await page(cookie, "/activity")).body;
+  assert.ok(act.some((e) => e.kind === "request" && e.target === targetUrl && e.status === 200));
+  assert.ok(act.some((e) => e.kind === "request" && e.error === "SSRF_BLOCKED"));
+  assert.ok(act.some((e) => e.kind === "paired" && e.site === second));
+  assert.ok(!JSON.stringify(act).includes("/on") && !JSON.stringify(act).includes(token), "no paths, headers or tokens");
+  const last = act.at(-1).seq;
+  assert.deepEqual((await page(cookie, "/activity?since=" + last)).body, [], "only what is new");
+});
+
+test("the shortcut that opens the agent's page: Start menu, applications menu, ~/Applications", async () => {
+  const { shortcutSpec } = await import("../agent/src/integration.js");
+  const win = shortcutSpec({ platform: "win32", command: ["C:\\Users\\a\\AppData\\Local\\api-client-agent\\api-client-agent.exe"], dir: "C:\\Users\\a\\AppData\\Local\\api-client-agent" });
+  const ps = Buffer.from(win.install[0][1].at(-1), "base64").toString("utf16le");
+  assert.match(ps, /GetFolderPath\('Programs'\)\) 'API Client Agent\.lnk'/, "the user's own Start menu");
+  assert.match(ps, /\$s\.Arguments = 'ui'/);
+  assert.match(Buffer.from(win.uninstall[0][1].at(-1), "base64").toString("utf16le"), /Remove-Item -LiteralPath/);
+  const linux = shortcutSpec({ platform: "linux", command: ["/h/my agent/api-client-agent"], dir: "/h/d", home: "/h", osEnv: {}, icon: Buffer.from("png") });
+  const desktop = linux.files.find((f) => f.path === "/h/.local/share/applications/api-client-agent.desktop");
+  assert.match(desktop.content, /^Exec="\/h\/my agent\/api-client-agent" "ui"$/m);
+  assert.match(desktop.content, /^Terminal=false$/m);
+  assert.ok(linux.files.some((f) => f.path === "/h/d/icon.png"));
+  const mac = shortcutSpec({ platform: "darwin", command: ["/usr/bin/node", "/U/it's/agent.mjs"], dir: "/U/d", home: "/U" });
+  assert.equal(mac.remove[0], "/U/Applications/API Client Agent.app");
+  assert.equal(mac.files.find((f) => f.path.endsWith("/MacOS/open-agent")).content, `#!/bin/sh\nexec '/usr/bin/node' '/U/it'\\''s/agent.mjs' 'ui'\n`);
+  assert.equal(mac.files.find((f) => f.path.endsWith("/MacOS/open-agent")).mode, 0o755);
+  const { validTarget } = await import("../agent/src/policy.js");
+  assert.deepEqual(["*.corp.local", "10.0.0.0/8", "fd00::/8", "192.168.1.1", "printer", "a/b/c", "10.0.0.0/33", "bad host", ""].map(validTarget), [true, true, true, true, true, false, false, false, false]);
+});

@@ -32,10 +32,11 @@
     "dev": "node --watch server/server.js",
     "dev:web": "vite --config web/vite.config.js",
     "agent": "node agent/src/main.js",
-    "build": "vite build --config web/vite.config.js && vite build --config agent/vite.config.js",
+    "build": "vite build --config web/vite.config.js && vite build --config web/agent-ui/vite.config.js && vite build --config agent/vite.config.js",
     "build:installers": "node agent/packaging/build.mjs",
     "pretest": "npm run build",
-    "test": "node --test --no-warnings --test-concurrency=1 tests/*.test.js"
+    "test": "node --test --no-warnings --test-concurrency=1 tests/*.test.js",
+    "dev:agent-ui": "vite --config web/agent-ui/vite.config.js"
   },
   "dependencies": {
     "@grpc/grpc-js": "^1.14.5",
