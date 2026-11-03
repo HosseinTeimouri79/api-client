@@ -4,14 +4,13 @@ import { cx, fmtBytes } from "../../lib/utils.js";
 import { Tabs } from "../../components/ui/Tabs.jsx";
 import { Button } from "../../components/ui/Button.jsx";
 import { Icon, Spinner } from "../../components/ui/Icon.jsx";
-import { toast } from "../../components/ui/Toasts.jsx";
 import { highlightJson } from "../../lib/highlight.jsx";
 import { protocolOf } from "../../lib/protocols.js";
 import { hexDump } from "../../lib/hex.js";
 import { pendingDeliveries } from "../../lib/amqp.js";
-import { t as tr, useT } from "../../i18n/index.js";
+import { useT } from "../../i18n/index.js";
 
-const copy = (text) => navigator.clipboard?.writeText(text).then(() => toast(tr("common.copied"), "ok"), () => toast(tr("common.copyFailed"), "error"));
+import { copy } from "../../lib/clipboard.js";
 const isMessage = (e) => e.type === "message";
 const KINDS = { all: () => true, sent: (e) => e.direction === "out", received: (e) => e.direction === "in" && e.type !== "closed", events: (e) => !isMessage(e) };
 const clock = (ts) => new Date(ts).toLocaleTimeString([], { hour12: false });

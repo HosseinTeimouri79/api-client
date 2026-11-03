@@ -89,6 +89,19 @@ test("E2E: code snippet — cURL by default, switch language with the autocomple
   await page.getByRole("button", { name: "Copy" }).click();
   await page.locator(".toast", { hasText: "Copied" }).waitFor();
   assert.match(await page.evaluate(() => navigator.clipboard.readText()), /require\("axios"\)/);
+  // over plain HTTP on a non-localhost address the async Clipboard API is unavailable: the fallback still copies
+  await page.evaluate(async () => {
+    const clip = navigator.clipboard;
+    await clip.writeText("");
+    window.__readClipboard = () => clip.readText();
+    Object.defineProperty(window, "isSecureContext", { value: false });
+    Object.defineProperty(navigator, "clipboard", { value: undefined });
+  });
+  await page.locator(".toast").first().waitFor({ state: "detached" }).catch(() => {});
+  await page.getByRole("button", { name: "Copy" }).click();
+  await page.locator(".toast", { hasText: "Copied" }).waitFor();
+  assert.match(await page.evaluate(() => window.__readClipboard()), /require\("axios"\)/);
+  assert.ok(await page.locator(".modal").isVisible(), "the dialog stays open");
   await page.keyboard.press("Escape");
 
   // the choice is remembered; the dialog reflects unsaved edits to the request

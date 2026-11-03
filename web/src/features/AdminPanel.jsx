@@ -9,6 +9,7 @@ import { Tabs } from "../components/ui/Tabs.jsx";
 import { Avatar } from "../components/ui/Avatar.jsx";
 import { Icon, Spinner } from "../components/ui/Icon.jsx";
 import { toast } from "../components/ui/Toasts.jsx";
+import { copy } from "../lib/clipboard.js";
 import { confirm } from "../components/ui/dialogs.jsx";
 import { useT } from "../i18n/index.js";
 
@@ -74,7 +75,7 @@ function PasswordForm({ close, user }) {
         <Field label={t("admin.newPassword")} hint={t("admin.resetHint")}>
           <div className="row"><input dir="ltr" className="grow mono" required minLength={8} maxLength={200} value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="off" data-autofocus />
             <IconButton icon="dice" label={t("admin.generate")} onClick={() => setPassword(randomPassword())} />
-            <IconButton icon="copy" label={t("common.copy")} onClick={() => navigator.clipboard?.writeText(password).then(() => toast(t("common.copied"), "ok"), () => toast(t("common.copyFailed"), "error"))} /></div>
+            <IconButton icon="copy" label={t("common.copy")} onClick={() => copy(password)} /></div>
         </Field>
         {err && <div className="err" role="alert">{err}</div>}
       </form>

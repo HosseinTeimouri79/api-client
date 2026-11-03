@@ -9,7 +9,7 @@ import { Modal } from "../components/ui/Modal.jsx";
 import { Button } from "../components/ui/Button.jsx";
 import { AutoComplete } from "../components/ui/AutoComplete.jsx";
 import { Checkbox } from "../components/ui/Switch.jsx";
-import { toast } from "../components/ui/Toasts.jsx";
+import { copy } from "../lib/clipboard.js";
 
 const KEY = "snippetTarget";
 const read = () => { try { const v = localStorage.getItem(KEY); return TARGETS.some((t) => t.id === v) ? v : DEFAULT_TARGET; } catch { return DEFAULT_TARGET; } };
@@ -44,7 +44,6 @@ export function CodeSnippetModal({ close, tab }) {
     catch (e) { return `// ${e.message}`; }
   }, [target, r, vars, inherited, substitute]);
   const left = useMemo(() => [...new Set(code.match(/\{\{[^}]+\}\}/g) ?? [])], [code]);
-  const copy = () => navigator.clipboard?.writeText(code).then(() => toast(t("common.copied"), "ok"), () => toast(t("common.copyFailed"), "error"));
 
   return (
     <Modal title={t("snippet.title")} size="lg" onClose={() => close()}>
@@ -52,7 +51,7 @@ export function CodeSnippetModal({ close, tab }) {
         <AutoComplete className="grow" aria-label={t("snippet.language")} clearable={false} options={OPTIONS} filter={filter}
           value={OPTIONS.find((o) => o.value === target)} onChange={(o) => { if (o) { setTarget(o.value); write(o.value); } }}
           renderChip={(o) => o.full} placeholder={t("snippet.search")} emptyText={t("snippet.none")} />
-        <Button icon="copy" data-autofocus onClick={copy}>{t("common.copy")}</Button>
+        <Button icon="copy" data-autofocus onClick={() => copy(code)}>{t("common.copy")}</Button>
       </div>
       <pre className="snippet" dir="ltr" tabIndex={0} aria-label={t("snippet.code")}>{code}</pre>
       <label className="row snippet-opt"><Checkbox checked={substitute} onChange={setSubstitute} label={t("snippet.substitute")} /> <span>{t("snippet.substitute")}</span></label>

@@ -6,7 +6,6 @@ import { Button, IconButton } from "../components/ui/Button.jsx";
 import { Field } from "../components/ui/Switch.jsx";
 import { Tabs } from "../components/ui/Tabs.jsx";
 import { Icon } from "../components/ui/Icon.jsx";
-import { toast } from "../components/ui/Toasts.jsx";
 import { cx } from "../lib/utils.js";
 import { api } from "../api.js";
 
@@ -38,7 +37,7 @@ export function useAgentWatch() {
   }, [mode]);
 }
 
-const copy = (text, t) => navigator.clipboard?.writeText(text).then(() => toast(t("common.copied"), "ok"), () => toast(t("common.copyFailed"), "error"));
+import { copy } from "../lib/clipboard.js";
 
 /** The agent's state in words, with what to do about it. */
 function AgentStatus({ compact }) {
@@ -141,7 +140,7 @@ function Command({ text }) {
   return (
     <div className="agent-cmd">
       <code dir="ltr">{text}</code>
-      <IconButton icon="copy" size="sm" label={t("common.copy")} onClick={() => copy(text, t)} />
+      <IconButton icon="copy" size="sm" label={t("common.copy")} onClick={() => copy(text)} />
     </div>
   );
 }

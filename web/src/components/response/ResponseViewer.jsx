@@ -6,12 +6,11 @@ import { highlightJson, highlightText } from "../../lib/highlight.jsx";
 import { Tabs } from "../ui/Tabs.jsx";
 import { Button } from "../ui/Button.jsx";
 import { Icon, Spinner } from "../ui/Icon.jsx";
-import { toast } from "../ui/Toasts.jsx";
 import { JsonTree } from "./JsonTree.jsx";
-import { t as tr, useT } from "../../i18n/index.js";
+import { useT } from "../../i18n/index.js";
 
 const kindOf = (r) => (/json/i.test(r.contentType) ? "json" : /html/i.test(r.contentType) ? "html" : /xml/i.test(r.contentType) ? "xml" : r.binary ? "binary" : "text");
-const copy = (text) => navigator.clipboard?.writeText(text).then(() => toast(tr("common.copied"), "ok"), () => toast(tr("common.copyFailed"), "error"));
+import { copy } from "../../lib/clipboard.js";
 
 function Tests({ tests }) {
   const t = useT();

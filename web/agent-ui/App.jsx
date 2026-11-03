@@ -10,6 +10,7 @@ import { confirm } from "../src/components/ui/dialogs.jsx";
 import { Select } from "../src/components/ui/Select.jsx";
 import { Flag } from "../src/components/ui/Flag.jsx";
 import { cx } from "../src/lib/utils.js";
+import { copy } from "../src/lib/clipboard.js";
 import { ui } from "./api.js";
 
 const SECTIONS = ["overview", "sites", "network", "activity", "settings"];
@@ -34,9 +35,6 @@ function useAgo() {
     return rtf.format(s, "second");
   }, [locale]);
 }
-const copy = async (text, t) => {
-  try { await navigator.clipboard.writeText(text); toast(t("common.copied"), "ok"); } catch { toast(t("common.copyFailed"), "error"); }
-};
 /** "Mozilla/5.0 ... Chrome/130.0 Safari/537.36" -> "Chrome 130" (a paired site's label is the browser that paired it). */
 function browserOf(label) {
   const ua = String(label ?? "");
@@ -53,7 +51,7 @@ function Command({ text }) {
   return (
     <div className="agent-cmd">
       <code dir="ltr">{text}</code>
-      <IconButton icon="copy" size="sm" label={t("common.copy")} onClick={() => copy(text, t)} />
+      <IconButton icon="copy" size="sm" label={t("common.copy")} onClick={() => copy(text)} />
     </div>
   );
 }
@@ -257,7 +255,7 @@ function PairPanel({ code, actions }) {
       <div className="au-pair-code" dir="ltr" aria-label={t("agentUi.pair.code")}>{code.code}</div>
       <div className="row wrap au-pair-meta">
         <span className="muted"><Icon name="clock" /> {t("agentUi.pair.expires", { time: `${Math.floor(left / 60)}:${String(left % 60).padStart(2, "0")}` })}</span>
-        <Button size="sm" icon="copy" onClick={() => copy(code.code, t)}>{t("common.copy")}</Button>
+        <Button size="sm" icon="copy" onClick={() => copy(code.code)}>{t("common.copy")}</Button>
         <Button size="sm" variant="ghost" onClick={actions.cancelPair}>{t("common.cancel")}</Button>
       </div>
       <ol className="au-steps">
