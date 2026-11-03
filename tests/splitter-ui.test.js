@@ -59,16 +59,53 @@ test("E2E: resizing panes keeps the page full width (stacked and side-by-side la
 
   // limits: the sidebar is at least 310px wide, the editor takes 40%-60% of the split
   const sideW = () => page.evaluate(() => Math.round(document.querySelector(".side").getBoundingClientRect().width));
-  const basis = () => page.evaluate(() => document.querySelector(".split > .pane").style.flexBasis);
+  const basis = () => page.evaluate(() => document.querySelector(".split > .pane").style.flexGrow);
   await drag(".side-split", -600, 0);
   assert.equal(await sideW(), 310, "sidebar stops at 310px");
   await drag(".split > .splitter.col", 2000, 0);
-  assert.equal(await basis(), "60%", "editor stops at 60%");
+  assert.equal(await basis(), "0.6", "editor stops at 60%");
   await drag(".split > .splitter.col", -2000, 0);
-  assert.equal(await basis(), "40%", "editor stops at 40%");
+  assert.equal(await basis(), "0.4", "editor stops at 40%");
   // values saved by an older version (200px, 85%) are brought into range
   await page.evaluate(() => { localStorage.setItem("sidebarW", "200"); localStorage.setItem("editorFrac", "0.85"); });
   await page.reload();
   await page.locator(".side").waitFor();
   assert.equal(await sideW(), 310);
+
+  // a tall console (saved by an older version) never squeezes the panes: both keep their minimum and never overlap,
+  // each pane clips its own content, and the editor's tabs wrap instead of running under the response
+  const boxes = () => page.evaluate(() => {
+    const r = (el) => { const b = el.getBoundingClientRect(); return { top: b.top, bottom: b.bottom, left: b.left, right: b.right, w: b.width, h: b.height }; };
+    const [ed, resp] = document.querySelectorAll(".split > .pane");
+    const tabs = [...ed.querySelectorAll(".editor > .tabstrip .tabstrip-i")].map(r);
+    return { ed: r(ed), resp: r(resp), console: r(document.querySelector(".console")), tabs, vh: innerHeight, clip: [ed, resp].map((p) => getComputedStyle(p).overflow) };
+  });
+  const noOverlap = (b, msg) => {
+    assert.deepEqual(b.clip, ["hidden", "hidden"], msg);
+    assert.ok(b.console.h <= Math.max(96, b.vh - 480) + 1, `${msg}: console ${b.console.h}px leaves room for the panes`);
+    for (const t of b.tabs) assert.ok(t.right <= b.ed.right + 1 && t.left >= b.ed.left - 1 && t.bottom <= b.ed.bottom + 1, `${msg}: editor tab inside its pane`);
+  };
+  await page.evaluate(() => localStorage.setItem("consoleH", "2000"));
+  await page.reload();
+  if (!(await page.locator(".split").count())) await page.getByRole("button", { name: "New request", exact: true }).click();
+  await page.locator(".split.cols").waitFor();
+  let b = await boxes();
+  noOverlap(b, "side by side");
+  assert.ok(b.ed.right <= b.resp.left + 1, "editor and response side by side do not overlap");
+  assert.ok(b.ed.w >= 399 && b.resp.w >= 319, `minimum widths (${b.ed.w}, ${b.resp.w})`);
+  await page.locator(".pane").nth(1).hover();
+  await page.getByLabel("Switch layout").click();
+  await page.locator(".split.rows").waitFor();
+  b = await boxes();
+  noOverlap(b, "stacked");
+  assert.ok(b.ed.bottom <= b.resp.top + 1, "editor and response stacked do not overlap");
+  assert.ok(b.ed.h >= 229 && b.resp.h >= 139, `minimum heights (${b.ed.h}, ${b.resp.h})`);
+  // too narrow for side by side: it stacks instead of overlapping
+  await page.locator(".split.rows > .pane").nth(1).hover();
+  await page.getByLabel("Switch layout").click();
+  await page.locator(".split.cols").waitFor();
+  await page.setViewportSize({ width: 960, height: 640 });
+  b = await boxes();
+  noOverlap(b, "narrow");
+  assert.ok(b.ed.bottom <= b.resp.top + 1 && b.ed.w === b.resp.w, "a narrow side-by-side split stacks");
 });

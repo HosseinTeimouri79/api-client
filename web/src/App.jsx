@@ -38,11 +38,11 @@ function Workspace() {
         <div className="split"><div className="pane grow"><CollectionSettings key={tab.key} tab={tab} /></div></div>
       ) : tab ? (
         <div className={cx("split", vertical ? "cols" : "rows")} ref={split}>
-          <div className="pane" style={{ flexBasis: `${editorFrac * 100}%` }}><RequestEditor key={tab.key} tab={tab} /></div>
+          <div className="pane" style={{ flexGrow: editorFrac }}><RequestEditor key={tab.key} tab={tab} /></div>
           {/* Bug fix: the editor / response split could be dragged anywhere from 15% to 85%, which made one pane far too small
               or too large; it now stays between EDITOR_FRAC.min and EDITOR_FRAC.max (40%-60%) */}
           <Splitter dir={vertical ? "col" : "row"} onDrag={(d) => { const r = split.current.getBoundingClientRect(); set((s) => ({ editorFrac: clampEditorFrac(s.editorFrac + d / (vertical ? r.width : r.height)) })); }} onEnd={() => LS("editorFrac", useStore.getState().editorFrac)} />
-          <div className="pane grow">
+          <div className="pane grow" style={{ flexGrow: 1 - editorFrac }}>
             <div className="pane-tools"><IconButton icon={vertical ? "table-columns" : "table-cells-large"} size="sm" label={t("app.switchLayout")} onClick={() => useStore.getState().updateSettings({ ui: { layout: vertical ? "stacked" : "side" } })} /></div>
             {liveTab(tab) ? <EventLog tab={tab} /> : <ResponseViewer tab={tab} />}
           </div>

@@ -8,6 +8,8 @@ import { Splitter } from "../components/ui/Splitter.jsx";
 import { useT } from "../i18n/index.js";
 
 const RANK = { DEBUG: 0, INFO: 1, WARN: 2, ERROR: 3 };
+/** Tallest the console may be: it leaves the top bar, the request tabs and both panes' minimums (see .console max-height). */
+const consoleMaxH = () => Math.max(96, innerHeight - 480);
 export function Console() {
   const t = useT();
   const LEVELS = [{ value: "all", label: t("console.all") }, { value: "warn", label: t("console.warn") }, { value: "error", label: t("console.error") }];
@@ -20,7 +22,7 @@ export function Console() {
   const errs = logs.filter((l) => l.level === "ERROR").length;
   return (
     <section className={cx("console", !consoleOpen && "closed")} style={consoleOpen ? { height: consoleH } : undefined}>
-      {consoleOpen && <Splitter dir="row" className="console-split" onDrag={(d) => set((s) => ({ consoleH: Math.max(80, Math.min(innerHeight * 0.7, s.consoleH - d)) }))} onEnd={() => { try { localStorage.setItem("consoleH", String(useStore.getState().consoleH)); } catch { /* private mode */ } }} />}
+      {consoleOpen && <Splitter dir="row" className="console-split" onDrag={(d) => set((s) => ({ consoleH: Math.max(96, Math.min(consoleMaxH(), s.consoleH - d)) }))} onEnd={() => { try { localStorage.setItem("consoleH", String(useStore.getState().consoleH)); } catch { /* private mode */ } }} />}
       <div className="console-h">
         <button className="console-title" onClick={() => set({ consoleOpen: !consoleOpen })} aria-expanded={consoleOpen}><Icon name="terminal" /> {t("console.title")} {errs > 0 && <span className="count err">{errs}</span>}</button>
         <span className="grow" />

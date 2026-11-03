@@ -105,7 +105,18 @@ mark { background: color-mix(in srgb, var(--warn) 40%, transparent); color: inhe
 .tab { display: flex; align-items: center; gap: 8px; padding: 6px 8px 6px 12px; border-radius: 8px 8px 0 0; border: 1px solid transparent; border-bottom: 0; color: var(--muted); cursor: pointer; max-width: 220px; }
 .tab:hover { background: var(--hover); } .tab.on { background: var(--bg); border-color: var(--border); color: var(--text); position: relative; top: 1px; }
 .tab-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .tab-x { background: none; border: 0; color: var(--muted); cursor: pointer; border-radius: 4px; width: 20px; height: 20px; font-size: 11px; text-align-last: justify; } .tab-x:hover { background: var(--line); color: var(--text); } .dirty { color: var(--warn); font-size: 10px; }
-.split { flex: 1; min-height: 0; display: flex; } .split.rows { flex-direction: column; } .pane { min-width: 0; min-height: 0; display: flex; flex-direction: column; position: relative; } .split > .pane { flex-grow: 0; flex-shrink: 0; } .split > .pane.grow { flex: 1 1 0; }
+/* Editor / response split. The panes share the space by flex-grow (editorFrac : 1 - editorFrac, set inline) and never go below
+   a usable minimum; each pane clips its own content, so nothing from one pane can show over the other. If the window is too
+   small for both minimums the split scrolls instead of squeezing them. Below ~740px of width side by side turns into stacked. */
+.main { container: main / inline-size; }
+.split { flex: 1; min-height: 0; display: flex; overflow: auto; } .split.rows { flex-direction: column; }
+.pane { min-width: 0; min-height: 0; display: flex; flex-direction: column; position: relative; } .split > .pane { flex: 1 1 0; overflow: hidden; }
+.split.rows > .pane:first-child { min-height: 230px; } .split.rows > .pane.grow { min-height: 140px; }
+.split.cols > .pane:first-child { min-width: 400px; } .split.cols > .pane.grow { min-width: 320px; }
+@container main (max-width: 739px) {
+  .split.cols { flex-direction: column; } .split.cols .splitter.col { display: none; }
+  .split.cols > .pane:first-child { min-width: 0; min-height: 230px; } .split.cols > .pane.grow { min-width: 0; min-height: 140px; border-top: 1px solid var(--border); }
+}
 .pane-tools { position: absolute; inset-inline-end: 6px; top: 6px; z-index: 3; opacity: 0; transition: opacity .15s; } .pane:hover .pane-tools { opacity: 1; }
 .empty { flex: 1; display: grid; place-items: center; text-align: center; color: var(--muted); padding: 20px; } .empty h2 { color: var(--text); margin-bottom: 4px; } .empty p { margin: 4px 0 14px; }
 .empty-mini { text-align: center; color: var(--muted); padding: 30px 12px; display: flex; flex-direction: column; align-items: center; gap: 4px; }
@@ -128,7 +139,7 @@ mark { background: color-mix(in srgb, var(--warn) 40%, transparent); color: inhe
 .editor { display: flex; flex-direction: column; min-height: 0; height: 100%; } .req-head { display: flex; gap: 8px; padding: 10px 12px 0; align-items: center; }
 .req-name { flex: 1; font-weight: 600; font-size: 14px; background: transparent !important; border-color: transparent !important; } .req-name:hover { border-color: var(--border) !important; } .req-name:focus { background: var(--panel2) !important; }
 .urlbar { display: flex; gap: 8px; padding: 8px 12px; } .method-select { min-width: 104px; } .url-input { flex: 1; }
-.editor > .tabstrip { padding: 0 8px; border-bottom: 1px solid var(--border); } .editor-body { flex: 1; min-height: 0; overflow: auto; padding: 12px; }
+.editor > .tabstrip { padding: 0 8px; border-bottom: 1px solid var(--border); flex-wrap: wrap; overflow: visible; } .editor-body { flex: 1; min-height: 0; overflow: auto; padding: 12px; }
 .docs { width: 100%; font-family: var(--app-font, var(--sans)); }
 
 /* var input */
@@ -169,10 +180,10 @@ mark { background: color-mix(in srgb, var(--warn) 40%, transparent); color: inhe
 .tests { padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; } .test { display: flex; gap: 8px; } .test.pass i { color: var(--ok); } .test.fail i { color: var(--err); } .sent-line { display: flex; gap: 10px; align-items: baseline; word-break: break-all; }
 
 /* console */
-.console { flex: none; display: flex; flex-direction: column; background: var(--panel); border-top: 1px solid var(--border); position: relative; } .console.closed { height: auto; }
+.console { flex: none; display: flex; flex-direction: column; background: var(--panel); border-top: 1px solid var(--border); position: relative; max-height: max(96px, calc(100vh - 480px)); } /* keep in step with consoleMaxH() */ .console.closed { height: auto; }
 .console-split { position: absolute !important; top: -3px; left: 0; right: 0; } .console-h { display: flex; align-items: center; gap: 8px; padding: 4px 10px; border-bottom: 1px solid var(--border); } .console.closed .console-h { border-bottom: 0; }
 .console-title { background: none; border: 0; color: var(--text); font: inherit; font-weight: 600; cursor: pointer; display: flex; gap: 8px; align-items: center; }
-.log { flex: 1; overflow: auto; padding: 6px 12px; font: 12px/1.6 var(--mono); } .L-ERROR { color: var(--err); } .L-WARN { color: var(--warn); } .L-DEBUG { color: var(--muted); }
+.log { flex: 1; min-height: 0; overflow: auto; padding: 6px 12px; font: 12px/1.6 var(--mono); } .L-ERROR { color: var(--err); } .L-WARN { color: var(--warn); } .L-DEBUG { color: var(--muted); }
 
 /* modal */
 .overlay { position: fixed; inset: 0; z-index: 500; background: #0008; backdrop-filter: blur(2px); display: grid; place-items: center; padding: 16px; animation: fade .12s; } @keyframes fade { from { opacity: 0; } }
@@ -198,7 +209,6 @@ mark { background: color-mix(in srgb, var(--warn) 40%, transparent); color: inhe
   .menu-btn { display: inline-flex; } .hide-sm, .brand-t { display: none; } .ws-select { min-width: 110px; } .env-select { min-width: 110px; }
   .side { position: fixed; z-index: 120; top: 50px; bottom: 0; inset-inline-start: 0; transform: translateX(-102%); transition: transform .2s; width: min(86vw, 340px) !important; box-shadow: var(--shadow); } .side.open { transform: none; }
   .scrim.on { display: block; position: fixed; inset: 50px 0 0; background: #0006; z-index: 110; } .side-split { display: none; }
-  .split.cols { flex-direction: column; } .split.cols > .pane { flex-basis: auto !important; } .split.cols > .pane:first-child { height: 55%; } .split.cols .splitter.col { display: none; }
 }
 @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
 .col-settings .req-head { padding-bottom: 2px; } .col-title { flex: 1; font-size: 14px; font-weight: 600; margin: 0; } .col-hint { margin: 2px 12px 8px; font-size: 12px; } .chev { cursor: pointer; }
