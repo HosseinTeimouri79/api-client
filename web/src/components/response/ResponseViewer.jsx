@@ -54,12 +54,12 @@ export function ResponseViewer({ tab }) {
   const [q, setQ] = useState("");
   const r = tab.response;
   const res = r?.response;
-  const kind = res ? kindOf(res) : "text";
-  const view = tab.respView ?? (kind === "html" ? "preview" : "pretty");
   const parsed = useMemo(() => {
-    if (!res || kind !== "json") return undefined;
+    if (!res || res.binary) return undefined;
     try { return JSON.parse(res.body); } catch { return undefined; }
-  }, [res?.body, kind]);
+  }, [res?.body, res?.binary]);
+  const kind = parsed !== undefined ? "json" : res ? kindOf(res) : "text";
+  const view = tab.respView ?? (kind === "html" ? "preview" : "pretty");
 
   if (tab.running) return <div className="empty"><div><Spinner /> {t("resp.sending")}</div></div>;
   if (!r) return <div className="empty"><div><Icon name="paper-plane" className="big" /><p>{t("resp.empty")}</p><span className="muted"><kbd>Ctrl</kbd> + <kbd>Enter</kbd></span></div></div>;
